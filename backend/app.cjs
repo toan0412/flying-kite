@@ -1,30 +1,42 @@
-const express = require('express');
-const app = express(); // Khởi tạo ứng dụng Express
-const http = require('http').Server(app);
-const mongoose = require('mongoose');
-const User = require('./model/user.model.cjs'); // Import User model
+require('dotenv').config({ path: `.env.${process.env.NODE_ENV || 'dev'}` })
+const express = require('express')
+const compression = require('compression')
+const { default: helmet } = require('helmet')
+const morgan = require('morgan')
 
-(async function connectDB() {
-    console.log('Attempting to connect to MongoDB Atlas...');
-    try {
-        await mongoose.connect('mongodb+srv://truongtoan00189:hAWT4jvSPyzMs9C0@cluster0.il30m.mongodb.net/realtimechat?retryWrites=true&w=majority&appName=Cluster0');
-        console.log('Connected to MongoDB Atlas');
+const app = express()
+// init middleware
+app.use(morgan('dev'))
+// app.use(morgan('combined')); // => only  for production
+app.use(helmet())
+app.use(compression())
+app.use(express.json())
+app.use(
+  express.urlencoded({
+    extended: true
+  })
+)
 
-        // Chèn dữ liệu vào MongoDB
-        const newUser = new User({
-            username: 'testuser',
-            email: 'testuser@example.com',
-            password: 'securepassword123'
-        });
+// init db
+require('./dbs/init.mongodb')
 
-        await newUser.save();
-        console.log('New user has been inserted into the database.');
+// init routes
+// app.use('/', require('./routers'));
 
-    } catch (error) {
-        console.error('Error connecting to MongoDB Atlas or inserting data:', error);
-    }
-})();
+// handle error
+app.use((req, res, next) => {
+  const err = new Error('Not Found')
+  err.status = 404
+  next(err)
+})
 
-http.listen(3000, function(){
-    console.log('Server is running');
-});
+app.use((err, req, res, next) => {
+  const statusCode = err.status || 500
+  return res.status(statusCode).json({
+    status: 'error',
+    code: statusCode,
+    message: err.message || 'Internal Server Error'
+  })
+})
+
+module.exports = app
