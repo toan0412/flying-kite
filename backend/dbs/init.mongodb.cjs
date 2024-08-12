@@ -4,8 +4,6 @@ const { app: { user, password, url, appname }, db: { name } } = require('../conf
 
 const connectString = `mongodb+srv://${user}:${password}@${url}/${name}?retryWrites=true&w=majority&appName=${appname}`;
 
-console.log(connectString)
-
 
 class Database {
     constructor() {

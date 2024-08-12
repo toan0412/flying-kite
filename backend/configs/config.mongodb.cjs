@@ -1,3 +1,5 @@
+require('dotenv').config({ path: __dirname + '/./../.env' });
+
 const config = {
     app: {
         user: process.env.MONGODB_USER,
@@ -9,5 +11,6 @@ const config = {
         name: process.env.MONGODB_NAME,
     }
 }
+
 
 module.exports = config;
