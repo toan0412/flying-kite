@@ -1,7 +1,7 @@
 /* color palette from <https://github.com/vuejs/theme> */
 :root {
-  --ms-primary-color: #79139E;
-  --ms-light-purple-color: #FCF0FF;
+  --ms-primary-color: #79139e;
+  --ms-light-purple-color: #fcf0ff;
   --ms-border-color: rgba(0, 0, 0, 0.1);
   --ms-lighter-color: #6e6e6e;
   --ms-text-color: #212121;
@@ -15,8 +15,8 @@
   --text-color: var(--ms-text-color);
   --border-color: var(--ms-border-color);
   --lighter-text-color: var(--ms-lighter-color);
+  --background-icon-color: #f1f1f4;
 }
-
 
 *,
 *::before,
@@ -34,7 +34,7 @@ body {
     color 0.5s,
     background-color 0.5s;
   line-height: 1.6;
-  font-family: "SF Bold", "Segoe System UI Bold", "Segoe UI Bold", sans-serif;
+  font-family: 'SF Bold', 'Segoe System UI Bold', 'Segoe UI Bold', sans-serif;
   font-size: 15px;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;

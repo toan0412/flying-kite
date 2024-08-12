@@ -3,25 +3,24 @@
 </template>
 
 <script>
-export default {
-}
+export default {}
 </script>
 
 <style lang="scss">
 .custom-textfield {
- .v-field{
+  .v-field {
     border-radius: 18px;
-    background-color: var(--background-sidebar-color);
+    background-color: var(--background-icon-color);
   }
 
-  .v-field--variant-solo{
+  .v-field--variant-solo {
     box-shadow: unset;
   }
 
-  .v-field__input{
+  .v-field__input {
     color: var(--text-color);
   }
-  .v-field__append-inner{
+  .v-field__append-inner {
     color: var(--text-color);
   }
 }
