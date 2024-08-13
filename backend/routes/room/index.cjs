@@ -1,0 +1,15 @@
+const { asyncHandler } = require('../../helpers/asyncHandler.cjs');
+const roomController = require('../../controllers/room.controller.cjs');
+const { authentication } = require('../../auth/authUtils.cjs');
+
+const router = require('express').Router();
+
+router.use(authentication);
+
+router.get('/rooms', asyncHandler(roomController.getAllRooms));
+router.post('/rooms', asyncHandler(roomController.createRoom));
+router.get('/rooms/:id', asyncHandler(roomController.getRoomById));
+router.patch('/rooms/:id', asyncHandler(roomController.updateRoom));
+router.delete('/rooms/:id', asyncHandler(roomController.deleteRoom));
+
+module.exports = router;

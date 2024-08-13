@@ -40,6 +40,16 @@ exports.postOne = (Model) => asyncHandler(async (req, res) => {
     });
   } catch (err) {
     console.error('Error creating item:', err);
+
+    // Xử lý lỗi trùng lặp khóa trong MongoDB
+    if (err.code === 11000) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Duplicate key error: an item with the same value already exists.'
+      });
+    }
+
+    // Ném ra lỗi BadRequestError cho các lỗi khác
     throw new BadRequestError(err.message);
   }
 });

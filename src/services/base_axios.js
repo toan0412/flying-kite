@@ -1,20 +1,19 @@
 import axios from 'axios'
 
+// Create an axios instance with default configuration
 const instance = axios.create({
   baseURL: import.meta.env.VITE_BACKEND_URL
 })
 
-const token = localStorage.getItem('accessToken');
-
-// Add a request interceptor to add headers
+// Add a request interceptor
 instance.interceptors.request.use(
   function (config) {
-    // Do something before request is sent
-    config.headers['Authorization'] = `Bearer ${token}`
+    // Add the API key to the headers
+    config.headers['x-api-key'] = import.meta.env.VITE_API_KEY
     return config
   },
   function (error) {
-    // Do something with request error
+    // Handle request errors
     return Promise.reject(error)
   }
 )
@@ -22,30 +21,29 @@ instance.interceptors.request.use(
 // Add a response interceptor
 instance.interceptors.response.use(
   function (response) {
-    // Any status code that lies within the range of 2xx causes this function to trigger
-    // Do something with response data
+    // Return the response data directly
     return response.data
   },
   function (error) {
-    // Any status codes that fall outside the range of 2xx cause this function to trigger
-    // Do something with response error
-    let res = {}
-    if (error.response) {
-      // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
-      res.data = error.response.data
-      res.status = error.response.status
-      res.headers = error.response.headers
-    } else if (error.request) {
-      // The request was made but no response was received
-      // `error.request` is an instance of XMLHttpRequest in the browser
-      // and an instance of http.ClientRequest in Node.js
-      console.log(error.request)
-    } else {
-      // Something happened in setting up the request that triggered an Error
-      console.log('Error', error.message)
+    // Handle response errors
+    let errorResponse = {
+      status: error.response ? error.response.status : 'UNKNOWN',
+      message: error.response ? error.response.data.message || 'Unknown error' : 'Network Error',
+      data: error.response ? error.response.data : null
     }
-    return Promise.reject(error)
+
+    if (error.response) {
+      // Log detailed error response if available
+      console.error('Response error:', errorResponse)
+    } else if (error.request) {
+      // Log the request error if no response is received
+      console.error('No response received:', error.request)
+    } else {
+      // Log any other error
+      console.error('Error', error.message)
+    }
+
+    return Promise.reject(errorResponse)
   }
 )
 

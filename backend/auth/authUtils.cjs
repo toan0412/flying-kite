@@ -26,7 +26,7 @@ const createTokenPair = async (payload, privateKey) => {
     //     if(err) {
     //         console.error('error verify token');
     //     } else{
-    //         console.log('decode jwt::', decode);
+        //         console.log('decode jwt::', decode);
     //     }
     // });
     return { accessToken, refreshToken };
@@ -41,17 +41,17 @@ const authentication = asyncHandler(async (req, res, next) => {
      * 5. check keyStore with userID
      */
     const userId = req.headers[HEADER.CLIENT_ID];
-    if (!userId) throw new AuthFailureError('Invalid Request');
+    if (!userId) throw new AuthFailureError('userId not found in headers');
 
     const keyStore = await KeyTokenService.findByUserid(userId);
-    if (!keyStore) throw new NotFoundError();
+    if (!keyStore) throw new NotFoundError('keyStore not found');
 
     const accessToken = req.headers[HEADER.AUTHORIZATION];
-    if (!accessToken) throw new AuthFailureError('Invalid Request');
+    if (!accessToken) throw new AuthFailureError('accessToken not found in headers');
 
     try {
         const decodeUser = jwt.verify(accessToken, keyStore.publicKey);
-        if (userId != decodeUser.userid) throw new AuthFailureError('Invalid Request');
+        if (userId != decodeUser.userid) throw new AuthFailureError('verify jwt failed');
         req.keyStore = keyStore;
         return next();
     } catch (error) {

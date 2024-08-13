@@ -3,12 +3,8 @@
   <div class="content-wrapper">
     <div class="content__header">
       <div class="content__header__info">
-        <v-img
-          width="40"
-          height="40"
-          alt="John"
-          src="https://cdns-images.dzcdn.net/images/cover/2dc4b0f8be56c076730024177b491b1c/1900x1900-000000-80-0-0.jpg"
-        ></v-img>
+        <v-img width="40" height="40" alt="John"
+          src="https://cdns-images.dzcdn.net/images/cover/2dc4b0f8be56c076730024177b491b1c/1900x1900-000000-80-0-0.jpg"></v-img>
         <p class="content__header__info__name">dinh the anh</p>
       </div>
       <div class="content__header__actions">
@@ -29,16 +25,8 @@
     <div class="content__input">
       <div class="content__input--wrapper">
         <div class="content__input__content">
-          <MSTextField
-            width="700"
-            height="50"
-            prepend-inner-icon="mdi-emoticon-outline"
-            density="compact"
-            variant="solo"
-            hide-details
-            single-line
-            placeholder="Nhập tin nhắn"
-          ></MSTextField>
+          <MSTextField width="700" height="50" prepend-inner-icon="mdi-emoticon-outline" density="compact" variant="solo"
+            hide-details single-line placeholder="Nhập tin nhắn"></MSTextField>
         </div>
         <div class="content__input__actions">
           <div class="content__input__actions__item">
@@ -63,9 +51,16 @@
 import MSTextField from '@/components/textfield/MSTextField.vue'
 
 export default {
+  data() {
+    return {
+      userInfo: null
+    }
+  },
+
   components: {
     MSTextField
-  }
+  },
+
 }
 </script>
 

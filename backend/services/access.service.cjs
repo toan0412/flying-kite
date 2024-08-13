@@ -1,6 +1,7 @@
 const userModel = require('../models/user.model.cjs');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
+const jwt = require("jsonwebtoken");
 const KeyTokenService = require('./keyToken.service.cjs');
 const { createTokenPair } = require('../auth/authUtils.cjs');
 const { getInfoData } = require('../utils/index.cjs');
@@ -23,11 +24,8 @@ const getPublicKey = async (userid) => {
 
 // Hàm xác thực token bằng khóa công khai
 const validateToken = async (accessToken, userID) => {
-    // Lấy khóa công khai từ cơ sở dữ liệu
     const publicKeyString = await getPublicKey(userID);
-    // Chuyển đổi khóa công khai từ chuỗi sang đối tượng RSA
     const publicKeyObject = crypto.createPublicKey(publicKeyString);
-    // Xác thực accessToken bằng khóa công khai
     jwt.verify(accessToken, publicKeyObject, (err, decode) => {
         if (err) {
             console.error('Error verifying token:', err);
@@ -87,11 +85,11 @@ class AccessService {
     static login = async ({ username, password, refreshToken = null }) => {
         // Tìm người dùng theo user
         const foundUser = await findByUser(username);
-        if (!foundUser) throw new BadRequestError('User not registered');
+        if (!foundUser) throw new BadRequestError('Không tìm thấy người dùng');
 
         // So sánh mật khẩu đã mã hóa
         const match = await bcrypt.compare(password, foundUser.password);
-        if (!match) throw new AuthFailureError('Authentication error');
+        if (!match) throw new AuthFailureError('Tài khoản hoặc mật khẩu sai');
 
         // Tạo token cho người dùng
         const tokens = await genToken(foundUser);
@@ -111,10 +109,10 @@ class AccessService {
 
     // Phương thức đăng ký
     static signUp = async ({ fullname, email, password, username }) => {
-        // Kiểm tra xem shop đã tồn tại chưa
+        // Kiểm tra xem user đã tồn tại chưa
         const checkExistUser = await userModel.findOne({ username }).lean();
         if (checkExistUser) {
-            throw new BadRequestError('Error: User exists');
+            throw new BadRequestError('Người dùng đã tồn tại');
         }
 
         // Mã hóa mật khẩu trước khi lưu
@@ -135,6 +133,18 @@ class AccessService {
         return {
             code: 200,
             newdata: null
+        };
+    }
+
+    //Lấy thông tin người dùng theo ID
+    static getUser = async ({ accessToken, userId }) => {
+        // Kiểm tra xem token có hợp lệ chưa
+        await validateToken(accessToken, userId);
+
+        // Lấy thông tin người dùng
+        const user = await userModel.findById(userId).lean();
+        return {
+            user: user,
         };
     }
 }

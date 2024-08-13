@@ -1,31 +1,64 @@
 <template>
-  <!--
-  <div class="sidebar-wrapper">
-    <Sidebar />
+  <div v-if="isAuth" class="main">
+    <div class="sidebar-wrapper">
+      <Sidebar />
+    </div>
+    <div class="main-wrapper">
+      <router-view />
+    </div>
   </div>
-  <div class="main-wrapper">
-    <router-view />
+  <div v-else>
+    <Login @is-auth="handleAuthStatus" />
   </div>
-  -->
-  <Login />
 </template>
 
 <script>
 import Sidebar from '@/components/layout/sidebar/Sidebar.vue'
 import Login from './views/Login/LoginView.vue'
+import { getUserAPI } from '@/services/UserServices'
+
+
 export default {
+  data() {
+    return {
+      isAuth: false,
+    };
+  },
+
   components: {
     Sidebar,
-    Login
-  }
-}
+    Login,
+  },
 
+  created() {
+    const accessToken = localStorage.getItem('accessToken');
+    const userId = localStorage.getItem('userId')
+    if (accessToken) {
+      this.isAuth = true;
+      getUserAPI(accessToken, userId)
+        .then((res) => {
+          localStorage.setItem('userInfo', JSON.stringify(res.metadata.user))
+        })
+    }
+  },
+
+  methods: {
+    handleAuthStatus(isAuth) {
+      this.isAuth = isAuth;
+    },
+  },
+};
 </script>
 
 <style lang="scss">
 #app {
   display: flex;
   border-top: 1px solid var(--border-color);
+}
+
+.main {
+  display: flex;
+  width: 100%;
 }
 
 .main-wrapper {

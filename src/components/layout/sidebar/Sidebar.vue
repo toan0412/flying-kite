@@ -7,14 +7,15 @@
     <div class="sidebar__statusbar">
       <div class="sidebar__statusbar__item">
         <v-avatar size="54">
-          <v-img alt="John" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQehhyMBXUAuR8iqYs0dkkE09Ycc2la0dJWdg&s"></v-img>
+          <v-img alt="John"
+            src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQehhyMBXUAuR8iqYs0dkkE09Ycc2la0dJWdg&s"></v-img>
         </v-avatar>
         <div class="pl-3">
           <div class="statusbar__item__username">
-            Nguyễn Trường Toàn
+            {{ userInfo.fullname }}
           </div>
           <div class="statusbar__item__status">
-            Quay lại ngay
+            {{ userInfo.status }}
           </div>
         </div>
       </div>
@@ -30,7 +31,8 @@
       <ul class="sidebar__main__content">
         <li class="sidebar__main__content__item">
           <div class="main__content_item__avatar">
-            <v-img alt="John" src="https://cdns-images.dzcdn.net/images/cover/2dc4b0f8be56c076730024177b491b1c/1900x1900-000000-80-0-0.jpg"></v-img>
+            <v-img alt="John"
+              src="https://cdns-images.dzcdn.net/images/cover/2dc4b0f8be56c076730024177b491b1c/1900x1900-000000-80-0-0.jpg"></v-img>
           </div>
           <div class="main__content_item--wrap">
             <div class="main__content_item__fullname">
@@ -56,9 +58,18 @@ import MSButton from '@/components/button/MSButton.vue'
 import MSTextField from '@/components/textfield/MSTextField.vue'
 
 export default {
+  data() {
+    return {
+      userInfo: null
+    }
+  },
   components: {
     MSButton,
     MSTextField
+  },
+  created() {
+    let userInfo = localStorage.getItem('userInfo');
+    this.userInfo = userInfo ? JSON.parse(userInfo) : null
   }
 }
 </script>

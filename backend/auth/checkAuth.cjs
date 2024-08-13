@@ -7,7 +7,6 @@ const HEADER = {
 }
 
 const apiKey = async (req, res, next) => {
-    console.log(req.headers)
     const key = req.headers[HEADER.API_KEY]?.toString();
     if (!key) {
         throw new FobiddenError('x-api-key is missing');

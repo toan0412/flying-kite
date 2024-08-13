@@ -10,6 +10,7 @@ router.post('/user/sign-up', asyncHandler(accessController.signUp));
 router.post('/user/login', asyncHandler(accessController.login));
 
 router.use(authentication);
+router.post('/user/info', asyncHandler(accessController.getUser))
 router.post('/user/logout', asyncHandler(accessController.logout));
 
-module.exports  = router
+module.exports = router
