@@ -6,9 +6,9 @@ const router = require('express').Router();
 
 router.use(authentication);
 
-router.get('/rooms', asyncHandler(roomController.getAllRooms));
+router.get('/rooms', asyncHandler(roomController.getConversations));
 router.post('/rooms', asyncHandler(roomController.createRoom));
-router.get('/rooms/:id', asyncHandler(roomController.getRoomById));
+router.put('/rooms/:id', asyncHandler(roomController.updateRoom));
 router.patch('/rooms/:id', asyncHandler(roomController.updateRoom));
 router.delete('/rooms/:id', asyncHandler(roomController.deleteRoom));
 

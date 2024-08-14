@@ -6,7 +6,6 @@ const COLLECTION_NAME = 'Rooms';
 const roomSchema = new Schema({
     roomname: {
         type: String,
-        required: [true, 'The roomname field is required'],
     },
     created_by: {
         type: Schema.Types.ObjectId,
@@ -17,6 +16,7 @@ const roomSchema = new Schema({
         user_id: {
             type: Schema.Types.ObjectId,
             ref: 'Users',
+            required: [true, 'The user_id in members is required']
         },
         role: {
             type: String,
@@ -30,7 +30,7 @@ const roomSchema = new Schema({
     type: {
         type: String,
         enum: ['public', 'private'],
-        default: 'public',
+        default: 'private',
     },
     last_message: {
         type: String,

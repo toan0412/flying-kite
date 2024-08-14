@@ -4,26 +4,26 @@ const { SuccessResponse, CREATED } = require('../core/success.response.cjs');
 class AccessController {
     login = async (req, res, next) => {
         new SuccessResponse({
-            metadata: await AccessService.login(req.body)
+            data: await AccessService.login(req.body)
         }).send(res);
     }
 
     logout = async (req, res, next) => {
         new SuccessResponse({
-            metadata: await AccessService.logout(req.keyStore)
+            data: await AccessService.logout(req.keyStore)
         }).send(res);
     }
 
     signUp = async (req, res, next) => {
         new CREATED({
             message: 'Register OK',
-            metadata: await AccessService.signUp(req.body)
+            data: await AccessService.signUp(req.body)
         }).send(res);
     }
 
     getUser = async (req, res, next) => {
         new SuccessResponse({
-            metadata: await AccessService.getUser(req.body)
+            data: await AccessService.getUser(req.body)
         }).send(res)
     }
 }

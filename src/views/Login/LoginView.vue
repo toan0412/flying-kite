@@ -139,8 +139,8 @@ export default {
         .then((res) => {
           if (res.status === 200) {
             this.errorMessage = ''
-            localStorage.setItem('accessToken', res.metadata.tokens.accessToken)
-            localStorage.setItem('userId', res.metadata.user._id)
+            localStorage.setItem('accessToken', res.data.tokens.accessToken)
+            localStorage.setItem('userId', res.data.user._id)
             this.$router.replace('/');
             this.$emit('is-auth', true)
           }

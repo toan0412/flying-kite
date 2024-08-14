@@ -1,27 +1,27 @@
-const { getAll, getOneById, postOne, updateOne, deleteOne } = require('./common.controller.cjs');
-const Room = require('../models/room.model.cjs');
+const RoomService = require("../services/room.service.cjs");
+const { SuccessResponse, CREATED } = require('../core/success.response.cjs');
 
-const roomController = {
-  getAllRooms: (req, res) => {
-    return getAll(Room)(req, res);
-  },
-
-  getRoomById: (req, res) => {
-    return getOneById(Room)(req, res);
-  },
-
-  createRoom: (req, res) => {
-    console.log(req)
-    return postOne(Room)(req, res);
-  },
-
-  updateRoom: (req, res) => {
-    return updateOne(Room)(req, res);
-  },
-
-  deleteRoom: (req, res) => {
-    return deleteOne(Room)(req, res);
+class RoomController {
+  createRoom = async (req, res, next) => {
+    new CREATED({
+      message: 'Tạo phòng thành công',
+      data: await RoomService.createRoom(req.body)
+    }).send(res);
   }
-};
 
-module.exports = roomController;
+  updateRoom = async (req, res, next) => {
+    new SuccessResponse({
+      message: 'Cập nhật phòng thành công',
+      data: await RoomService.updateRoom(req.body)
+    }).send(res)
+  }
+
+  getConversations = async(req, res, next) => {
+      new SuccessResponse({
+        message: 'Lấy thông tin các cuộc trò chuyện thành công',
+        data: await RoomService.getConversations(req.body)
+      }).send(res)
+  }
+}
+
+module.exports = new RoomController();

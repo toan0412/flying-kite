@@ -11,8 +11,8 @@ const keytokenModel = require("../models/keytoken.model.cjs");
 
 // Các vai trò người dùng
 const RoleUser = {
-    USER: 'USER',
-    ADMIN: 'ADMIN'
+    USER: 'user',
+    ADMIN: 'admin'
 }
 
 // Hàm lấy khóa công khai của người dùng từ cơ sở dữ liệu
