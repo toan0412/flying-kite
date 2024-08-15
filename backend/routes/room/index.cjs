@@ -6,10 +6,8 @@ const router = require('express').Router();
 
 router.use(authentication);
 
-router.get('/rooms', asyncHandler(roomController.getConversations));
+router.get('/rooms/:userId', asyncHandler(roomController.getConversations));
 router.post('/rooms', asyncHandler(roomController.createRoom));
-router.put('/rooms/:id', asyncHandler(roomController.updateRoom));
-router.patch('/rooms/:id', asyncHandler(roomController.updateRoom));
-router.delete('/rooms/:id', asyncHandler(roomController.deleteRoom));
+router.put('/rooms/:userId', asyncHandler(roomController.updateRoom));
 
 module.exports = router;

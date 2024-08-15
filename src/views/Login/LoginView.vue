@@ -117,6 +117,9 @@
 
 <script>
 import { loginAPI, signUpAPI } from '@/services/UserServices.js'
+import { createAvatar } from '@dicebear/core'
+import { adventurerNeutral } from '@dicebear/collection'
+
 export default {
   data() {
     return {
@@ -156,13 +159,15 @@ export default {
     handleSignUp() {
       this.isLoading = true
       if (this.confirmPassword !== this.password) return
-      const userSignUp = {
+      const avatarUrl = this.generateAvatarUrl(this.username)
+      const signUpInfo = {
         username: this.username,
         password: this.password,
         email: this.email,
-        fullname: this.fullname
+        fullname: this.fullname,
+        avatarUrl: avatarUrl
       }
-      signUpAPI(userSignUp)
+      signUpAPI(signUpInfo)
         .then((res) => {
           this.toggleComponent()
         })
@@ -187,6 +192,15 @@ export default {
       this.fullname = ''
       this.errorMessage = ''
     },
+
+    //Tạo avataUrl theo seed và background
+    generateAvatarUrl(username) {
+      const avatar = createAvatar(adventurerNeutral, {
+        seed: username,
+        backgroundColor: '#ffdbea',
+      });
+      return avatar.toDataUri()
+    }
 
   }
 }

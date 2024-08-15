@@ -6,7 +6,7 @@ const COLLECTION_NAME = 'Notifications';
 const notificationSchema = new Schema({
     user_id: {
         type: Schema.Types.ObjectId,
-        ref: 'Users',
+        ref: 'User',
         required: [true, 'The user_id field is required'],
     },
     message: {

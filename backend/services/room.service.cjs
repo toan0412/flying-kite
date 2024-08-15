@@ -1,6 +1,6 @@
 const RoomModel = require("../models/room.model.cjs");
 const { BadRequestError, NotFoundError } = require('../core/error.response.cjs');
-const { findByUser } = require('./user.service.cjs');
+const UserService = require('./user.service.cjs');
 const { getInfoData } = require('../utils/index.cjs');
 
 const RoleRoom = {
@@ -18,43 +18,21 @@ class RoomService {
     //Tạo phòng
     createRoom = async ({ userId }) => {
         //Check xem người tạo phòng có tồn tại không
-        const userCreatedRoom = await findByUser(userId)
-        if (!userCreatedRoom) {
-            throw new NotFoundError('Người tạo phòng không tồn tại')
-        }
+        UserService.findByFilter(userId)
 
         const newRoom = await RoomModel.create({
-            created_by: userCreatedRoom._id,
-            members: [{ user_id: userCreatedRoom._id, role: RoleRoom.ADMIN }]
+            created_by: userId,
+            members: [{ user_id: userId, role: RoleRoom.ADMIN }]
         });
         return newRoom;
     }
 
     //Cập nhât phòng
     updateRoom = async ({ roomId, newMembers = [], roomName, status, lastMessage }) => {
-        console.log(roomId, newMembers)
+        newMembers = ['66bd61871f90807a94916636']
         // Tìm phòng cần cập nhật
-        const room = await RoomModel.findById(roomId)
-        if (!room) {
-            throw new NotFoundError('Phòng không tồn tại')
-        }
+        const room = await this.checkExistRoom(roomId)
 
-        // Thêm thành viên mới vào phòng (nếu có)
-        if (newMembers.length > 0) {
-            for (const memberId of newMembers) {
-                // Kiểm tra xem thành viên có tồn tại không
-                const user = await findByUser(memberId)
-                if (!user) {
-                    throw new NotFoundError(`Người dùng với ID ${memberId} không tồn tại`)
-                }
-                // Kiểm tra xem thành viên đã có trong phòng chưa, nếu chưa thì thêm vào
-                const alreadyMember = room.members.some(member => member.user_id.toString() === memberId)
-                if (alreadyMember) throw new BadRequestError('Người dùng đã ở trong phòng')
-                else {
-                    room.members.push({ user_id: memberId })
-                }
-            }
-        }
         if (roomName) { room.roomname = roomName }
 
         if (status) { room.status = status }
@@ -64,14 +42,28 @@ class RoomService {
             room.last_message_at = Date.now();
         }
 
-        // Lưu thay đổi vào cơ sở dữ liệu
-        await room.save();
+        // Thêm thành viên mới vào phòng (nếu có)
+        if (newMembers.length > 0) {
+            for (const memberId of newMembers) {
+                // Kiểm tra xem thành viên có tồn tại không
+                UserService.findByFilter(memberId)
+                // Kiểm tra xem thành viên đã có trong phòng chưa, nếu chưa thì thêm vào
+                const alreadyMember = room.members.some(member => member.user_id.toString() === memberId)
+                if (alreadyMember) throw new BadRequestError('Người dùng đã ở trong phòng')
+                else {
+                    room.members.push({ user_id: memberId })
+                }
+            }
+        }
 
+
+        await room.save();
         return room;
     };
 
     //Lấy danh sách các phòng
-    getConversations = async ({ userId }) => {
+    getConversations = async (params) => {
+        const userId = params.userId
         const conservations = [];
         // Tìm phòng mà người dùng là thành viên
         const rooms = await RoomModel.find({
@@ -83,28 +75,42 @@ class RoomService {
         }
 
         for (const room of rooms) {
+            const baseConversation = {
+                id: room._id,
+                lastMessage: room.last_message,
+                lastMessageAt: room.last_message_at
+            };
+
             if (room.members.length === 2) {
-                // Phòng có 2 người, lấy id của người nhận
+                // Phòng có 2 người, lấy tên của người nhận làm tên phòng
                 const receiver = room.members.find(member => member.user_id.toString() !== userId.toString());
-                // Lấy thông tin người nhận
-                const receiverInfo = await findByUser(receiver.user_id.toString());
+                const receiverInfo = await UserService.findByUser(receiver.user_id.toString());
                 conservations.push({
+                    ...baseConversation,
                     displayName: receiverInfo.fullname,
-                    last_message: room.last_message,
-                    last_message_at: room.last_message_at
+                    avatarUrl: receiverInfo.avatarUrl,
                 });
-            } else if (room.members.length > 2) {
+            }
+            else if (room.members.length > 2) {
                 // Phòng có trên 2 người, trả về tên phòng
                 conservations.push({
+                    baseConversation,
                     displayName: room.roomname,
-                    last_message: room.last_message,
-                    last_message_at: room.last_message_at
                 });
             }
         }
 
         return conservations;
     };
+
+    //Check exist Room
+    checkExistRoom = async (roomId) => {
+        const existRoom = await RoomModel.findById(roomId);
+        if (!existRoom) {
+            throw new NotFoundError('Không tìm thấy phòng với ID')
+        }
+        return existRoom
+    }
 
 }
 

@@ -21,9 +21,9 @@ const userSchema = new Schema({
         type: String,
         required: [true, 'The password field is required'],
     },
-    avatar: {
+    avatarUrl: {
         type: String,
-        default: 'https://cellphones.com.vn/sforum/wp-content/uploads/2023/10/avatar-trang-4.jpg',
+        default: '',
     },
     status: {
         type: String,

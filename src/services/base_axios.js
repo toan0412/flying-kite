@@ -1,5 +1,8 @@
 import axios from 'axios'
 
+const accessToken = localStorage.getItem('accessToken')
+const userId = localStorage.getItem('userId')
+
 // Create an axios instance with default configuration
 const instance = axios.create({
   baseURL: import.meta.env.VITE_BACKEND_URL
@@ -10,6 +13,18 @@ instance.interceptors.request.use(
   function (config) {
     // Add the API key to the headers
     config.headers['x-api-key'] = import.meta.env.VITE_API_KEY
+
+    // Get token and userId at request time to ensure they are up to date
+    const accessToken = localStorage.getItem('accessToken')
+    const userId = localStorage.getItem('userId')
+
+    if (accessToken) {
+      config.headers['Authorization'] = accessToken
+    }
+    if (userId) {
+      config.headers['x-client-id'] = userId
+    }
+
     return config
   },
   function (error) {

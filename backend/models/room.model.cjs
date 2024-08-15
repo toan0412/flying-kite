@@ -9,13 +9,13 @@ const roomSchema = new Schema({
     },
     created_by: {
         type: Schema.Types.ObjectId,
-        ref: 'Users',
+        ref: 'User',
         required: [true, 'The created_by field is required'],
     },
     members: [{
         user_id: {
             type: Schema.Types.ObjectId,
-            ref: 'Users',
+            ref: 'User',
             required: [true, 'The user_id in members is required']
         },
         role: {
@@ -26,6 +26,7 @@ const roomSchema = new Schema({
     }],
     avatar: {
         type: String,
+        default: ''
     },
     type: {
         type: String,

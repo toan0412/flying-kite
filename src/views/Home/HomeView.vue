@@ -3,9 +3,8 @@
   <div class="content-wrapper">
     <div class="content__header">
       <div class="content__header__info">
-        <v-img width="40" height="40" alt="John"
-          src="https://cdns-images.dzcdn.net/images/cover/2dc4b0f8be56c076730024177b491b1c/1900x1900-000000-80-0-0.jpg"></v-img>
-        <p class="content__header__info__name">dinh the anh</p>
+        <v-img width="40" height="40" :alt="conversation.fullname" :src="conversation.avatarUrl"></v-img>
+        <p class="content__header__info__name">{{ conversation.fullname || '' }}</p>
       </div>
       <div class="content__header__actions">
         <div class="content__header__actions__item">
@@ -49,20 +48,55 @@
 
 <script>
 import MSTextField from '@/components/textfield/MSTextField.vue'
+import { useConversationStore } from '@/stores/ConversationStore'
+import { getConservationByRoomIdAPI } from '@/services/MessageService'
 
 export default {
-  data() {
-    return {
-      userInfo: null
-    }
-  },
-
   components: {
     MSTextField
   },
 
+  data() {
+    return {
+      conversation: {},
+      message: []
+    };
+  },
+
+  methods: {
+    getConservationByRoomId() {
+      getConservationByRoomIdAPI(this.conversation.id)
+        .then(response => {
+          this.message = response.data
+          console.log(this.message)
+        })
+        .catch(error => {
+          console.log(error)
+        })
+    }
+  },
+
+  props: {
+    roomId: String
+  },
+
+  computed: {
+    currentConversation() {
+      const conversationStore = useConversationStore();
+      return conversationStore.conversation
+    }
+  },
+
+  watch: {
+    currentConversation(newConversation, oldConversation) {
+      this.conversation = newConversation
+      this.getConservationByRoomId()
+    }
+  }
+
 }
 </script>
+
 
 <style lang="scss">
 .content__header {
@@ -80,6 +114,7 @@ export default {
   height: 40px;
 
   .v-img__img {
+    background-color: var(--avatar-color);
     border: 1px solid var(--ms-border-color);
     border-radius: 6px;
   }
@@ -140,6 +175,8 @@ export default {
     justify-content: center;
     height: 46px;
     width: 50px;
+    margin: 0 4px;
   }
+
 }
 </style>

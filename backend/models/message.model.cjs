@@ -6,12 +6,12 @@ const COLLECTION_NAME = 'Messages';
 const messageSchema = new Schema({
     room_id: {
         type: Schema.Types.ObjectId,
-        ref: 'Rooms',
+        ref: 'Room',
         required: [true, 'The room_id field is required'],
     },
     sender_id: {
         type: Schema.Types.ObjectId,
-        ref: 'Users',
+        ref: 'User',
         required: [true, 'The sender_id field is required'],
     },
     content: {
@@ -25,7 +25,7 @@ const messageSchema = new Schema({
     reactions: [{
         user_id: {
             type: Schema.Types.ObjectId,
-            ref: 'Users',
+            ref: 'User',
         },
         emoji: {
             type: String,
@@ -45,16 +45,8 @@ const messageSchema = new Schema({
             type: String,
             enum: ['image', 'video', 'audio'],
             required: [true, 'The media type field is required'],
-        },
-        uploaded_at: {
-            type: Date,
-            default: Date.now,
-        },
+        }
     }],
-    created_at: {
-        type: Date,
-        default: Date.now,
-    },
 }, {
     timestamps: true,
     collection: COLLECTION_NAME,

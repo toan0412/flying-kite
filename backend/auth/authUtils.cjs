@@ -26,7 +26,7 @@ const createTokenPair = async (payload, privateKey) => {
     //     if(err) {
     //         console.error('error verify token');
     //     } else{
-        //         console.log('decode jwt::', decode);
+    //         console.log('decode jwt::', decode);
     //     }
     // });
     return { accessToken, refreshToken };
@@ -57,7 +57,6 @@ const authentication = asyncHandler(async (req, res, next) => {
     } catch (error) {
         throw error
     }
-
 })
 
 module.exports = {

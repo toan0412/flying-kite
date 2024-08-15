@@ -1,5 +1,5 @@
 const RoomService = require("../services/room.service.cjs");
-const { SuccessResponse, CREATED } = require('../core/success.response.cjs');
+const { SuccessResponse, CREATED } = require('../core/success.response.cjs')
 
 class RoomController {
   createRoom = async (req, res, next) => {
@@ -16,11 +16,11 @@ class RoomController {
     }).send(res)
   }
 
-  getConversations = async(req, res, next) => {
-      new SuccessResponse({
-        message: 'Lấy thông tin các cuộc trò chuyện thành công',
-        data: await RoomService.getConversations(req.body)
-      }).send(res)
+  getConversations = async (req, res, next) => {
+    new SuccessResponse({
+      message: 'Lấy thông tin các cuộc trò chuyện thành công',
+      data: await RoomService.getConversations(req.params)
+    }).send(res)
   }
 }
 

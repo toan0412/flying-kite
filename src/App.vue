@@ -15,8 +15,6 @@
 <script>
 import Sidebar from '@/components/layout/sidebar/Sidebar.vue'
 import Login from './views/Login/LoginView.vue'
-import { getUserAPI } from '@/services/UserServices'
-
 
 export default {
   data() {
@@ -33,12 +31,8 @@ export default {
   created() {
     const accessToken = localStorage.getItem('accessToken');
     const userId = localStorage.getItem('userId')
-    if (accessToken) {
+    if (accessToken && userId) {
       this.isAuth = true;
-      getUserAPI(accessToken, userId)
-        .then((res) => {
-          localStorage.setItem('userInfo', JSON.stringify(res.metadata.user))
-        })
     }
   },
 

@@ -1,38 +1,18 @@
 const userModel = require('../models/user.model.cjs');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
-const jwt = require("jsonwebtoken");
 const KeyTokenService = require('./keyToken.service.cjs');
 const { createTokenPair } = require('../auth/authUtils.cjs');
 const { getInfoData } = require('../utils/index.cjs');
 const { BadRequestError, AuthFailureError } = require('../core/error.response.cjs');
-const { findByUser } = require('./user.service.cjs');
+const UserService = require('./user.service.cjs');
 const keytokenModel = require("../models/keytoken.model.cjs");
+
 
 // Các vai trò người dùng
 const RoleUser = {
     USER: 'user',
     ADMIN: 'admin'
-}
-
-// Hàm lấy khóa công khai của người dùng từ cơ sở dữ liệu
-const getPublicKey = async (userid) => {
-    const filter = { user: userid };
-    const token = await keytokenModel.findOne(filter);
-    return token.publicKey;
-}
-
-// Hàm xác thực token bằng khóa công khai
-const validateToken = async (accessToken, userID) => {
-    const publicKeyString = await getPublicKey(userID);
-    const publicKeyObject = crypto.createPublicKey(publicKeyString);
-    jwt.verify(accessToken, publicKeyObject, (err, decode) => {
-        if (err) {
-            console.error('Error verifying token:', err);
-        } else {
-            console.log('Decoded JWT:', decode);
-        }
-    });
 }
 
 // Hàm tạo hoặc cập nhật khóa token trong cơ sở dữ liệu
@@ -84,7 +64,7 @@ class AccessService {
     // Phương thức đăng nhập
     static login = async ({ username, password, refreshToken = null }) => {
         // Tìm người dùng theo user
-        const foundUser = await findByUser(username);
+        const foundUser = await UserService.findByUser(username);
         if (!foundUser) throw new BadRequestError('Không tìm thấy người dùng');
 
         // So sánh mật khẩu đã mã hóa
@@ -108,7 +88,7 @@ class AccessService {
     }
 
     // Phương thức đăng ký
-    static signUp = async ({ fullname, email, password, username }) => {
+    static signUp = async ({ fullname, email, password, username, avatarUrl }) => {
         // Kiểm tra xem user đã tồn tại chưa
         const checkExistUser = await userModel.findOne({ username }).lean();
         if (checkExistUser) {
@@ -120,7 +100,7 @@ class AccessService {
 
         // Tạo người dùng mới
         const newUser = await userModel.create({
-            username, fullname, email, password: passwordHash, roles: [RoleUser.USER]
+            username, fullname, email, password: passwordHash, avatarUrl, roles: [RoleUser.USER]
         });
 
         if (newUser) {
@@ -136,17 +116,6 @@ class AccessService {
         };
     }
 
-    //Lấy thông tin người dùng theo ID
-    static getUser = async ({ accessToken, userId }) => {
-        // Kiểm tra xem token có hợp lệ chưa
-        await validateToken(accessToken, userId);
-
-        // Lấy thông tin người dùng
-        const user = await userModel.findById(userId).lean();
-        return {
-            user: user,
-        };
-    }
 }
 
 module.exports = AccessService;

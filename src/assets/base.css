@@ -5,6 +5,7 @@
   --ms-border-color: rgba(0, 0, 0, 0.1);
   --ms-lighter-color: #6e6e6e;
   --ms-text-color: #212121;
+  --ms-border-avatar-color: #a7a7a7;
 }
 
 /* semantic color variables for this project */
@@ -16,6 +17,8 @@
   --border-color: var(--ms-border-color);
   --lighter-text-color: var(--ms-lighter-color);
   --background-icon-color: #f1f1f4;
+  --border-avatar-color: var(--ms-border-avatar-color);
+  --avatar-color: #ffdbea;
 }
 
 *,

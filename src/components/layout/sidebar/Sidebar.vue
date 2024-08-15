@@ -1,14 +1,16 @@
 <template>
   <div class="sidebar">
     <div class="sidebar-search pt-3 pl-3">
-      <MSTextField width="298" append-inner-icon="mdi-magnify" density="compact" variant="solo" hide-details single-line
-        placeholder="Tìm kiếm"></MSTextField>
+      <MSTextField v-model="searchValue" width="298" append-inner-icon="mdi-magnify" density="compact" variant="solo"
+        hide-details single-line placeholder="Tìm kiếm"></MSTextField>
     </div>
     <div class="sidebar__statusbar">
-      <div class="sidebar__statusbar__item">
+      <div v-if="skeletonLoadingUserInfo" class="sidebar__statusbar__item">
+        <v-skeleton-loader width="240" type="list-item-avatar"></v-skeleton-loader>
+      </div>
+      <div v-else class="sidebar__statusbar__item">
         <v-avatar size="54">
-          <v-img alt="John"
-            src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQehhyMBXUAuR8iqYs0dkkE09Ycc2la0dJWdg&s"></v-img>
+          <v-img :alt="userInfo.username" :src="userInfo.avatarUrl"></v-img>
         </v-avatar>
         <div class="pl-3">
           <div class="statusbar__item__username">
@@ -23,32 +25,42 @@
         <v-icon icon="mdi-cog"></v-icon>
       </div>
     </div>
-    <div class="sidebar__main pa-4">
+    <!--Sidebar-content -->
+    <div class="sidebar__main">
       <div class="sidebar__main__filter">
         Cuộc trò chuyện gần đây
         <v-icon size="14" icon="mdi-chevron-down" />
       </div>
       <ul class="sidebar__main__content">
-        <li class="sidebar__main__content__item">
-          <div class="main__content_item__avatar">
-            <v-img alt="John"
-              src="https://cdns-images.dzcdn.net/images/cover/2dc4b0f8be56c076730024177b491b1c/1900x1900-000000-80-0-0.jpg"></v-img>
-          </div>
-          <div class="main__content_item--wrap">
-            <div class="main__content_item__fullname">
-              Nguyễn Trường Toàn
+        <div v-if="skeletonLoadingConversations">
+          <v-skeleton-loader width="270" type="list-item-avatar"></v-skeleton-loader>
+          <v-skeleton-loader width="270" type="list-item-avatar"></v-skeleton-loader>
+          <v-skeleton-loader width="270" type="list-item-avatar"></v-skeleton-loader>
+          <v-skeleton-loader width="270" type="list-item-avatar"></v-skeleton-loader>
+          <v-skeleton-loader width="270" type="list-item-avatar"></v-skeleton-loader>
+        </div>
+        <div v-else>
+          <li :room-id="conservation.id" @click="handleChangeConversation(conservation)"
+            v-for="(conservation, index) in conversations" :key="index" class="sidebar__main__content__item">
+            <div class="main__content_item__avatar">
+              <v-img alt="John" :src="conservation.avatarUrl"></v-img>
             </div>
-            <div class="main__content_item__message--recently">
-              Hello chào bạn
+            <div class="main__content_item--wrap">
+              <div class="main__content_item__fullname">
+                {{ conservation.displayName || conservation.fullname }}
+              </div>
+              <div class="main__content_item__message--recently">
+                {{ conservation.lastMessage || '' }}
+              </div>
             </div>
-          </div>
-          <div class="d-flex position-absolute align-center right-0 top-0 pt-2">
-            <p class="texting-time pr-1">
-              T4
-            </p>
-            <v-icon size="14" icon="mdi-pin-outline"></v-icon>
-          </div>
-        </li>
+            <div class="d-flex position-absolute align-center right-0 top-0 pt-2 pr-2">
+              <p class="texting-time pr-1">
+                {{ conservation.lastMessageAt ? convertToDayOfWeek(conservation.lastMessageAt) : '' }}
+              </p>
+              <v-icon size="14" icon="mdi-pin-outline"></v-icon>
+            </div>
+          </li>
+        </div>
       </ul>
     </div>
   </div>
@@ -56,21 +68,89 @@
 <script>
 import MSButton from '@/components/button/MSButton.vue'
 import MSTextField from '@/components/textfield/MSTextField.vue'
+import { getConservationsAPI } from '@/services/RoomServices'
+import { searchUserAPI, getUserAPI } from '@/services/UserServices'
+import { convertToDayOfWeek } from '@/helper/ConvertDate'
+import { useConversationStore } from '@/stores/ConversationStore';
+import lodash from 'lodash'
+
 
 export default {
   data() {
     return {
-      userInfo: null
+      userInfo: {},
+      conversation: {},
+      conversations: [],
+      searchValue: '',
+      skeletonLoadingUserInfo: true,
+      skeletonLoadingConversations: true,
+      noneConversations: true,
     }
   },
   components: {
     MSButton,
     MSTextField
   },
+  methods: {
+    async fetchUserInfo() {
+      await getUserAPI()
+        .then((res) => {
+          this.userInfo = res.data.user
+          this.skeletonLoadingUserInfo = false
+        })
+    },
+
+    async fetchConservations() {
+      await getConservationsAPI()
+        .then((res) => {
+          this.conversations = res.data
+          this.skeletonLoadingConversations = false
+          //Sau này nên lưu vào redis
+        })
+        .catch((err) => {
+          console.log('Error fetching conversations: ', err)
+        })
+    }
+    ,
+    convertToDayOfWeek(dateString) {
+      return convertToDayOfWeek(dateString);
+    },
+
+    handleSearch() {
+      searchUserAPI(this.searchValue)
+        .then((res) => {
+          this.conversations = res.data
+          this.skeletonLoadingConversations = false
+        })
+    },
+    //debounce search
+    debounceSearch: lodash.debounce(function (data) {
+      this.handleSearch(data);
+    }, 300),
+    //Xử lý onclick vào thẻ li trong sidebar
+    handleChangeConversation(conversation) {
+      const conversationStore = useConversationStore();
+      conversationStore.setConversation(conversation);
+    }
+  },
+
   created() {
-    let userInfo = localStorage.getItem('userInfo');
-    this.userInfo = userInfo ? JSON.parse(userInfo) : null
-  }
+    this.fetchUserInfo()
+    this.fetchConservations()
+  },
+
+  watch: {
+    searchValue(newInput) {
+      this.skeletonLoadingConversations = true
+      if (newInput.length == 0) {
+        this.fetchConservations()
+      }
+      else {
+        this.debounceSearch(newInput);
+      }
+    },
+  },
+
 }
 </script>
 
@@ -97,6 +177,11 @@ export default {
   display: flex;
   padding: 0 16px;
   align-items: center;
+  background-color: var(--background-sidebar-color);
+
+  .v-skeleton-loader {
+    background-color: inherit;
+  }
 
   .statusbar__item__username {
     font-size: 16px;
@@ -111,9 +196,11 @@ export default {
 
 .sidebar__main {
   color: #212121;
+  padding: 8px;
 }
 
 .sidebar__main__filter {
+  padding: 8px;
   display: flex;
   height: 44px;
   align-items: center;
@@ -132,7 +219,8 @@ export default {
     width: 40px;
 
     .v-img__img {
-      border: 1px solid var(--ms-border-color);
+      border: 1px solid var(--border-avatar-color);
+      background-color: var(--avatar-color);
       border-radius: 6px;
     }
   }
@@ -151,10 +239,17 @@ export default {
   }
 
   .sidebar__main__content__item {
+    padding: 8px;
+    cursor: pointer;
     display: flex;
     align-items: center;
     position: relative;
     height: 60px;
+    border-radius: 8px;
+
+    &:hover {
+      background-color: var(--background-sidebar-color);
+    }
   }
 
   .main__content_item__fullname {
@@ -194,6 +289,7 @@ export default {
 }
 
 .v-avatar {
-  border: 1px solid var(--ms-border-color);
+  border: 1px solid var(--border-avatar-color);
+  background-color: var(--avatar-color) !important;
 }
 </style>
