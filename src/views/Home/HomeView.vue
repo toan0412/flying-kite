@@ -3,7 +3,12 @@
   <div class="content-wrapper">
     <div class="content__header">
       <div class="content__header__info">
-        <v-img width="40" height="40" :alt="conversation.fullname" :src="conversation.avatarUrl"></v-img>
+        <v-img
+          width="40"
+          height="40"
+          :alt="conversation.fullname"
+          :src="conversation.avatarUrl"
+        ></v-img>
         <p class="content__header__info__name">{{ conversation.fullname || '' }}</p>
       </div>
       <div class="content__header__actions">
@@ -24,8 +29,16 @@
     <div class="content__input">
       <div class="content__input--wrapper">
         <div class="content__input__content">
-          <MSTextField width="700" height="50" prepend-inner-icon="mdi-emoticon-outline" density="compact" variant="solo"
-            hide-details single-line placeholder="Nhập tin nhắn"></MSTextField>
+          <MSTextField
+            width="700"
+            height="50"
+            prepend-inner-icon="mdi-emoticon-outline"
+            density="compact"
+            variant="solo"
+            hide-details
+            single-line
+            placeholder="Nhập tin nhắn"
+          ></MSTextField>
         </div>
         <div class="content__input__actions">
           <div class="content__input__actions__item">
@@ -60,17 +73,17 @@ export default {
     return {
       conversation: {},
       message: []
-    };
+    }
   },
 
   methods: {
     getConservationByRoomId() {
-      getConservationByRoomIdAPI(this.conversation.id)
-        .then(response => {
+      getConservationByRoomIdAPI(this.conversation._id)
+        .then((response) => {
           this.message = response.data
           console.log(this.message)
         })
-        .catch(error => {
+        .catch((error) => {
           console.log(error)
         })
     }
@@ -82,7 +95,7 @@ export default {
 
   computed: {
     currentConversation() {
-      const conversationStore = useConversationStore();
+      const conversationStore = useConversationStore()
       return conversationStore.conversation
     }
   },
@@ -93,7 +106,6 @@ export default {
       this.getConservationByRoomId()
     }
   }
-
 }
 </script>
 
@@ -177,6 +189,5 @@ export default {
     width: 50px;
     margin: 0 4px;
   }
-
 }
 </style>
