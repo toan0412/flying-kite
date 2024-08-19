@@ -6,7 +6,7 @@ const router = require('express').Router();
 
 router.use(authentication);
 
-router.post('/messages', asyncHandler(messageController.createMessage))
+router.post('/messages/:roomId', asyncHandler(messageController.createMessage))
 router.get('/messages/:roomId', asyncHandler(messageController.getMessageByRoom))
 
 module.exports = router;

@@ -5,7 +5,7 @@ class MessageController {
   createMessage = async (req, res, next) => {
     new CREATED({
       message: 'Tạo tin nhắn mới thành công',
-      data: await MessageService.createMessage(req.body)
+      data: await MessageService.createMessage(req)
     }).send(res)
   }
 

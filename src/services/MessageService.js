@@ -4,4 +4,10 @@ const getConservationByRoomIdAPI = (roomId) => {
   return axiosInstance.get(`v1/api/messages/${roomId}`)
 }
 
-export { getConservationByRoomIdAPI }
+const sendMessageAPI = (req) => {
+  const { roomId, senderId, content } = req
+  console.log(roomId, senderId, content)
+  return axiosInstance.post(`v1/api/messages/${roomId}`, { senderId, content })
+}
+
+export { getConservationByRoomIdAPI, sendMessageAPI }

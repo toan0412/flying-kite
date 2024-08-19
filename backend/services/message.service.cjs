@@ -1,20 +1,18 @@
 const MessageModel = require("../models/message.model.cjs");
 const RoomService = require("../services/room.service.cjs");
-const UserService = require("../services/user.service.cjs");
 
 class MessageService {
 
     //Tạo tin nhắn
-    createMessage = async ({ roomId, senderId, content }) => {
-        // Check xem người gửi có tồn tại không
-        UserService.findByFilter(senderId)
-
-        // Check xem phòng có tồn tại không 
-        RoomService.checkExistRoom(roomId)
+    createMessage = async (req) => {
+        const { roomId } = req.params
+        const { senderId, content } = req.body
+        // Check xem người gửi có trong phòng chat không
+        RoomService.checkExistMemberInRoom(roomId, senderId)
 
         const newMessage = await MessageModel.create({
-            room_id: roomId,
-            sender_id: senderId,
+            roomId: roomId,
+            senderId: senderId,
             content: content
         });
 
@@ -24,13 +22,11 @@ class MessageService {
     //Lấy tin nhắn theo phòng
     getMessageByRoom = async (params) => {
         const { roomId } = params;
-        // Check xem người gửi có tồn tại không
-        // UserService.findByFilter(userId)
 
         // Check xem phòng có tồn tại không 
-        RoomService.checkExistRoom(roomId)
+        RoomService.checkExistRoomById(roomId)
 
-        const messages = await MessageModel.find({ room_id: roomId })
+        const messages = await MessageModel.find({ roomId: roomId })
 
         return messages;
     }

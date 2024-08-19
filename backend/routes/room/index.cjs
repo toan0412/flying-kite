@@ -7,7 +7,7 @@ const router = require('express').Router();
 router.use(authentication);
 
 router.get('/rooms/:userId', asyncHandler(roomController.getConversations));
-router.post('/rooms', asyncHandler(roomController.createRoom));
+router.post('/rooms', asyncHandler(roomController.getOrCreateRoom));
 router.put('/rooms/:userId', asyncHandler(roomController.updateRoom));
 
 module.exports = router;

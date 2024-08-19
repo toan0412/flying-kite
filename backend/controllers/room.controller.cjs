@@ -2,10 +2,10 @@ const RoomService = require("../services/room.service.cjs");
 const { SuccessResponse, CREATED } = require('../core/success.response.cjs')
 
 class RoomController {
-  createRoom = async (req, res, next) => {
-    new CREATED({
-      message: 'Tạo phòng thành công',
-      data: await RoomService.createRoom(req.body)
+  getOrCreateRoom = async (req, res, next) => {
+    new SuccessResponse({
+      message: 'Tạo(lấy) phòng thành công',
+      data: await RoomService.getOrCreateRoom(req)
     }).send(res);
   }
 

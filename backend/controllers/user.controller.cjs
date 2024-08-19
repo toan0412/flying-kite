@@ -13,6 +13,12 @@ class UserController {
             data: await UserService.findByFilter(req.body)
         }).send(res)
     }
+
+    getAllUsers = async (req, res, next) => {
+        new SuccessResponse({
+            data: await UserService.getAllUsers(req)
+        }).send(res)
+    }
 }
 
 module.exports = new UserController();

@@ -4,7 +4,7 @@ const DOCUMENT_NAME = 'Notification';
 const COLLECTION_NAME = 'Notifications';
 
 const notificationSchema = new Schema({
-    user_id: {
+    userId: {
         type: Schema.Types.ObjectId,
         ref: 'User',
         required: [true, 'The user_id field is required'],
@@ -13,7 +13,7 @@ const notificationSchema = new Schema({
         type: String,
         required: [true, 'The message field is required'],
     },
-    is_read: {
+    isRead: {
         type: Boolean,
         default: false,
     },

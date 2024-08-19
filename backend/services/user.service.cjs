@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 const userModel = require("../models/user.model.cjs");
 const { BadRequestError, NotFoundError } = require('../core/error.response.cjs');
+const { getInfoData } = require('../utils/index.cjs');
 
 class UserService {
     findByUser = async (identifier) => {
@@ -29,6 +30,12 @@ class UserService {
         };
     }
 
+    //Lấy danh sách tất cả người dùng
+    getAllUsers = async () => {
+        const select = { _id: 1, username: 1, fullname: 1, avatarUrl: 1 }
+        return await userModel.find().select(select).lean()
+    };
+
     findByFilter = async ({ searchString }, select = { _id: 1, username: 1, fullname: 1, status: 1, avatarUrl: 1, email: 1 }) => {
         const regex = new RegExp(searchString, 'i');
         const filter = {
@@ -41,7 +48,6 @@ class UserService {
 
         return await userModel.find(filter).select(select).lean();
     }
-
 
 }
 

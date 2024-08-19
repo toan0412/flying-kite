@@ -7,12 +7,13 @@ const router = require('express').Router()
 
 
 // sign up
-router.post('/user/sign-up', asyncHandler(accessController.signUp));
-router.post('/user/login', asyncHandler(accessController.login));
+router.post('/users/sign-up', asyncHandler(accessController.signUp));
+router.post('/users/login', asyncHandler(accessController.login));
 
 router.use(authentication);
-router.get('/user/:id', asyncHandler(userController.getUser))
-router.post('/user/search', asyncHandler(userController.searchUser))
-router.post('/user/logout', asyncHandler(accessController.logout));
+router.get('/users', asyncHandler(userController.getAllUsers))
+router.get('/users/:id', asyncHandler(userController.getUser))
+router.post('/users/search', asyncHandler(userController.searchUser))
+router.post('/users/logout', asyncHandler(accessController.logout));
 
 module.exports = router

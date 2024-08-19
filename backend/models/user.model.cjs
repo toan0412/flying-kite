@@ -41,7 +41,7 @@ const userSchema = new Schema({
             default: 'pending',
         },
     }],
-    block_list: [{
+    blocks: [{
         type: Schema.Types.ObjectId,
         ref: 'Users',
     }],

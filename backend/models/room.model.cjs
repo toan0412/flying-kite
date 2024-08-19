@@ -4,16 +4,16 @@ const DOCUMENT_NAME = 'Room';
 const COLLECTION_NAME = 'Rooms';
 
 const roomSchema = new Schema({
-    roomname: {
+    roomName: {
         type: String,
     },
-    created_by: {
+    createdBy: {
         type: Schema.Types.ObjectId,
         ref: 'User',
         required: [true, 'The created_by field is required'],
     },
     members: [{
-        user_id: {
+        userId: {
             type: Schema.Types.ObjectId,
             ref: 'User',
             required: [true, 'The user_id in members is required']
@@ -33,11 +33,11 @@ const roomSchema = new Schema({
         enum: ['public', 'private'],
         default: 'private',
     },
-    last_message: {
+    lastMessage: {
         type: String,
         default: '',
     },
-    last_message_at: {
+    lastMessageAt: {
         type: Date,
         default: Date.now,
     },

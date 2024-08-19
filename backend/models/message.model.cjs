@@ -4,12 +4,12 @@ const DOCUMENT_NAME = 'Message';
 const COLLECTION_NAME = 'Messages';
 
 const messageSchema = new Schema({
-    room_id: {
+    roomId: {
         type: Schema.Types.ObjectId,
         ref: 'Room',
         required: [true, 'The room_id field is required'],
     },
-    sender_id: {
+    senderId: {
         type: Schema.Types.ObjectId,
         ref: 'User',
         required: [true, 'The sender_id field is required'],
@@ -18,7 +18,7 @@ const messageSchema = new Schema({
         type: String,
         required: [true, 'The content field is required'],
     },
-    is_read: {
+    isRead: {
         type: Boolean,
         default: false,
     },

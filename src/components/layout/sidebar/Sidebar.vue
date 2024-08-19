@@ -40,8 +40,8 @@
           <v-skeleton-loader width="270" type="list-item-avatar"></v-skeleton-loader>
         </div>
         <div v-else>
-          <li :room-id="conservation.id" @click="handleChangeConversation(conservation)"
-            v-for="(conservation, index) in conversations" :key="index" class="sidebar__main__content__item">
+          <li @click="handleChangeRoom(conservation)" v-for="(conservation, index) in rooms" :key="index"
+            class="sidebar__main__content__item">
             <div class="main__content_item__avatar">
               <v-img alt="John" :src="conservation.avatarUrl"></v-img>
             </div>
@@ -50,14 +50,13 @@
                 {{ conservation.displayName || conservation.fullname }}
               </div>
               <div class="main__content_item__message--recently">
-                {{ conservation.lastMessage || '' }}
+                {{ conservation.lastMessage || '@' + conservation.username }}
               </div>
             </div>
             <div class="d-flex position-absolute align-center right-0 top-0 pt-2 pr-2">
               <p class="texting-time pr-1">
                 {{ conservation.lastMessageAt ? convertToDayOfWeek(conservation.lastMessageAt) : '' }}
               </p>
-              <v-icon size="14" icon="mdi-pin-outline"></v-icon>
             </div>
           </li>
         </div>
@@ -68,10 +67,11 @@
 <script>
 import MSButton from '@/components/button/MSButton.vue'
 import MSTextField from '@/components/textfield/MSTextField.vue'
-import { getConservationsAPI } from '@/services/RoomServices'
-import { searchUserAPI, getUserAPI } from '@/services/UserServices'
+import { getConservationsAPI, getOrCreatePrivateRoomAPI } from '@/services/RoomServices'
+import { searchUserAPI, getUserAPI, getAllUsersAPI } from '@/services/UserServices'
 import { convertToDayOfWeek } from '@/helper/ConvertDate'
-import { useConversationStore } from '@/stores/ConversationStore';
+import { useRoomInfoStore } from '@/stores/RoomInfoStore'
+import { useUsersInfoStore } from '@/stores/UsersInfoStore'
 import lodash from 'lodash'
 
 
@@ -79,7 +79,7 @@ export default {
   data() {
     return {
       userInfo: {},
-      conversation: {},
+      rooms: [],
       conversations: [],
       searchValue: '',
       skeletonLoadingUserInfo: true,
@@ -100,15 +100,23 @@ export default {
         })
     },
 
+    async getAllUsers() {
+      await getAllUsersAPI()
+        .then((res) => {
+          const usersInfoStore = useUsersInfoStore()
+          usersInfoStore.setUsersInfo(res.data)
+        })
+    },
+
     async fetchConservations() {
       await getConservationsAPI()
         .then((res) => {
-          this.conversations = res.data
+          const rooms = res.data
           this.skeletonLoadingConversations = false
-          //Sau này nên lưu vào redis
+          this.generateConversationWithUsersInfo(rooms)
         })
         .catch((err) => {
-          console.log('Error fetching conversations: ', err)
+          console.log('Error fetching rooms: ', err)
         })
     }
     ,
@@ -119,7 +127,7 @@ export default {
     handleSearch() {
       searchUserAPI(this.searchValue)
         .then((res) => {
-          this.conversations = res.data
+          this.rooms = res.data
           this.skeletonLoadingConversations = false
         })
     },
@@ -127,14 +135,52 @@ export default {
     debounceSearch: lodash.debounce(function (data) {
       this.handleSearch(data);
     }, 300),
+
     //Xử lý onclick vào thẻ li trong sidebar
-    handleChangeConversation(conversation) {
-      const conversationStore = useConversationStore();
-      conversationStore.setConversation(conversation);
+    async handleChangeRoom(roomInfo) {
+      //Tao phòng nếu chưa có (lấy phòng nếu đã tồn tại)
+      await getOrCreatePrivateRoomAPI([roomInfo.receiverId])
+        .then((res) => {
+          const roomInfoStore = useRoomInfoStore()
+          roomInfoStore.setRoomInfo(roomInfo)
+        })
+        .catch(err => {
+          console.log('Không tạo (lấy) được thông tin phòng: ', err)
+        })
+    },
+
+    generateConversationWithUsersInfo(rooms) {
+      const conversations = []
+      const usersInfoStore = useUsersInfoStore()
+      const UsersInfo = usersInfoStore.usersInfo
+
+      rooms.forEach((room) => {
+        // Tìm user còn lại trong room (khác với user hiện tại)
+        const remainUser = room.members.find((member) => member.userId != this.userInfo._id)
+        if (!remainUser) return
+
+        // Tìm thông tin của remainUser trong UsersInfo
+        const userInfo = UsersInfo.find(user => user._id == remainUser.userId)
+        if (userInfo) {
+          // Thêm thông tin vào rooms
+          conversations.push({
+            _id: room._id,
+            receiverId: userInfo._id,
+            displayName: userInfo.fullname,
+            avatarUrl: userInfo.avatarUrl,
+            lastMessage: room.lastMessage,
+            lastMessageAt: room.lastMessageAt,
+          })
+        }
+      })
+      this.rooms = conversations
     }
+
   },
 
-  created() {
+
+  async created() {
+    await this.getAllUsers()
     this.fetchUserInfo()
     this.fetchConservations()
   },
