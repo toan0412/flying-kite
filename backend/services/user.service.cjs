@@ -5,18 +5,18 @@ const { getInfoData } = require('../utils/index.cjs');
 
 class UserService {
     findByUser = async (identifier) => {
-        const query = {};
+        const query = {}
 
         // Kiểm tra nếu identifier là ObjectId hoặc chuỗi (username)
         if (mongoose.Types.ObjectId.isValid(identifier)) {
-            query._id = identifier;
+            query._id = identifier
         } else {
-            query.username = identifier;
+            query.username = identifier
         }
 
         const existUser = await userModel.findOne(query).lean()
         if (!existUser) {
-            throw new NotFoundError('Không tìm thấy người dùng');
+            throw new NotFoundError('Không tìm thấy người dùng')
         }
         return existUser
     }
@@ -24,32 +24,44 @@ class UserService {
     //Lấy thông tin người dùng theo ID
     getUser = async (req) => {
         const userId = req.headers['x-client-id']
-        const user = await userModel.findById(userId).lean();
+        const user = await userModel.findById(userId).lean()
         return {
-            user: user,
-        };
+            user: user
+        }
     }
 
-    //Lấy danh sách tất cả người dùng
-    getAllUsers = async () => {
-        const select = { _id: 1, username: 1, fullname: 1, avatarUrl: 1 }
-        return await userModel.find().select(select).lean()
-    };
-
-    findByFilter = async ({ searchString }, select = { _id: 1, username: 1, fullname: 1, status: 1, avatarUrl: 1, email: 1 }) => {
-        const regex = new RegExp(searchString, 'i');
+    findByFilter = async (
+        { searchString },
+        select = { _id: 1, username: 1, fullname: 1, status: 1, avatarUrl: 1, email: 1, type: 'friend' }
+    ) => {
+        const regex = new RegExp(searchString, 'i')
         const filter = {
             $or: [
                 { username: { $regex: regex } },
                 { fullname: { $regex: regex } },
                 { email: { $regex: regex } }
             ]
+        }
+
+        //Lấy danh sách tất cả người dùng
+        getAllUsers = async () => {
+            const select = { _id: 1, username: 1, fullname: 1, avatarUrl: 1 }
+            return await userModel.find().select(select).lean()
         };
 
-        return await userModel.find(filter).select(select).lean();
+        findByFilter = async ({ searchString }, select = { _id: 1, username: 1, fullname: 1, status: 1, avatarUrl: 1, email: 1 }) => {
+            const regex = new RegExp(searchString, 'i');
+            const filter = {
+                $or: [
+                    { username: { $regex: regex } },
+                    { fullname: { $regex: regex } },
+                    { email: { $regex: regex } }
+                ]
+            };
+
+            return await userModel.find(filter).select(select).lean();
+        }
+
     }
-
-}
-
 
 module.exports = new UserService()

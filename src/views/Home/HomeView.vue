@@ -133,10 +133,10 @@ export default {
         .then(response => {
           console.log(response.data)
           this.messages = response.data
-          this.skeletonLoadingConversation = false
+          thiion = false
           this.skeletonLoadingRoomInfo = false
         })
-        .catch(error => {
+        .catch((error) => {
           console.log(error)
         })
     },
@@ -188,7 +188,6 @@ export default {
       }
     }
   }
-
 }
 </script>
 
@@ -286,7 +285,6 @@ export default {
     width: 50px;
     margin: 0 4px;
   }
-
 }
 
 .content__conversation {
