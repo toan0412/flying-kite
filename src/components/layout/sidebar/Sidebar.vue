@@ -72,6 +72,7 @@ import { searchUserAPI, getUserAPI, getAllUsersAPI } from '@/services/UserServic
 import { convertToDayOfWeek } from '@/helper/ConvertDate'
 import { useRoomInfoStore } from '@/stores/RoomInfoStore'
 import { useUsersInfoStore } from '@/stores/UsersInfoStore'
+import ChatService from '@/socket/ChatService.cjs';
 import lodash from 'lodash'
 
 
@@ -85,6 +86,7 @@ export default {
       skeletonLoadingUserInfo: true,
       skeletonLoadingConversations: true,
       noneConversations: true,
+      isRequestInProgress: false,
     }
   },
   components: {
@@ -111,15 +113,18 @@ export default {
     async fetchConservations() {
       await getConservationsAPI()
         .then((res) => {
-          const rooms = res.data
           this.skeletonLoadingConversations = false
-          this.generateConversationWithUsersInfo(rooms)
+          const conversations = this.generateConversationWithUsersInfo(res.data)
+          this.rooms = conversations
+          //Mặc định là lấy cuộc hội thoại gần nhất
+          const roomInfoStore = useRoomInfoStore()
+          roomInfoStore.setRoomInfo(this.rooms[0])
         })
         .catch((err) => {
           console.log('Error fetching rooms: ', err)
         })
-    }
-    ,
+    },
+
     convertToDayOfWeek(dateString) {
       return convertToDayOfWeek(dateString);
     },
@@ -137,32 +142,38 @@ export default {
     }, 300),
 
     //Xử lý onclick vào thẻ li trong sidebar
-    async handleChangeRoom(roomInfo) {
+    async handleChangeRoom(room) {
+      if (this.isRequestInProgress) return
+      this.isRequestInProgress = true
+      const receiver = room.receiverId || room._id
       //Tao phòng nếu chưa có (lấy phòng nếu đã tồn tại)
-      await getOrCreatePrivateRoomAPI([roomInfo.receiverId])
+      await getOrCreatePrivateRoomAPI([receiver])
         .then((res) => {
+          const roomInfo = this.generateConversationWithUsersInfo([res.data])
           const roomInfoStore = useRoomInfoStore()
-          roomInfoStore.setRoomInfo(roomInfo)
+          roomInfoStore.setRoomInfo(roomInfo[0])
+          this.isRequestInProgress = false
         })
         .catch(err => {
           console.log('Không tạo (lấy) được thông tin phòng: ', err)
+          this.isRequestInProgress = false
         })
     },
 
     generateConversationWithUsersInfo(rooms) {
-      const conversations = []
-      const usersInfoStore = useUsersInfoStore()
-      const UsersInfo = usersInfoStore.usersInfo
+      const conversations = [];
+      const usersInfoStore = useUsersInfoStore();
+      const UsersInfo = usersInfoStore.usersInfo;
 
       rooms.forEach((room) => {
-        // Tìm user còn lại trong room (khác với user hiện tại)
-        const remainUser = room.members.find((member) => member.userId != this.userInfo._id)
-        if (!remainUser) return
+        // Tìm người dùng còn lại trong phòng (khác với người dùng hiện tại)
+        const remainUser = room.members.find((member) => member.userId !== this.userInfo._id);
+        if (!remainUser) return;
 
-        // Tìm thông tin của remainUser trong UsersInfo
-        const userInfo = UsersInfo.find(user => user._id == remainUser.userId)
+        // Tìm thông tin của người dùng còn lại trong UsersInfo
+        const userInfo = UsersInfo.find(user => user._id === remainUser.userId);
         if (userInfo) {
-          // Thêm thông tin vào rooms
+          // Thêm thông tin vào danh sách cuộc trò chuyện
           conversations.push({
             _id: room._id,
             receiverId: userInfo._id,
@@ -170,34 +181,58 @@ export default {
             avatarUrl: userInfo.avatarUrl,
             lastMessage: room.lastMessage,
             lastMessageAt: room.lastMessageAt,
-          })
+            updatedAt: room.updatedAt,
+          });
         }
-      })
-      this.rooms = conversations
-    }
+      });
 
+      return conversations
+    },
   },
 
 
   async created() {
-    await this.getAllUsers()
-    this.fetchUserInfo()
-    this.fetchConservations()
+    await this.getAllUsers();
+    // Tiếp tục với các hành động khác
+    this.fetchUserInfo();
+    this.fetchConservations();
   },
+
+
+  mounted() {
+    ChatService.onLastMessageReceived((updatedRoom) => {
+      // Tìm chỉ mục của phòng trong danh sách phòng hiện tại
+      const roomIndex = this.rooms.findIndex(room => room._id === updatedRoom._id);
+
+      if (roomIndex !== -1) {
+        // Nếu phòng đã tồn tại, cập nhật tin nhắn cuối cùng và thời gian
+        this.rooms[roomIndex].lastMessage = updatedRoom.lastMessage;
+        this.rooms[roomIndex].lastMessageAt = updatedRoom.lastMessageAt;
+
+        // Di chuyển phòng đã cập nhật lên đầu danh sách
+        const updatedRoomData = this.rooms.splice(roomIndex, 1)[0];
+        this.rooms.unshift(updatedRoomData);
+      }
+    });
+
+  },
+
 
   watch: {
     searchValue(newInput) {
-      this.skeletonLoadingConversations = true
-      if (newInput.length == 0) {
-        this.fetchConservations()
-      }
-      else {
-        this.debounceSearch(newInput);
-      }
+      this.skeletonLoadingConversations = true;
+      setTimeout(() => {
+        if (newInput.length === 0) {
+          this.fetchConservations()
+        } else {
+          this.debounceSearch(newInput);
+        }
+      }, 300);
     },
   },
 
 }
+
 </script>
 
 <style lang="scss">

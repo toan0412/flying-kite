@@ -111,9 +111,9 @@ class RoomService {
     const rooms = await RoomModel.find({
       members: { $elemMatch: { userId: userId } },
       lastMessageAt: { $ne: '' }
-    }).lean();
-
-
+    })
+    .sort({ updatedAt: -1 }) 
+    .lean();
 
     if (rooms.length === 0) {
       return []

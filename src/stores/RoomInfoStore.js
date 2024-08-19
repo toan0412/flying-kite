@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 
 export const useRoomInfoStore = defineStore('roomInfo', {
   state: () => ({
-    roomInfo: null
+    roomInfo: {}
   }),
   actions: {
     setRoomInfo(roomInfo) {

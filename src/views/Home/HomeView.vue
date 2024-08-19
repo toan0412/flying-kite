@@ -28,7 +28,7 @@
     <div class="content__conversation">
       <div class="content__conversation--left"></div>
       <div class="content__conversation--main">
-        <!-- skeleton loadig -->
+        <!-- skeleton loading -->
         <ol v-if="skeletonLoadingConversation">
           <li class="my-message">
             <v-skeleton-loader width="400" type="paragraph"></v-skeleton-loader>
@@ -54,11 +54,9 @@
           <li class="other-message">
             <v-skeleton-loader width="400" type="paragraph"></v-skeleton-loader>
           </li>
-          <li class="my-message">
-            <v-skeleton-loader width="400" type="paragraph"></v-skeleton-loader>
-          </li>
+          <!-- Add more skeleton loaders as needed -->
         </ol>
-        <ol v-else>
+        <ol ref="messageList" v-else>
           <li v-for="message in messages" :key="message._id" :class="{
             'my-message': message.senderId === userId,
             'other-message': message.senderId !== userId
@@ -105,9 +103,10 @@
 </template>
 
 <script>
-import MSTextField from '@/components/textfield/MSTextField.vue'
-import { useRoomInfoStore } from '@/stores/RoomInfoStore'
-import { getConservationByRoomIdAPI, sendMessageAPI } from '@/services/MessageService'
+import MSTextField from '@/components/textfield/MSTextField.vue';
+import { useRoomInfoStore } from '@/stores/RoomInfoStore';
+import { getConservationByRoomIdAPI } from '@/services/MessageService';
+import ChatService from '@/socket/ChatService.cjs';
 
 export default {
   components: {
@@ -131,46 +130,65 @@ export default {
     getConservationByRoomId() {
       getConservationByRoomIdAPI(this.roomId)
         .then(response => {
-          console.log(response.data)
-          this.messages = response.data
-          this.skeletonLoadingConversation = false
-          this.skeletonLoadingRoomInfo = false
+          this.messages = response.data;
+          this.skeletonLoadingConversation = false;
+          this.skeletonLoadingRoomInfo = false;
+          setTimeout(() => {
+            this.scrollListMessageToBottom();
+          }, 0);
         })
-        .catch((error) => {
-          console.log(error)
-        })
+        .catch(error => {
+          console.log(error);
+        });
     },
 
     sendMessage() {
-      if (this.messageInput.length == 0) return
-      const senderId = localStorage.getItem('userId')
-      const roomId = this.roomId
+      if (this.messageInput.length === 0) return;
       const content = this.messageInput
-      sendMessageAPI({ senderId, roomId, content })
-        .then((res) => {
-          this.messageInput = ''
-          this.getConservationByRoomId()
-        })
-        .catch(error => {
-          console.log(error)
-        })
+      const lastMessage = {
+        roomId: this.roomId,
+        content: content
+      }
+      const message = {
+        ...lastMessage,
+        senderId: this.userId,
+      }
+      ChatService.sendMessage(message)
+      ChatService.setLastMessage(lastMessage)
+      this.messageInput = ''
+
     },
+
+    //Hàm cuộn thẻ ol xuống dưới
+    scrollListMessageToBottom() {
+      const messageList = this.$refs.messageList;
+      if (messageList) {
+        messageList.scrollTop = messageList.scrollHeight;
+      }
+    }
   },
 
   mounted() {
-    this.userId = localStorage.getItem('userId')
+    this.userId = localStorage.getItem('userId');
+    // Set up socket listener for incoming messages
+    ChatService.onMessageReceived((message) => {
+      this.messages.push(message);
+      //Cuộn xuống cuối khi DOM được re-render
+      setTimeout(() => {
+        this.scrollListMessageToBottom();
+      }, 0);
+    });
   },
 
   computed: {
     currentRoom() {
-      const roomInfoStore = useRoomInfoStore()
-      return roomInfoStore.roomInfo
+      const roomInfoStore = useRoomInfoStore();
+      return roomInfoStore.roomInfo;
     }
   },
 
-
   watch: {
-    currentRoom(newVal, oldVal) {
+    currentRoom(newVal) {
       this.room = newVal
       this.roomId = newVal._id
       this.skeletonLoadingConversation = true
@@ -178,14 +196,8 @@ export default {
       this.getConservationByRoomId()
     },
 
-    // lắng nghe input
-    messageInput(newMessage, oldMessage) {
-      if (newMessage.length == 0) {
-        this.isTyping = false
-      }
-      else {
-        this.isTyping = true
-      }
+    messageInput(newMessage) {
+      this.isTyping = newMessage.length > 0;
     }
   }
 }
@@ -306,8 +318,16 @@ export default {
     overflow: hidden;
     align-items: stretch;
     opacity: 1;
-    height: 780px;
+    height: 100%;
     width: 1060px;
+
+    ol {
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      padding: 0 8px;
+      height: 100%
+    }
 
     .my-message {
       margin: 4px 0;

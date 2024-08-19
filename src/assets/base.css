@@ -44,3 +44,32 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+html {
+  overflow: hidden;
+}
+
+/* Thanh cuộn */
+::-webkit-scrollbar {
+  width: 8px;
+  /* Kích thước thanh cuộn dọc */
+}
+
+/* Phần nền của thanh cuộn */
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  /* Màu nền của thanh cuộn */
+}
+
+/* Phần thanh cuộn */
+::-webkit-scrollbar-thumb {
+  background-color: var(--background-message-color);
+  box-shadow: inset 2px 2px 5px rgba(255, 255, 255, 0.5);
+  border-radius: 100px;
+}
+
+/* Phần thanh cuộn khi hover */
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+  /* Màu khi hover lên thanh cuộn */
+}
