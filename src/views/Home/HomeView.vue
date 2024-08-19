@@ -133,7 +133,7 @@ export default {
         .then(response => {
           console.log(response.data)
           this.messages = response.data
-          thiion = false
+          this.skeletonLoadingConversation = false
           this.skeletonLoadingRoomInfo = false
         })
         .catch((error) => {
