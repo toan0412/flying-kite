@@ -57,6 +57,9 @@
           <!-- Add more skeleton loaders as needed -->
         </ol>
         <ol ref="messageList" v-else>
+          <li class="messageList--loading" v-if="isLoadingMessage">
+            <v-progress-circular :size="20" :width="3" color="purple" indeterminate></v-progress-circular>
+          </li>
           <li v-for="message in messages" :key="message._id" :class="{
             'my-message': message.senderId === userId,
             'other-message': message.senderId !== userId
@@ -123,23 +126,46 @@ export default {
       roomId: '',
       skeletonLoadingRoomInfo: true,
       skeletonLoadingConversation: true,
+      isLoadingMessage: true,
+      offset: 0,
+      limit: 30
     };
   },
 
   methods: {
-    getConservationByRoomId() {
-      getConservationByRoomIdAPI(this.roomId)
-        .then(response => {
-          this.messages = response.data;
-          this.skeletonLoadingConversation = false;
-          this.skeletonLoadingRoomInfo = false;
-          setTimeout(() => {
-            this.scrollListMessageToBottom();
-          }, 0);
+    //Lấy cuộc hội thoại theo id phòng
+    async getConservationByRoomId() {
+      if (!this.roomId) return
+      await getConservationByRoomIdAPI(this.roomId, this.limit, this.offset)
+        .then(res => {
+          this.messages = [...this.messages, ...res.data]
+          this.skeletonLoadingConversation = false
+          this.skeletonLoadingRoomInfo = false
+          this.isLoadingMessage = false
+          this.offset += this.limit
         })
         .catch(error => {
-          console.log(error);
+          console.error(error);
         });
+    },
+
+    //Hàm setup lắng nghe sự kiện scroll top
+    setupScrollTopListMessageListener() {
+      const messageList = this.$refs.messageList;
+
+      const handleScroll = () => {
+        const scrollBottom = messageList.clientHeight - messageList.scrollTop
+
+        // Kiểm tra nếu người dùng đã cuộn lên trên cùng
+        if (scrollBottom + 1 == messageList.scrollHeight) {
+          this.isLoadingMessage = true
+          this.getConservationByRoomId()
+        }
+      };
+
+      if (messageList) {
+        messageList.addEventListener('scroll', handleScroll)
+      }
     },
 
     sendMessage() {
@@ -159,25 +185,16 @@ export default {
 
     },
 
-    //Hàm cuộn thẻ ol xuống dưới
-    scrollListMessageToBottom() {
-      const messageList = this.$refs.messageList;
-      if (messageList) {
-        messageList.scrollTop = messageList.scrollHeight;
-      }
-    }
   },
 
   mounted() {
-    this.userId = localStorage.getItem('userId');
+    this.userId = localStorage.getItem('userId')
+
     // Set up socket listener for incoming messages
     ChatService.onMessageReceived((message) => {
-      this.messages.push(message);
-      //Cuộn xuống cuối khi DOM được re-render
-      setTimeout(() => {
-        this.scrollListMessageToBottom();
-      }, 0);
+      this.messages.unshift(message);
     });
+
   },
 
   computed: {
@@ -188,12 +205,29 @@ export default {
   },
 
   watch: {
-    currentRoom(newVal) {
-      this.room = newVal
+    async currentRoom(newVal, oldVal) {
+      if (!newVal) return
+      this.room = newVal;
       this.roomId = newVal._id
-      this.skeletonLoadingConversation = true
-      this.skeletonLoadingRoomInfo = true
-      this.getConservationByRoomId()
+      this.messages = []
+      this.offset = 0
+      this.skeletonLoadingConversation = true;
+      this.skeletonLoadingRoomInfo = true;
+
+      // Xóa người dùng khỏi phòng cũ nếu oldVal tồn tại
+      if (oldVal._id) {
+        ChatService.leaveRoom(oldVal._id);
+      }
+
+      // Thêm người dùng vào phòng mới
+      ChatService.joinRoom(this.roomId);
+
+      // Lấy cuộc hội thoại theo phòng mới
+      await this.getConservationByRoomId();
+
+      // Thiết lập sự kiện cuộn
+      this.setupScrollTopListMessageListener();
+
     },
 
     messageInput(newMessage) {
@@ -311,6 +345,7 @@ export default {
   align-items: stretch;
 
   .content__conversation--main {
+    position: relative;
     display: flex;
     flex-direction: column;
     flex-grow: 0;
@@ -324,13 +359,23 @@ export default {
     ol {
       overflow-y: auto;
       display: flex;
-      flex-direction: column;
+      flex-direction: column-reverse;
       padding: 0 8px;
       height: 100%
     }
 
+    .messageList--loading {
+      position: absolute;
+      display: flex;
+      justify-content: center;
+      width: 100%;
+      top: 0;
+      height: 36px;
+      align-items: center;
+    }
+
     .my-message {
-      margin: 4px 0;
+      padding: 4px 0;
       display: flex;
       justify-content: flex-end;
 
@@ -340,7 +385,7 @@ export default {
     }
 
     .other-message {
-      margin: 4px 0;
+      padding: 4px 0;
       display: flex;
       justify-content: start;
 

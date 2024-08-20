@@ -39,6 +39,9 @@
           <v-skeleton-loader width="270" type="list-item-avatar"></v-skeleton-loader>
           <v-skeleton-loader width="270" type="list-item-avatar"></v-skeleton-loader>
         </div>
+        <div v-else-if="noConversation">
+          Bạn chưa có cuộc trò chuyện nào
+        </div>
         <div v-else>
           <li @click="handleChangeRoom(conservation)" v-for="(conservation, index) in rooms" :key="index"
             class="sidebar__main__content__item">
@@ -72,6 +75,7 @@ import { searchUserAPI, getUserAPI, getAllUsersAPI } from '@/services/UserServic
 import { convertToDayOfWeek } from '@/helper/ConvertDate'
 import { useRoomInfoStore } from '@/stores/RoomInfoStore'
 import { useUsersInfoStore } from '@/stores/UsersInfoStore'
+import { useUserInfoStore } from '@/stores/UserInfoStore'
 import ChatService from '@/socket/ChatService.cjs';
 import lodash from 'lodash'
 
@@ -87,6 +91,8 @@ export default {
       skeletonLoadingConversations: true,
       noneConversations: true,
       isRequestInProgress: false,
+      selectedRoomId: null,
+      noConversation: false,
     }
   },
   components: {
@@ -99,6 +105,8 @@ export default {
         .then((res) => {
           this.userInfo = res.data.user
           this.skeletonLoadingUserInfo = false
+          const useUserInfoStore = useUserInfoStore()
+          useUserInfoStore.setUserInfo = res.data.user
         })
     },
 
@@ -114,6 +122,12 @@ export default {
       await getConservationsAPI()
         .then((res) => {
           this.skeletonLoadingConversations = false
+          //Kiểm tra xem có cuộc trò chuyện nào chưa
+          if (res.data.length === 0) {
+            this.noConversation = true
+            return
+          }
+          this.noConversation = false
           const conversations = this.generateConversationWithUsersInfo(res.data)
           this.rooms = conversations
           //Mặc định là lấy cuộc hội thoại gần nhất
@@ -143,7 +157,8 @@ export default {
 
     //Xử lý onclick vào thẻ li trong sidebar
     async handleChangeRoom(room) {
-      if (this.isRequestInProgress) return
+      if (this.isRequestInProgress || room._id === this.selectedRoomId) return
+
       this.isRequestInProgress = true
       const receiver = room.receiverId || room._id
       //Tao phòng nếu chưa có (lấy phòng nếu đã tồn tại)
@@ -153,6 +168,7 @@ export default {
           const roomInfoStore = useRoomInfoStore()
           roomInfoStore.setRoomInfo(roomInfo[0])
           this.isRequestInProgress = false
+          this.selectedRoomId = room._id
         })
         .catch(err => {
           console.log('Không tạo (lấy) được thông tin phòng: ', err)
@@ -192,15 +208,21 @@ export default {
 
 
   async created() {
+    // Đợi lấy tất cả người dùng
     await this.getAllUsers();
-    // Tiếp tục với các hành động khác
-    this.fetchUserInfo();
-    this.fetchConservations();
+
+    // Chạy fetchUserInfo và fetchConservations đồng thời
+    await Promise.all([this.fetchUserInfo(), this.fetchConservations()]);
+
+    // Sau khi cả hai phương thức hoàn tất, tham gia phòng
+    ChatService.joinRoom(this.userInfo._id);
   },
+
 
 
   mounted() {
     ChatService.onLastMessageReceived((updatedRoom) => {
+      console.log('1133')
       // Tìm chỉ mục của phòng trong danh sách phòng hiện tại
       const roomIndex = this.rooms.findIndex(room => room._id === updatedRoom._id);
 

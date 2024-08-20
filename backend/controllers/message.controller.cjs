@@ -12,7 +12,7 @@ class MessageController {
   getMessageByRoom = async (req, res, next) => {
     new SuccessResponse({
       message: 'Lấy cuộc hội thoại thành công',
-      data: await MessageService.getMessageByRoom(req.params)
+      data: await MessageService.getMessageByRoom(req)
     }).send(res)
   }
 

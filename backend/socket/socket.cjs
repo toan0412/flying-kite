@@ -1,6 +1,6 @@
 const socketIO = require('socket.io');
-const MessageService = require('../services/message.service.cjs')
-const RoomService = require('../services/room.service.cjs')
+const MessageService = require('../services/message.service.cjs');
+const RoomService = require('../services/room.service.cjs');
 
 function setupSocket(server) {
   const io = socketIO(server, {
@@ -12,7 +12,19 @@ function setupSocket(server) {
   });
 
   io.on('connection', (socket) => {
-    console.log('user connected');
+    console.log('User connected:', socket.id);
+
+    // Lắng nghe sự kiện 'joinRoom'
+    socket.on('joinRoom', (roomId) => {
+      socket.join(roomId);
+      console.log(`User ${socket.id} joined room ${roomId}`);
+    });
+
+    // Lắng nghe sự kiện 'leaveRoom'
+    socket.on('leaveRoom', (roomId) => {
+      socket.leave(roomId);
+      console.log(`User ${socket.id} left room ${roomId}`);
+    });
 
     // Lắng nghe sự kiện 'sendMessage'
     socket.on('sendMessage', async (message, ack) => {
@@ -40,35 +52,36 @@ function setupSocket(server) {
       }
     });
 
-
     socket.on('sendLastMessage', async (message, ack) => {
       try {
         const { roomId, lastMessage } = message;
 
-        // Lấy tin nhắn cuối cùng của phòng
-        const updateRoom = await RoomService.updateRoom({
-          roomId, lastMessage
+        // Cập nhật tin nhắn cuối cùng của phòng
+        const updatedRoom = await RoomService.updateRoom({ roomId, lastMessage });
+
+        console.log('Updated room:', updatedRoom);
+
+        const members = updatedRoom.members
+
+        // Phát lại tin nhắn đến các client là thành viên trong phòng
+        members.forEach(member => {
+          console.log(member.userId.toString())
+          io.to(member.userId.toString()).emit('receiveLastMessage', updatedRoom)
         });
 
-        console.log('update room', updateRoom);
-
-        // Phát lại tin nhắn đến tất cả các client khác trong cùng một room
-        socket.to(roomId).emit('receiveLastMessage', updateRoom);
-
         // Gửi acknowledgement cho client (nếu cần)
-        if (ack) ack({ success: true, message: 'Message sent successfully!' });
+        if (ack) ack({ success: true, message: 'Last message updated successfully!' })
       } catch (error) {
-        console.error('Error handling message:', error);
+        console.error('Error handling message:', error)
 
         // Gửi thông báo lỗi cho client qua acknowledgement
-        if (ack) ack({ success: false, message: error.message });
+        if (ack) ack({ success: false, message: error.message })
       }
     });
 
-
-    // Lắng nghe sự kiện disconnect
+    // Lắng nghe sự kiện 'disconnect'
     socket.on('disconnect', () => {
-      console.log('A user disconnected');
+      console.log('A user disconnected:', socket.id);
     });
   });
 

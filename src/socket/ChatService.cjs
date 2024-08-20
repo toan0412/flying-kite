@@ -4,16 +4,23 @@ const backendUrl = import.meta.env.VITE_BACKEND_URL;
 const socket = io(backendUrl);
 
 const ChatService = {
-  
+  joinRoom(roomId) {
+    socket.emit('joinRoom', roomId);
+  },
+
+  leaveRoom(roomId) {
+    socket.emit('leaveRoom', roomId);
+  },
+
   sendMessage(message, callback) {
     socket.emit('sendMessage', message, (ack) => {
       if (ack.success) {
-        if (callback) callback(null, ack); // Thực hiện callback với kết quả thành công
+        if (callback) callback(null, ack);
       } else {
         console.error('Error sending message:', ack.message);
-        if (callback) callback(new Error(ack.message), null); // Thực hiện callback với lỗi
+        if (callback) callback(new Error(ack.message), null);
       }
-    })
+    });
   },
 
   onMessageReceived(callback) {
@@ -21,15 +28,15 @@ const ChatService = {
   },
 
   setLastMessage(message, callback) {
-    const { roomId, content } = message
-    socket.emit('sendLastMessage', { roomId: roomId, lastMessage: content }, (ack) => {
+    const { roomId, content } = message;
+    socket.emit('sendLastMessage', { roomId, lastMessage: content }, (ack) => {
       if (ack.success) {
-        if (callback) callback(null, ack); // Thực hiện callback với kết quả thành công
+        if (callback) callback(null, ack);
       } else {
-        console.error('Error sending message:', ack.message);
-        if (callback) callback(new Error(ack.message), null); // Thực hiện callback với lỗi
+        console.error('Error updating last message:', ack.message);
+        if (callback) callback(new Error(ack.message), null);
       }
-    })
+    });
   },
 
   onLastMessageReceived(callback) {

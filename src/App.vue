@@ -4,7 +4,7 @@
       <Sidebar />
     </div>
     <div class="main-wrapper">
-      <router-view />
+      <HomeView />
     </div>
   </div>
   <div v-else>
@@ -15,7 +15,8 @@
 <script>
 import Sidebar from '@/components/layout/sidebar/Sidebar.vue'
 import Login from './views/Login/LoginView.vue'
-  
+import HomeView from './views/Home/HomeView.vue'
+
 export default {
   data() {
     return {
@@ -26,6 +27,7 @@ export default {
   components: {
     Sidebar,
     Login,
+    HomeView,
   },
 
   created() {

@@ -20,13 +20,18 @@ class MessageService {
     }
 
     //Lấy tin nhắn theo phòng
-    getMessageByRoom = async (params) => {
-        const { roomId } = params;
+    getMessageByRoom = async (req) => {
+        const { limit, offset } = req.query
+        const { roomId } = req.params;
 
         // Check xem phòng có tồn tại không 
         RoomService.checkExistRoomById(roomId)
 
         const messages = await MessageModel.find({ roomId: roomId })
+            .sort({ createdAt: -1 })
+            .skip(offset)
+            .limit(limit)
+            .lean();
 
         return messages;
     }
