@@ -1,38 +1,42 @@
 <template>
   <div v-if="isAuth" class="main">
     <div class="sidebar-wrapper">
-      <Sidebar />
+      <Sidebar @select-room="handleRoomSelected" />
     </div>
     <div class="main-wrapper">
-      <HomeView />
+      <IntroductionView v-if="isIntroduction" />
+      <HomeView v-else />
     </div>
   </div>
   <div v-else>
-    <Login @is-auth="handleAuthStatus" />
+    <LoginView @is-auth="handleAuthStatus" />
   </div>
 </template>
 
 <script>
-import Sidebar from '@/components/layout/sidebar/Sidebar.vue'
-import Login from './views/Login/LoginView.vue'
-import HomeView from './views/Home/HomeView.vue'
+import Sidebar from '@/components/layout/sidebar/Sidebar.vue';
+import LoginView from './views/Login/LoginView.vue';
+import HomeView from './views/Home/HomeView.vue';
+import IntroductionView from './views/Introduction/IntroductionView.vue';
 
 export default {
   data() {
     return {
       isAuth: false,
+      isIntroduction: true,
     };
   },
 
   components: {
     Sidebar,
-    Login,
+    LoginView,
     HomeView,
+    IntroductionView
   },
 
   created() {
     const accessToken = localStorage.getItem('accessToken');
-    const userId = localStorage.getItem('userId')
+    const userId = localStorage.getItem('userId');
     if (accessToken && userId) {
       this.isAuth = true;
     }
@@ -42,9 +46,13 @@ export default {
     handleAuthStatus(isAuth) {
       this.isAuth = isAuth;
     },
+    handleRoomSelected() {
+      this.isIntroduction = false;
+    },
   },
 };
 </script>
+
 
 <style lang="scss">
 #app {

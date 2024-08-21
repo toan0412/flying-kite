@@ -97,7 +97,8 @@
               <div class="error-message" v-if="errorMessage">{{ errorMessage }}</div>
               <button type="submit" name="btn-register" class="large-button w-button">
                 Đăng nhập
-                <v-progress-circular v-if="isLoading" size="20" color="white" indeterminate></v-progress-circular>
+                <v-progress-circular class="ml-2" v-if="isLoading" size="16" width="3" color="white"
+                  indeterminate></v-progress-circular>
               </button>
             </form>
             <div class="div-block-95">
@@ -118,7 +119,7 @@
 <script>
 import { loginAPI, signUpAPI } from '@/services/UserServices.js'
 import { createAvatar } from '@dicebear/core'
-import { adventurerNeutral } from '@dicebear/collection'
+import { croodles } from '@dicebear/collection'
 
 export default {
   data() {
@@ -195,7 +196,7 @@ export default {
 
     //Tạo avataUrl theo seed và background
     generateAvatarUrl(username) {
-      const avatar = createAvatar(adventurerNeutral, {
+      const avatar = createAvatar(croodles, {
         seed: username,
         backgroundColor: '#ffdbea',
       });
@@ -384,7 +385,6 @@ export default {
   padding: 8px 12px;
   font-size: 14px;
   line-height: 1.428571429;
-  vertical-align: middle;
   border: 1px solid #cccccc;
 }
 

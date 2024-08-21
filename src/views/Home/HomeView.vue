@@ -58,7 +58,7 @@
         </ol>
         <ol ref="messageList" v-else>
           <li class="messageList--loading" v-if="isLoadingMessage">
-            <v-progress-circular :size="20" :width="3" color="purple" indeterminate></v-progress-circular>
+            <v-progress-circular :size="20" :width="3" color="brown" indeterminate></v-progress-circular>
           </li>
           <li v-for="message in messages" :key="message._id" :class="{
             'my-message': message.senderId === userId,
@@ -157,7 +157,7 @@ export default {
         const scrollBottom = messageList.clientHeight - messageList.scrollTop
 
         // Kiểm tra nếu người dùng đã cuộn lên trên cùng
-        if (scrollBottom + 1 == messageList.scrollHeight) {
+        if (scrollBottom >= messageList.scrollHeight - 100) {
           this.isLoadingMessage = true
           this.getConservationByRoomId()
         }
@@ -404,6 +404,8 @@ export default {
     .message-content {
       font-size: 14px;
       overflow-wrap: break-word;
+      color: var(--text-color);
+
     }
   }
 

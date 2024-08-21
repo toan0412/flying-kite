@@ -41,6 +41,7 @@
         </div>
         <div v-else-if="noConversation">
           Bạn chưa có cuộc trò chuyện nào
+          <v-img src="mdi-forum-outline"></v-img>
         </div>
         <div v-else>
           <li @click="handleChangeRoom(conservation)" v-for="(conservation, index) in rooms" :key="index"
@@ -105,8 +106,8 @@ export default {
         .then((res) => {
           this.userInfo = res.data.user
           this.skeletonLoadingUserInfo = false
-          const useUserInfoStore = useUserInfoStore()
-          useUserInfoStore.setUserInfo = res.data.user
+          const userInfoStore = useUserInfoStore()
+          userInfoStore.setUserInfo(res.data.user)
         })
     },
 
@@ -158,7 +159,8 @@ export default {
     //Xử lý onclick vào thẻ li trong sidebar
     async handleChangeRoom(room) {
       if (this.isRequestInProgress || room._id === this.selectedRoomId) return
-
+      //Gửi sự kiện chọn phòng để tắt introduction view
+      this.$emit('select-room', true);
       this.isRequestInProgress = true
       const receiver = room.receiverId || room._id
       //Tao phòng nếu chưa có (lấy phòng nếu đã tồn tại)

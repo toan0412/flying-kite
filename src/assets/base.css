@@ -1,7 +1,7 @@
 /* color palette from <https://github.com/vuejs/theme> */
 :root {
-  --ms-primary-color: #79139e;
-  --ms-light-purple-color: #fcf0ff;
+  --ms-primary-color: #e85e41;
+  --ms-light-purple-color: #eae7dc;
   --ms-border-color: rgba(0, 0, 0, 0.1);
   --ms-lighter-color: #6e6e6e;
   --ms-text-color: #212121;
@@ -18,8 +18,8 @@
   --lighter-text-color: var(--ms-lighter-color);
   --background-icon-color: #f1f1f4;
   --border-avatar-color: var(--ms-border-avatar-color);
-  --avatar-color: #ffdbea;
-  --background-message-color: #f9d7ec;
+  --avatar-color: #d8c3a5;
+  --background-message-color: #d8c3a5;
 }
 
 *,
