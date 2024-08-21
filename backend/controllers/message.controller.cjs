@@ -16,6 +16,13 @@ class MessageController {
     }).send(res)
   }
 
+  searchMessagesByRoom = async (req, res, next) => {
+    new SuccessResponse({
+      message: 'Tìm kiếm tin nhắn thành công',
+      data: await MessageService.searchMessagesByRoom(req)
+    }).send(res)
+  }
+
 }
 
 module.exports = new MessageController();

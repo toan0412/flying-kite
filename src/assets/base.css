@@ -20,6 +20,7 @@
   --border-avatar-color: var(--ms-border-avatar-color);
   --avatar-color: #d8c3a5;
   --background-message-color: #d8c3a5;
+  --highlight-text-color: var(--ms-primary-color)
 }
 
 *,

@@ -1,5 +1,7 @@
 <template>
-  <v-text-field class="custom-textfield"></v-text-field>
+  <v-text-field class="custom-textfield">
+    <slot></slot>
+  </v-text-field>
 </template>
 
 <script>
@@ -20,8 +22,8 @@ export default {}
   .v-field__input {
     color: var(--text-color);
   }
+
   .v-field__append-inner {
     color: var(--text-color);
   }
-}
-</style>
+}</style>

@@ -2,7 +2,8 @@
   <div class="sidebar">
     <div class="sidebar-search pt-3 pl-3">
       <MSTextField v-model="searchValue" width="298" append-inner-icon="mdi-magnify" density="compact" variant="solo"
-        hide-details single-line placeholder="Tìm kiếm"></MSTextField>
+        hide-details single-line placeholder="Tìm kiếm" clear-icon="mdi-close-circle-outline" clearable>
+      </MSTextField>
     </div>
     <div class="sidebar__statusbar">
       <div v-if="skeletonLoadingUserInfo" class="sidebar__statusbar__item">
@@ -10,7 +11,7 @@
       </div>
       <div v-else class="sidebar__statusbar__item">
         <v-avatar size="54">
-          <v-img :alt="userInfo.username" :src="userInfo.avatarUrl"></v-img>
+          <MSAvatar :alt="userInfo.username" :src="userInfo.avatarUrl"></MSAvatar>
         </v-avatar>
         <div class="pl-3">
           <div class="statusbar__item__username">
@@ -47,7 +48,7 @@
           <li @click="handleChangeRoom(conservation)" v-for="(conservation, index) in rooms" :key="index"
             class="sidebar__main__content__item">
             <div class="main__content_item__avatar">
-              <v-img alt="John" :src="conservation.avatarUrl"></v-img>
+              <MSAvatar alt="John" :src="conservation.avatarUrl"></MSAvatar>
             </div>
             <div class="main__content_item--wrap">
               <div class="main__content_item__fullname">
@@ -71,6 +72,7 @@
 <script>
 import MSButton from '@/components/button/MSButton.vue'
 import MSTextField from '@/components/textfield/MSTextField.vue'
+import MSAvatar from '@/components/avatar/MSAvatar.vue'
 import { getConservationsAPI, getOrCreatePrivateRoomAPI } from '@/services/RoomServices'
 import { searchUserAPI, getUserAPI, getAllUsersAPI } from '@/services/UserServices'
 import { convertToDayOfWeek } from '@/helper/ConvertDate'
@@ -98,7 +100,8 @@ export default {
   },
   components: {
     MSButton,
-    MSTextField
+    MSTextField,
+    MSAvatar
   },
   methods: {
     async fetchUserInfo() {
@@ -150,6 +153,11 @@ export default {
           this.rooms = res.data
           this.skeletonLoadingConversations = false
         })
+    },
+    //Xóa text trong trường search
+    handleRemoveSearchField() {
+      if (this.searchValue)
+        this.searchValue = ''
     },
     //debounce search
     debounceSearch: lodash.debounce(function (data) {
@@ -322,12 +330,6 @@ export default {
   .main__content_item__avatar {
     height: 40px;
     width: 40px;
-
-    .v-img__img {
-      border: 1px solid var(--border-avatar-color);
-      background-color: var(--avatar-color);
-      border-radius: 6px;
-    }
   }
 
   .main__content_item--wrap {

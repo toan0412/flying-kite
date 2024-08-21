@@ -25,7 +25,7 @@ class MessageService {
         const { roomId } = req.params;
 
         // Check xem phòng có tồn tại không 
-        RoomService.checkExistRoomById(roomId)
+        await RoomService.checkExistRoomById(roomId)
 
         const messages = await MessageModel.find({ roomId: roomId })
             .sort({ createdAt: -1 })
@@ -35,6 +35,28 @@ class MessageService {
 
         return messages;
     }
+
+    // Tìm kiếm tin nhắn theo phòng
+    searchMessagesByRoom = async (req) => {
+        const { roomId, searchString } = req.query;
+        console.log(roomId, searchString)
+        // 0. Kiểm tra phòng có tồn tại không
+        await RoomService.checkExistRoomById(roomId);
+
+        // 1. Tìm các tin nhắn khớp với từ khóa
+        const matchedMessages = await MessageModel.find({
+            roomId: roomId,
+            content: { $regex: searchString || '', $options: 'i' }
+        }).sort({ createdAt: -1 });
+
+        if (!matchedMessages.length) {
+            return [];
+        }
+
+        return matchedMessages
+
+    }
+
 }
 
 

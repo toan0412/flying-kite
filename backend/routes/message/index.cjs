@@ -6,6 +6,7 @@ const router = require('express').Router();
 
 router.use(authentication);
 
+router.get('/messages/search', asyncHandler(messageController.searchMessagesByRoom))
 router.post('/messages/:roomId', asyncHandler(messageController.createMessage))
 router.get('/messages/:roomId', asyncHandler(messageController.getMessageByRoom))
 
