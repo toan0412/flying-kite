@@ -2,7 +2,11 @@
 <template>
   <div class="content-wrapper">
     <div class="content__header">
-      <v-skeleton-loader v-if="skeletonLoadingRoomInfo" width="270" type="list-item-avatar"></v-skeleton-loader>
+      <v-skeleton-loader
+        v-if="skeletonLoadingRoomInfo"
+        width="270"
+        type="list-item-avatar"
+      ></v-skeleton-loader>
       <div v-else class="content__header__info">
         <MSAvatar width="40" height="40" :alt="room.fullname" :src="room.avatarUrl"></MSAvatar>
         <p class="content__header__info__name">{{ room.displayName || '' }}</p>
@@ -14,26 +18,54 @@
             <div class="content__header__actions__searchfield__wrapper" v-if="isSearchField">
               <v-menu transition="scroll-y-transition">
                 <template v-slot:activator="{ props }">
-                  <MSTextField v-bind="props" v-model="searchValue" width="270" density="compact" variant="solo"
-                    hide-details single-line placeholder="Tìm tin nhắn" clear-icon="mdi-close-circle-outline" clearable
-                    @keydown.enter="handleSearchMessage">
+                  <MSTextField
+                    v-bind="props"
+                    v-model="searchValue"
+                    width="270"
+                    density="compact"
+                    variant="solo"
+                    hide-details
+                    single-line
+                    placeholder="Tìm tin nhắn"
+                    clear-icon="mdi-close"
+                    clearable
+                    @keydown.enter="handleSearchMessage"
+                  >
                   </MSTextField>
                 </template>
-                <v-list width="270" class="mt-1">
+                <v-list width="350" class="mt-1">
                   <v-list-item>
-                    <v-list-item-content>
-                      <v-list-item-subtitle>
-                        Nhấn enter để tìm tin nhắn
-                      </v-list-item-subtitle>
-                    </v-list-item-content>
+                    <v-list-subheader class="justify-center">
+                      <span class="font-weight-bold pr-3">{{ searchNotification }}</span>
+                      <v-progress-circular
+                        v-if="isLoadingSearch"
+                        :size="20"
+                        :width="3"
+                        color="black"
+                        indeterminate
+                      ></v-progress-circular>
+                    </v-list-subheader>
                   </v-list-item>
-                  <v-list-item class="pa-2" v-for="messageSearch in messagesSearchList" :key="messageSearch._id"
-                    @click="handleSrcollMessage(messageSearch)">
+                  <v-list-item
+                    class="pa-2"
+                    v-for="messageSearch in messagesSearchList"
+                    :key="messageSearch._id"
+                    @click="handleScrollMessage(messageSearch)"
+                  >
                     <template v-slot:prepend>
                       <MSAvatar height="40" width="40" :src="messageSearch.avatarUrl"></MSAvatar>
                     </template>
-                    <v-list-item-title class="pl-2" v-text="messageSearch.senderName"></v-list-item-title>
-                    <v-list-item-subtitle class="pl-2" v-html="messageSearch.content"></v-list-item-subtitle>
+                    <v-list-item-title class="pl-2">{{
+                      messageSearch.senderName
+                    }}</v-list-item-title>
+                    <v-list-item-subtitle class="pl-2"
+                      ><span v-html="messageSearch.content"></span
+                    ></v-list-item-subtitle>
+                    <template v-slot:append>
+                      <div>
+                        {{ convertToDayOfWeek(messageSearch.createdAt) }}
+                      </div>
+                    </template>
                   </v-list-item>
                 </v-list>
               </v-menu>
@@ -89,12 +121,23 @@
         </ol>
         <ol ref="messageList" v-else>
           <li class="messageList--loading" v-if="isLoadingMessage & !flagStopCallApi">
-            <v-progress-circular :size="20" :width="3" color="brown" indeterminate></v-progress-circular>
+            <v-progress-circular
+              :size="20"
+              :width="3"
+              color="brown"
+              indeterminate
+            ></v-progress-circular>
           </li>
-          <li v-for="message in messages" :key="message._id" :class="{
-            'my-message': message.senderId === userId,
-            'other-message': message.senderId !== userId
-          }" :data-id="message._id" ref="messageElement">
+          <li
+            v-for="message in messages"
+            :key="message._id"
+            :class="{
+              'my-message': message.senderId === userId,
+              'other-message': message.senderId !== userId
+            }"
+            :data-id="message._id"
+            ref="messageElement"
+          >
             <div class="message-wrapper">
               <div class="message-content">
                 {{ message.content }}
@@ -111,8 +154,16 @@
     <div class="content__input">
       <div class="content__input--wrapper">
         <div class="content__input__content">
-          <MSTextField v-model="messageInput" height="50" prepend-inner-icon="mdi-emoticon-outline" density="compact"
-            variant="solo" hide-details single-line placeholder="Nhập tin nhắn" />
+          <MSTextField
+            v-model="messageInput"
+            height="50"
+            prepend-inner-icon="mdi-emoticon-outline"
+            density="compact"
+            variant="solo"
+            hide-details
+            single-line
+            placeholder="Nhập tin nhắn"
+          />
         </div>
         <div class="content__input__actions">
           <div v-if="isTyping" @click="sendMessage" class="content__input__actions__item">
@@ -138,11 +189,12 @@
 
 <script>
 import MSAvatar from '@/components/avatar/MSAvatar.vue'
-import MSTextField from '@/components/textfield/MSTextField.vue';
-import { useRoomInfoStore } from '@/stores/RoomInfoStore';
-import { getConservationByRoomIdAPI, searchMessageByRoomAPI } from '@/services/MessageService';
-import ChatService from '@/socket/ChatService.cjs';
-import { useUsersInfoStore } from '@/stores/UsersInfoStore';
+import MSTextField from '@/components/textfield/MSTextField.vue'
+import { useRoomInfoStore } from '@/stores/RoomInfoStore'
+import { getConservationByRoomIdAPI, searchMessageByRoomAPI } from '@/services/MessageService'
+import ChatService from '@/socket/ChatService.cjs'
+import { useUsersInfoStore } from '@/stores/UsersInfoStore'
+import { convertToDayOfWeek } from '@/helper/ConvertDate'
 
 export default {
   components: {
@@ -161,7 +213,7 @@ export default {
       skeletonLoadingRoomInfo: true,
       skeletonLoadingConversation: true,
       isLoadingMessage: true,
-      isLoadingMessageSearch: true,
+      isLoadingSearch: false,
       offset: 0,
       limit: 30,
       isSearchField: false,
@@ -169,61 +221,40 @@ export default {
       flagStopCallApi: false,
       currentSearchMessage: 0,
       totalSearchMessage: 0,
-      messagesSearchList: []
-    };
+      messagesSearchList: [],
+      searchNotification: 'Nhấn "Enter" để tìm tin nhắn'
+    }
   },
 
   methods: {
     //Lấy cuộc hội thoại theo id phòng
     async getConservationByRoomId() {
-      if (!this.roomId || this.flagStopCallApi || this.isLoadingMessages) return;
+      if (!this.roomId || this.flagStopCallApi || this.isLoadingMessages) return
 
       this.isLoadingMessages = true
 
       try {
-        const res = await getConservationByRoomIdAPI(this.roomId, this.limit, this.offset);
+        const res = await getConservationByRoomIdAPI(this.roomId, this.limit, this.offset)
 
         if (res.data.length === 0) {
-          this.flagStopCallApi = true;
+          this.flagStopCallApi = true
         }
 
-        this.messages = [...this.messages, ...res.data];
-        this.skeletonLoadingConversation = false;
-        this.skeletonLoadingRoomInfo = false;
-        this.isLoadingMessage = false;
-        this.offset += this.limit;
-
+        this.messages = [...this.messages, ...res.data]
+        this.skeletonLoadingConversation = false
+        this.skeletonLoadingRoomInfo = false
+        this.isLoadingMessage = false
+        this.offset += this.limit
       } catch (error) {
-        console.error(error);
-
+        console.error(error)
       } finally {
-        this.isLoadingMessages = false; // Đánh dấu cuộc gọi API đã hoàn tất
-      }
-    },
-
-
-    //Hàm setup lắng nghe sự kiện scroll top
-    setupScrollTopListMessageListener() {
-      const messageList = this.$refs.messageList;
-
-      const handleScroll = () => {
-        const scrollBottom = messageList.clientHeight - messageList.scrollTop
-
-        // Kiểm tra nếu người dùng đã cuộn lên trên cùng
-        if (scrollBottom >= messageList.scrollHeight - 100) {
-          this.isLoadingMessage = true
-          this.getConservationByRoomId()
-        }
-      };
-
-      if (messageList) {
-        messageList.addEventListener('scroll', handleScroll)
+        this.isLoadingMessages = false // Đánh dấu cuộc gọi API đã hoàn tất
       }
     },
 
     //Hàm gửi tin nhắn
     sendMessage() {
-      if (this.messageInput.length === 0) return;
+      if (this.messageInput.length === 0) return
       const content = this.messageInput
       const lastMessage = {
         roomId: this.roomId,
@@ -231,12 +262,51 @@ export default {
       }
       const message = {
         ...lastMessage,
-        senderId: this.userId,
+        senderId: this.userId
       }
       ChatService.sendMessage(message)
       ChatService.setLastMessage(lastMessage)
       this.messageInput = ''
+    },
 
+    //Hàm xử lý tìm kiếm tin nhắn
+    handleSearchMessage() {
+      if (this.searchValue.length === 0) return
+
+      this.isLoadingSearch = true
+
+      searchMessageByRoomAPI(this.roomId, this.searchValue)
+        .then((res) => {
+          const messagesSearchList = res.data
+
+          if (messagesSearchList.length === 0) {
+            this.searchNotification = 'Không tìm thấy kết quả nào, thử lại'
+            return
+          }
+
+          const usersInfoStore = useUsersInfoStore()
+          const usersInfo = usersInfoStore.usersInfo
+
+          this.messagesSearchList = messagesSearchList.map((message) => {
+            const user = usersInfo.find((user) => user._id === message.senderId)
+            message.senderName = user ? user.fullname : 'Unknown'
+            message.avatarUrl = user ? user.avatarUrl : ''
+            message.content = message.content.replace(
+              new RegExp(this.searchValue, 'gi'),
+              `<b>${this.searchValue}</b>`
+            )
+            return message
+          })
+        })
+        .catch((error) => {
+          console.error(error)
+        })
+        .finally(() => {
+          this.isLoadingSearch = false
+          if (this.messagesSearchList.length > 0) {
+            this.searchNotification = 'Tìm thấy ' + this.messagesSearchList.length + ' kết quả'
+          }
+        })
     },
 
     //Hàm toggle field nhập tìm kiếm tin nhắn
@@ -249,69 +319,51 @@ export default {
       this.isSearchField = !this.isSearchField
     },
 
-    //Hàm xử lý tìm kiếm tin nhắn
-    handleSearchMessage() {
-      if (this.searchValue.length === 0) return;
-
-      this.isLoadingMessageSearch = true;
-
-      searchMessageByRoomAPI(this.roomId, this.searchValue)
-        .then((res) => {
-          const messagesSearchList = res.data;
-
-          if (messagesSearchList.length === 0) {
-            console.log('Không tìm được tin nhắn');
-            this.messagesSearchList = [];
-            return;
-          }
-
-          const usersInfoStore = useUsersInfoStore();
-          const usersInfo = usersInfoStore.usersInfo;
-
-          this.messagesSearchList = messagesSearchList.map((message) => {
-            const user = usersInfo.find(user => user._id === message.senderId);
-            message.senderName = user ? user.fullname : 'Unknown';
-            message.avatarUrl = user ? user.avatarUrl : '';
-            message.content = message.content.replace(
-              new RegExp(this.searchValue, 'gi'),
-              `<b>${this.searchValue}</b>`
-            );
-            return message;
-          });
-
-          console.log(this.messagesSearchList);
-        })
-        .catch((error) => {
-          console.error(error);
-        })
-        .finally(() => {
-          this.isLoadingMessageSearch = false;
-        });
-    },
-
-
     //Hàm scroll đến tin nhắn đã chọn
-    async handleSrcollMessage(messageSelected) {
+    async handleScrollMessage(messageSelected) {
       this.removeHighLightTextClass()
-      const messageList = this.$refs.messageList;
+      const messageList = this.$refs.messageList
       const messageSelectedElement = messageList.querySelector(`[data-id="${messageSelected._id}"]`)
       // Khi không tìm thấy nghĩa là tin nhắn ở paging trước => call api
       if (!messageSelectedElement) {
-        await this.getConservationByRoomId();
-        this.handleSrcollMessage(messageSelected)
+        await this.getConservationByRoomId()
+        this.handleScrollMessage(messageSelected)
         return
       }
 
-      messageSelectedElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      messageSelectedElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
       messageSelectedElement.classList.add('highlight-text')
+    },
+
+    //Hàm setup lắng nghe sự kiện scroll top
+    setupScrollTopListMessageListener() {
+      const messageList = this.$refs.messageList
+
+      const handleScroll = () => {
+        const scrollBottom = messageList.clientHeight - messageList.scrollTop
+
+        // Kiểm tra nếu người dùng đã cuộn lên trên cùng
+        if (scrollBottom >= messageList.scrollHeight - 100) {
+          this.isLoadingMessage = true
+          this.getConservationByRoomId()
+        }
+      }
+
+      if (messageList) {
+        messageList.addEventListener('scroll', handleScroll)
+      }
     },
 
     // Xóa lớp 'highlight-text' khỏi tất cả các thẻ <li>
     removeHighLightTextClass() {
-      const allItems = this.$el.querySelectorAll('li.highlight-text');
-      allItems.forEach(item => {
-        item.classList.remove('highlight-text');
-      });
+      const allItems = this.$el.querySelectorAll('li.highlight-text')
+      allItems.forEach((item) => {
+        item.classList.remove('highlight-text')
+      })
+    },
+
+    convertToDayOfWeek(dateString) {
+      return convertToDayOfWeek(dateString)
     }
   },
 
@@ -320,15 +372,14 @@ export default {
 
     // Set up socket listener for incoming messages
     ChatService.onMessageReceived((message) => {
-      this.messages.unshift(message);
-    });
-
+      this.messages.unshift(message)
+    })
   },
 
   computed: {
     currentRoom() {
-      const roomInfoStore = useRoomInfoStore();
-      return roomInfoStore.roomInfo;
+      const roomInfoStore = useRoomInfoStore()
+      return roomInfoStore.roomInfo
     }
   },
 
@@ -336,34 +387,42 @@ export default {
     async currentRoom(newVal, oldVal) {
       if (!newVal) return
       //reset when room change
-      this.room = newVal;
+      this.room = newVal
       this.roomId = newVal._id
       this.messages = []
       this.offset = 0
-      this.skeletonLoadingConversation = true;
-      this.skeletonLoadingRoomInfo = true;
-      this.flagStopCallApi = false;
+      this.skeletonLoadingConversation = true
+      this.skeletonLoadingRoomInfo = true
+      this.flagStopCallApi = false
+      this.isSearchField = false
 
       // Xóa người dùng khỏi phòng cũ nếu oldVal tồn tại
       if (oldVal._id) {
-        ChatService.leaveRoom(oldVal._id);
+        ChatService.leaveRoom(oldVal._id)
       }
 
       // Thêm người dùng vào phòng mới
-      ChatService.joinRoom(this.roomId);
+      ChatService.joinRoom(this.roomId)
 
       // Lấy cuộc hội thoại theo phòng mới
-      await this.getConservationByRoomId();
+      await this.getConservationByRoomId()
 
       // Thiết lập sự kiện cuộn
-      this.setupScrollTopListMessageListener();
-
+      this.setupScrollTopListMessageListener()
     },
 
+    //Theo dõi input nhắn tin
     messageInput(newMessage) {
-      this.isTyping = newMessage.length > 0;
+      this.isTyping = newMessage.length > 0
     },
 
+    //Theo dõi input search
+    searchValue(newVal, oldVal) {
+      if (newVal != oldVal) {
+        this.searchNotification = 'Nhấn "Enter" để tìm tin nhắn'
+        this.messagesSearchList = []
+      }
+    }
   }
 }
 </script>
@@ -403,7 +462,6 @@ export default {
 
 .content__header__actions {
   display: flex;
-
 }
 
 .content__header__actions__searchfield {
@@ -414,7 +472,6 @@ export default {
   display: flex;
   align-items: center;
   height: 100%;
-
 }
 
 .content__header__actions__item {
@@ -427,7 +484,7 @@ export default {
 }
 
 .header-action-background {
-  background-color: var(--ms-primary-color);
+  background-color: var(--background-icon-primary-color);
 }
 
 .content__input {
@@ -446,7 +503,7 @@ export default {
 
   .content__input__content {
     display: flex;
-    width: 50%
+    width: 50%;
   }
 
   .content__input__actions {
@@ -496,12 +553,12 @@ export default {
       display: flex;
       flex-direction: column-reverse;
       padding: 0 8px;
-      height: 100%
+      height: 100%;
     }
 
     .highlight-text {
       .message-content {
-        background: var(--highlight-text-color)
+        background: var(--highlight-text-color);
       }
     }
 
@@ -539,14 +596,12 @@ export default {
       padding: 4px 12px;
       border-radius: 8px;
       max-width: 70%;
-
     }
 
     .message-content {
       font-size: 14px;
       overflow-wrap: break-word;
       color: var(--text-color);
-
     }
   }
 
@@ -565,6 +620,5 @@ export default {
     align-items: stretch;
     min-width: 30px;
   }
-
 }
 </style>

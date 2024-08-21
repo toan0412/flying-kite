@@ -1,8 +1,18 @@
 <template>
   <div class="sidebar">
     <div class="sidebar-search pt-3 pl-3">
-      <MSTextField v-model="searchValue" width="298" append-inner-icon="mdi-magnify" density="compact" variant="solo"
-        hide-details single-line placeholder="Tìm kiếm" clear-icon="mdi-close-circle-outline" clearable>
+      <MSTextField
+        v-model="searchValue"
+        width="298"
+        append-inner-icon="mdi-magnify"
+        density="compact"
+        variant="solo"
+        hide-details
+        single-line
+        placeholder="Tìm kiếm"
+        clear-icon="mdi-close-circle-outline"
+        clearable
+      >
       </MSTextField>
     </div>
     <div class="sidebar__statusbar">
@@ -23,7 +33,20 @@
         </div>
       </div>
       <div class="sidebar__statusbar__item">
-        <v-icon icon="mdi-cog"></v-icon>
+        <v-menu transition="slide-x-transition" offset-y>
+          <template v-slot:activator="{ props }">
+            <v-icon v-bind="props" class="mr-2">mdi-cog</v-icon>
+          </template>
+
+          <v-list>
+            <v-list-item @click="openSettings">
+              <span>Cài đặt</span>
+            </v-list-item>
+            <v-list-item @click="logout">
+              <span class="text-red-lighten-1">Đăng xuất</span>
+            </v-list-item>
+          </v-list>
+        </v-menu>
       </div>
     </div>
     <!--Sidebar-content -->
@@ -45,8 +68,12 @@
           <v-img src="mdi-forum-outline"></v-img>
         </div>
         <div v-else>
-          <li @click="handleChangeRoom(conservation)" v-for="(conservation, index) in rooms" :key="index"
-            class="sidebar__main__content__item">
+          <li
+            @click="handleChangeRoom(conservation)"
+            v-for="(conservation, index) in rooms"
+            :key="index"
+            class="sidebar__main__content__item"
+          >
             <div class="main__content_item__avatar">
               <MSAvatar alt="John" :src="conservation.avatarUrl"></MSAvatar>
             </div>
@@ -60,7 +87,9 @@
             </div>
             <div class="d-flex position-absolute align-center right-0 top-0 pt-2 pr-2">
               <p class="texting-time pr-1">
-                {{ conservation.lastMessageAt ? convertToDayOfWeek(conservation.lastMessageAt) : '' }}
+                {{
+                  conservation.lastMessageAt ? convertToDayOfWeek(conservation.lastMessageAt) : ''
+                }}
               </p>
             </div>
           </li>
@@ -70,18 +99,16 @@
   </div>
 </template>
 <script>
-import MSButton from '@/components/button/MSButton.vue'
 import MSTextField from '@/components/textfield/MSTextField.vue'
 import MSAvatar from '@/components/avatar/MSAvatar.vue'
 import { getConservationsAPI, getOrCreatePrivateRoomAPI } from '@/services/RoomServices'
-import { searchUserAPI, getUserAPI, getAllUsersAPI } from '@/services/UserServices'
+import { searchUserAPI, getUserAPI, getAllUsersAPI, logoutAPI } from '@/services/UserServices'
 import { convertToDayOfWeek } from '@/helper/ConvertDate'
 import { useRoomInfoStore } from '@/stores/RoomInfoStore'
 import { useUsersInfoStore } from '@/stores/UsersInfoStore'
 import { useUserInfoStore } from '@/stores/UserInfoStore'
-import ChatService from '@/socket/ChatService.cjs';
+import ChatService from '@/socket/ChatService.cjs'
 import lodash from 'lodash'
-
 
 export default {
   data() {
@@ -95,31 +122,28 @@ export default {
       noneConversations: true,
       isRequestInProgress: false,
       selectedRoomId: null,
-      noConversation: false,
+      noConversation: false
     }
   },
   components: {
-    MSButton,
     MSTextField,
     MSAvatar
   },
   methods: {
     async fetchUserInfo() {
-      await getUserAPI()
-        .then((res) => {
-          this.userInfo = res.data.user
-          this.skeletonLoadingUserInfo = false
-          const userInfoStore = useUserInfoStore()
-          userInfoStore.setUserInfo(res.data.user)
-        })
+      await getUserAPI().then((res) => {
+        this.userInfo = res.data.user
+        this.skeletonLoadingUserInfo = false
+        const userInfoStore = useUserInfoStore()
+        userInfoStore.setUserInfo(res.data.user)
+      })
     },
 
     async getAllUsers() {
-      await getAllUsersAPI()
-        .then((res) => {
-          const usersInfoStore = useUsersInfoStore()
-          usersInfoStore.setUsersInfo(res.data)
-        })
+      await getAllUsersAPI().then((res) => {
+        const usersInfoStore = useUsersInfoStore()
+        usersInfoStore.setUsersInfo(res.data)
+      })
     },
 
     async fetchConservations() {
@@ -134,9 +158,6 @@ export default {
           this.noConversation = false
           const conversations = this.generateConversationWithUsersInfo(res.data)
           this.rooms = conversations
-          //Mặc định là lấy cuộc hội thoại gần nhất
-          const roomInfoStore = useRoomInfoStore()
-          roomInfoStore.setRoomInfo(this.rooms[0])
         })
         .catch((err) => {
           console.log('Error fetching rooms: ', err)
@@ -144,31 +165,26 @@ export default {
     },
 
     convertToDayOfWeek(dateString) {
-      return convertToDayOfWeek(dateString);
+      return convertToDayOfWeek(dateString)
     },
 
     handleSearch() {
-      searchUserAPI(this.searchValue)
-        .then((res) => {
-          this.rooms = res.data
-          this.skeletonLoadingConversations = false
-        })
+      searchUserAPI(this.searchValue).then((res) => {
+        this.rooms = res.data
+        this.skeletonLoadingConversations = false
+      })
     },
-    //Xóa text trong trường search
-    handleRemoveSearchField() {
-      if (this.searchValue)
-        this.searchValue = ''
-    },
+
     //debounce search
     debounceSearch: lodash.debounce(function (data) {
-      this.handleSearch(data);
+      this.handleSearch(data)
     }, 300),
 
     //Xử lý onclick vào thẻ li trong sidebar
     async handleChangeRoom(room) {
       if (this.isRequestInProgress || room._id === this.selectedRoomId) return
       //Gửi sự kiện chọn phòng để tắt introduction view
-      this.$emit('select-room', true);
+      this.$emit('select-room', true)
       this.isRequestInProgress = true
       const receiver = room.receiverId || room._id
       //Tao phòng nếu chưa có (lấy phòng nếu đã tồn tại)
@@ -180,24 +196,24 @@ export default {
           this.isRequestInProgress = false
           this.selectedRoomId = room._id
         })
-        .catch(err => {
+        .catch((err) => {
           console.log('Không tạo (lấy) được thông tin phòng: ', err)
           this.isRequestInProgress = false
         })
     },
 
     generateConversationWithUsersInfo(rooms) {
-      const conversations = [];
-      const usersInfoStore = useUsersInfoStore();
-      const UsersInfo = usersInfoStore.usersInfo;
+      const conversations = []
+      const usersInfoStore = useUsersInfoStore()
+      const UsersInfo = usersInfoStore.usersInfo
 
       rooms.forEach((room) => {
         // Tìm người dùng còn lại trong phòng (khác với người dùng hiện tại)
-        const remainUser = room.members.find((member) => member.userId !== this.userInfo._id);
-        if (!remainUser) return;
+        const remainUser = room.members.find((member) => member.userId !== this.userInfo._id)
+        if (!remainUser) return
 
         // Tìm thông tin của người dùng còn lại trong UsersInfo
-        const userInfo = UsersInfo.find(user => user._id === remainUser.userId);
+        const userInfo = UsersInfo.find((user) => user._id === remainUser.userId)
         if (userInfo) {
           // Thêm thông tin vào danh sách cuộc trò chuyện
           conversations.push({
@@ -207,64 +223,74 @@ export default {
             avatarUrl: userInfo.avatarUrl,
             lastMessage: room.lastMessage,
             lastMessageAt: room.lastMessageAt,
-            updatedAt: room.updatedAt,
-          });
+            updatedAt: room.updatedAt
+          })
         }
-      });
+      })
 
       return conversations
     },
-  },
 
+    logout() {
+      logoutAPI()
+        .then((res) => {
+          if (res.status === 200) {
+            this.$router.push('/login')
+            this.$emit('is-auth', false)
+            localStorage.clear()
+          }
+        })
+        .catch((error) => {
+          console.error('Đăng xuất thất bại:', error)
+        })
+    },
+
+    openSettings() {
+      //open setting
+      console.log('open settings')
+    }
+  },
 
   async created() {
     // Đợi lấy tất cả người dùng
-    await this.getAllUsers();
+    await this.getAllUsers()
 
     // Chạy fetchUserInfo và fetchConservations đồng thời
-    await Promise.all([this.fetchUserInfo(), this.fetchConservations()]);
+    await Promise.all([this.fetchUserInfo(), this.fetchConservations()])
 
     // Sau khi cả hai phương thức hoàn tất, tham gia phòng
-    ChatService.joinRoom(this.userInfo._id);
+    ChatService.joinRoom(this.userInfo._id)
   },
 
-
-
   mounted() {
+    //Client nhận tin nhắn
     ChatService.onLastMessageReceived((updatedRoom) => {
-      console.log('1133')
       // Tìm chỉ mục của phòng trong danh sách phòng hiện tại
-      const roomIndex = this.rooms.findIndex(room => room._id === updatedRoom._id);
+      const roomIndex = this.rooms.findIndex((room) => room._id === updatedRoom._id)
 
       if (roomIndex !== -1) {
         // Nếu phòng đã tồn tại, cập nhật tin nhắn cuối cùng và thời gian
-        this.rooms[roomIndex].lastMessage = updatedRoom.lastMessage;
-        this.rooms[roomIndex].lastMessageAt = updatedRoom.lastMessageAt;
+        this.rooms[roomIndex].lastMessage = updatedRoom.lastMessage
+        this.rooms[roomIndex].lastMessageAt = updatedRoom.lastMessageAt
 
         // Di chuyển phòng đã cập nhật lên đầu danh sách
-        const updatedRoomData = this.rooms.splice(roomIndex, 1)[0];
-        this.rooms.unshift(updatedRoomData);
+        const updatedRoomData = this.rooms.splice(roomIndex, 1)[0]
+        this.rooms.unshift(updatedRoomData)
       }
-    });
-
+    })
   },
-
 
   watch: {
     searchValue(newInput) {
-      this.skeletonLoadingConversations = true;
-      setTimeout(() => {
-        if (newInput.length === 0) {
-          this.fetchConservations()
-        } else {
-          this.debounceSearch(newInput);
-        }
-      }, 300);
-    },
-  },
-
+      this.skeletonLoadingConversations = true
+      if (newInput.length === 0) {
+        this.fetchConservations()
+      } else {
+        this.debounceSearch(newInput)
+      }
+    }
+  }
 }
-
 </script>
 
 <style lang="scss">
@@ -298,7 +324,7 @@ export default {
 
   .statusbar__item__username {
     font-size: 16px;
-    font-weight: bold
+    font-weight: bold;
   }
 
   .statusbar__item__status {
@@ -385,7 +411,7 @@ export default {
 
   .texting-time {
     font-size: 12px;
-    color: var(--lighter-text-color)
+    color: var(--lighter-text-color);
   }
 }
 

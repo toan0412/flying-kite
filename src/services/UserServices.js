@@ -8,6 +8,10 @@ const signUpAPI = (userInfo) => {
   return axiosInstance.post('v1/api/users/sign-up', userInfo)
 }
 
+const logoutAPI = () => {
+  return axiosInstance.post('v1/api/users/logout')
+}
+
 const getUserAPI = () => {
   return axiosInstance.get('v1/api/users/info')
 }
@@ -20,4 +24,4 @@ const getAllUsersAPI = () => {
   return axiosInstance.get('v1/api/users')
 }
 
-export { loginAPI, signUpAPI, getUserAPI, searchUserAPI, getAllUsersAPI }
+export { loginAPI, signUpAPI, getUserAPI, searchUserAPI, getAllUsersAPI, logoutAPI }

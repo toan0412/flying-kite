@@ -1,26 +1,34 @@
 /* color palette from <https://github.com/vuejs/theme> */
 :root {
-  --ms-primary-color: #e85e41;
-  --ms-light-purple-color: #eae7dc;
+  --ms-soft-cream: #eae7dc;
+  --ms-light-beige: #d8c3a5;
+  --ms-coral-pink: #e88d8a;
+  --ms-word-pink: #e98074;
+  --ms-brick-red: #e85a4f;
   --ms-border-color: rgba(0, 0, 0, 0.1);
-  --ms-lighter-color: #6e6e6e;
-  --ms-text-color: #212121;
-  --ms-border-avatar-color: #a7a7a7;
+  --ms-dark-grey: #6e6e6e;
+  --ms-charcoal-black: #212121;
+  --ms-white: #fff;
+  --ms-grayish-white: #f1f1f4;
+  --ms-light-gray: #a7a7a7;
 }
 
 /* semantic color variables for this project */
 :root {
-  --background-sidebar-color: var(--ms-light-purple-color);
-  --background-button-color: var(--ms-primary-color);
-  --primary-text-color: var(--ms-primary-color);
-  --text-color: var(--ms-text-color);
+  --ms-border-avatar-color: var(--ms-light-gray);
+  --background-sidebar-color: var(--ms-soft-cream);
+  --background-button-color: var(--ms-brick-red);
+  --primary-text-color: var(--ms-brick-red);
+  --text-color: var(--ms-charcoal-black);
   --border-color: var(--ms-border-color);
-  --lighter-text-color: var(--ms-lighter-color);
-  --background-icon-color: #f1f1f4;
-  --border-avatar-color: var(--ms-border-avatar-color);
-  --avatar-color: #d8c3a5;
-  --background-message-color: #d8c3a5;
-  --highlight-text-color: var(--ms-primary-color)
+  --background-icon-primary-color: var(--ms-brick-red);
+  --lighter-text-color: var(--ms-dark-grey);
+  --background-icon-color: var(--ms-grayish-white);
+  --border-avatar-color: var(--ms-light-gray);
+  --avatar-color: var(--ms-light-beige);
+  --background-message-color: var(--ms-soft-cream);
+  --highlight-text-color: var(--ms-word-pink);
+  --login-background-color: linear-gradient(180deg, var(--ms-dark-grey), var(--ms-light-beige));
 }
 
 *,

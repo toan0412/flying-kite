@@ -9,8 +9,8 @@
               <div class="heading-text">Kite</div>
             </div>
             <div class="sub-heading-text">
-              Kết nối với bất cứ ai, bất cứ lúc nào, thu hẹp khoảng cách giữa bạn và những người thân yêu với các cuộc trò
-              chuyện nhanh và dễ dàng!
+              Kết nối với bất cứ ai, bất cứ lúc nào, thu hẹp khoảng cách giữa bạn và những người
+              thân yêu với các cuộc trò chuyện nhanh và dễ dàng!
             </div>
           </div>
         </div>
@@ -31,34 +31,77 @@
               <div class="form-field-wrapper">
                 <div class="text-field-box">
                   <label for="email" class="field-label-2">Email</label>
-                  <input type="email" v-model="email" class="input_register w-input" maxlength="256" name="email"
-                    placeholder="Nhập email" id="email" required="">
+                  <input
+                    type="email"
+                    v-model="email"
+                    class="input_register w-input"
+                    maxlength="256"
+                    name="email"
+                    placeholder="Nhập email"
+                    id="email"
+                    required=""
+                  />
                 </div>
                 <div class="text-field-box">
                   <label for="username" class="field-label-2">Username</label>
-                  <input v-model="username" class="input_register w-input" maxlength="256" name="username"
-                    placeholder="Nhập tên đăng nhập" id="username" required="">
+                  <input
+                    v-model="username"
+                    class="input_register w-input"
+                    maxlength="256"
+                    name="username"
+                    placeholder="Nhập tên đăng nhập"
+                    id="username"
+                    required=""
+                  />
                 </div>
                 <div class="text-field-box">
                   <label for="password" class="field-label-2">Password</label>
-                  <input v-model="password" type="password" class="input_register w-input" maxlength="256" name="password"
-                    placeholder="Nhập mật khẩu" id="password" required="">
+                  <input
+                    v-model="password"
+                    type="password"
+                    class="input_register w-input"
+                    maxlength="256"
+                    name="password"
+                    placeholder="Nhập mật khẩu"
+                    id="password"
+                    required=""
+                  />
                 </div>
                 <div class="text-field-box">
                   <label for="confirmPassword" class="field-label-2">Confirm Password</label>
-                  <input v-model="confirmPassword" type="password" class="input_register w-input" maxlength="256"
-                    name="confirmPassword" placeholder="Nhập lại mật khẩu" id="confirmPassword" required="">
+                  <input
+                    v-model="confirmPassword"
+                    type="password"
+                    class="input_register w-input"
+                    maxlength="256"
+                    name="confirmPassword"
+                    placeholder="Nhập lại mật khẩu"
+                    id="confirmPassword"
+                    required=""
+                  />
                 </div>
                 <div class="text-field-box">
                   <label for="fullname" class="field-label-2">Tên đầy đủ</label>
-                  <input v-model="fullname" class="input_register w-input" maxlength="256" name="fullname"
-                    placeholder="Nhập tên của bạn" id="fullname" required="">
+                  <input
+                    v-model="fullname"
+                    class="input_register w-input"
+                    maxlength="256"
+                    name="fullname"
+                    placeholder="Nhập tên của bạn"
+                    id="fullname"
+                    required=""
+                  />
                 </div>
               </div>
               <div class="error-message" v-if="errorMessage">{{ errorMessage }}</div>
               <button type="submit" name="btn-register" class="large-button w-button">
                 Tạo tài khoản
-                <v-progress-circular v-if="isLoading" size="20" color="white" indeterminate></v-progress-circular>
+                <v-progress-circular
+                  v-if="isLoading"
+                  size="20"
+                  color="white"
+                  indeterminate
+                ></v-progress-circular>
               </button>
             </form>
           </div>
@@ -85,20 +128,41 @@
               <div class="form-field-wrapper">
                 <div class="text-field-box">
                   <label for="username" class="field-label-2">Username</label>
-                  <input v-model="username" class="input_register w-input" maxlength="256" name="username"
-                    placeholder="Nhập tên đăng nhập" id="username" required="">
+                  <input
+                    v-model="username"
+                    class="input_register w-input"
+                    maxlength="256"
+                    name="username"
+                    placeholder="Nhập tên đăng nhập"
+                    id="username"
+                    required=""
+                  />
                 </div>
                 <div class="text-field-box">
                   <label for="password" class="field-label-2">Password</label>
-                  <input v-model="password" type="password" class="input_register w-input" maxlength="256" name="password"
-                    placeholder="Nhập mật khẩu" id="password" required="">
+                  <input
+                    v-model="password"
+                    type="password"
+                    class="input_register w-input"
+                    maxlength="256"
+                    name="password"
+                    placeholder="Nhập mật khẩu"
+                    id="password"
+                    required=""
+                  />
                 </div>
               </div>
               <div class="error-message" v-if="errorMessage">{{ errorMessage }}</div>
               <button type="submit" name="btn-register" class="large-button w-button">
                 Đăng nhập
-                <v-progress-circular class="ml-2" v-if="isLoading" size="16" width="3" color="white"
-                  indeterminate></v-progress-circular>
+                <v-progress-circular
+                  class="ml-2"
+                  v-if="isLoading"
+                  size="16"
+                  width="3"
+                  color="white"
+                  indeterminate
+                ></v-progress-circular>
               </button>
             </form>
             <div class="div-block-95">
@@ -131,21 +195,21 @@ export default {
       fullname: '',
       isRegister: false,
       isLoading: false,
-      errorMessage: '',
+      errorMessage: ''
     }
   },
   methods: {
     handleLogin() {
-      this.isLoading = true;
+      this.errorMessage = ''
+      this.isLoading = true
       const userInfo = { username: this.username, password: this.password }
-
       loginAPI(userInfo)
         .then((res) => {
           if (res.status === 200) {
             this.errorMessage = ''
             localStorage.setItem('accessToken', res.data.tokens.accessToken)
             localStorage.setItem('userId', res.data.user._id)
-            this.$router.replace('/');
+            this.$router.push('/')
             this.$emit('is-auth', true)
           }
         })
@@ -153,11 +217,12 @@ export default {
           this.errorMessage = error.message
         })
         .finally(() => {
-          this.isLoading = false;
+          this.isLoading = false
         })
     },
 
     handleSignUp() {
+      this.error = ''
       this.isLoading = true
       if (this.confirmPassword !== this.password) return
       const avatarUrl = this.generateAvatarUrl(this.username)
@@ -176,7 +241,7 @@ export default {
           this.errorMessage = error.message
         })
         .finally(() => {
-          this.isLoading = false;
+          this.isLoading = false
         })
     },
 
@@ -198,11 +263,10 @@ export default {
     generateAvatarUrl(username) {
       const avatar = createAvatar(croodles, {
         seed: username,
-        backgroundColor: '#ffdbea',
-      });
+        backgroundColor: '#ffdbea'
+      })
       return avatar.toDataUri()
     }
-
   }
 }
 </script>
@@ -218,8 +282,7 @@ export default {
 
 .content-left-wrapper {
   width: 60%;
-  background-color: #79139e;
-  background-image: linear-gradient(180deg, #d49be9, #79139e);
+  background-image: var(--login-background-color);
   background-position: 0px 0px, 50% 50%;
   background-size: auto, cover;
 }
@@ -230,7 +293,7 @@ export default {
   height: 100%;
   padding: 40px;
   align-items: center;
-  color: #fff;
+  color: var(--ms-white);
 }
 
 .content-wrapper {
@@ -258,7 +321,7 @@ export default {
   max-width: none;
   margin-top: 0px;
   margin-bottom: 20px;
-  color: #fff;
+  color: var(--ms-white);
   font-size: 120px;
   line-height: 1em;
   font-weight: 900;
@@ -266,7 +329,7 @@ export default {
 
 .sub-heading-text {
   padding-top: 13px;
-  color: #fff;
+  color: var(--ms-white);
   font-size: 23px;
   line-height: 33px;
   font-weight: 300;
@@ -276,7 +339,7 @@ export default {
   width: auto;
   align-items: center;
   flex: 1;
-  background-color: #fff;
+  background-color: var(--ms-white);
 }
 
 .block-2 {
@@ -375,9 +438,9 @@ export default {
   height: 45px;
   margin-bottom: 15px;
   border-radius: 5px;
-  background-color: #fff;
+  background-color: var(--ms-white);
   font-family: Roboto, sans-serif;
-  color: #2e3547;
+  color: var(--text-color);
   font-size: 16px;
   font-weight: 300;
   display: block;
@@ -399,7 +462,8 @@ export default {
   border-radius: 5px;
   background-color: var(--primary-text-color);
   box-shadow: 1px 10px 20px 0 rgba(0, 0, 0, 0.14);
-  transition: background-color 200ms ease, box-shadow 200ms ease, transform 200ms ease, -webkit-transform 200ms ease;
+  transition: background-color 200ms ease, box-shadow 200ms ease, transform 200ms ease,
+    -webkit-transform 200ms ease;
   color: #fff;
   font-size: 18px;
   font-weight: 700;
@@ -441,6 +505,6 @@ a {
   width: 100%;
   font-size: 14px;
   background-image: linear-gradient(rgb(255 235 233), rgb(255 235 233));
-  border: 1px solid rgb(255 129 130 / 40%)
+  border: 1px solid rgb(255 129 130 / 40%);
 }
 </style>
