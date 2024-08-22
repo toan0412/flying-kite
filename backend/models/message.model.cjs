@@ -16,7 +16,6 @@ const messageSchema = new Schema({
     },
     content: {
         type: String,
-        required: [true, 'The content field is required'],
     },
     isRead: {
         type: Boolean,
@@ -37,13 +36,16 @@ const messageSchema = new Schema({
         },
     }],
     media: [{
+        name: {
+            type: String,
+            required: [true, 'The name media field is required']
+        },
         url: {
             type: String,
             required: [true, 'The URL field is required'],
         },
         type: {
             type: String,
-            enum: ['image', 'video', 'audio'],
             required: [true, 'The media type field is required'],
         }
     }],

@@ -1,18 +1,8 @@
 <template>
   <div class="sidebar">
     <div class="sidebar-search pt-3 pl-3">
-      <MSTextField
-        v-model="searchValue"
-        width="298"
-        append-inner-icon="mdi-magnify"
-        density="compact"
-        variant="solo"
-        hide-details
-        single-line
-        placeholder="Tìm kiếm"
-        clear-icon="mdi-close-circle-outline"
-        clearable
-      >
+      <MSTextField v-model="searchValue" width="298" append-inner-icon="mdi-magnify" density="compact" variant="solo"
+        hide-details single-line placeholder="Tìm kiếm" clear-icon="mdi-close-circle-outline" clearable>
       </MSTextField>
     </div>
     <div class="sidebar__statusbar">
@@ -68,12 +58,8 @@
           <v-img src="mdi-forum-outline"></v-img>
         </div>
         <div v-else>
-          <li
-            @click="handleChangeRoom(conservation)"
-            v-for="(conservation, index) in rooms"
-            :key="index"
-            class="sidebar__main__content__item"
-          >
+          <li @click="handleChangeRoom(conservation)" v-for="(conservation, index) in rooms" :key="index"
+            class="sidebar__main__content__item">
             <div class="main__content_item__avatar">
               <MSAvatar alt="John" :src="conservation.avatarUrl"></MSAvatar>
             </div>

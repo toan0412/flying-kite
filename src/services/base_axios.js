@@ -1,7 +1,6 @@
 import axios from 'axios'
 
-const accessToken = localStorage.getItem('accessToken')
-const userId = localStorage.getItem('userId')
+const AuthFail = ['invalid signature', 'jwt has expired', 'jwt malformed', 'verify jwt failed']
 
 // Create an axios instance with default configuration
 const instance = axios.create({
@@ -50,6 +49,12 @@ instance.interceptors.response.use(
     if (error.response) {
       // Log detailed error response if available
       console.error('Response error:', errorResponse)
+      AuthFail.forEach((errorMessage) => {
+        if (errorResponse.message == errorMessage) {
+          localStorage.clear()
+          window.location.reload()
+        }
+      })
     } else if (error.request) {
       // Log the request error if no response is received
       console.error('No response received:', error.request)

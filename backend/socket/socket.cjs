@@ -29,12 +29,13 @@ function setupSocket(server) {
     // Lắng nghe sự kiện 'sendMessage'
     socket.on('sendMessage', async (message, ack) => {
       try {
-        const { roomId, senderId, content } = message;
+        // Destructure message object
+        const { roomId, senderId, content, media } = message;
 
         // Tạo tin nhắn mới
         const newMessage = await MessageService.createMessage({
           params: { roomId },
-          body: { senderId, content },
+          body: { senderId, content, media },
         });
 
         console.log('New message:', newMessage);
@@ -42,15 +43,20 @@ function setupSocket(server) {
         // Phát lại tin nhắn đến tất cả các client trong phòng
         io.to(roomId).emit('receiveMessage', newMessage);
 
-        // Gửi acknowledgement cho client (nếu cần)
-        if (ack) ack({ success: true, message: 'Message sent successfully!' });
+        // Gửi acknowledgement cho client
+        if (ack) {
+          ack({ success: true, message: 'Message sent successfully!' });
+        }
       } catch (error) {
         console.error('Error handling message:', error);
 
         // Gửi thông báo lỗi cho client qua acknowledgement
-        if (ack) ack({ success: false, message: error.message });
+        if (ack) {
+          ack({ success: false, message: error.message });
+        }
       }
     });
+
 
     socket.on('sendLastMessage', async (message, ack) => {
       try {

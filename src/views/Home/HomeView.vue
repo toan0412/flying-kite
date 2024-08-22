@@ -2,11 +2,7 @@
 <template>
   <div class="content-wrapper">
     <div class="content__header">
-      <v-skeleton-loader
-        v-if="skeletonLoadingRoomInfo"
-        width="270"
-        type="list-item-avatar"
-      ></v-skeleton-loader>
+      <v-skeleton-loader v-if="skeletonLoadingRoomInfo" width="270" type="list-item-avatar"></v-skeleton-loader>
       <div v-else class="content__header__info">
         <MSAvatar width="40" height="40" :alt="room.fullname" :src="room.avatarUrl"></MSAvatar>
         <p class="content__header__info__name">{{ room.displayName || '' }}</p>
@@ -18,49 +14,28 @@
             <div class="content__header__actions__searchfield__wrapper" v-if="isSearchField">
               <v-menu transition="scroll-y-transition">
                 <template v-slot:activator="{ props }">
-                  <MSTextField
-                    v-bind="props"
-                    v-model="searchValue"
-                    width="270"
-                    density="compact"
-                    variant="solo"
-                    hide-details
-                    single-line
-                    placeholder="Tìm tin nhắn"
-                    clear-icon="mdi-close"
-                    clearable
-                    @keydown.enter="handleSearchMessage"
-                  >
+                  <MSTextField v-bind="props" v-model="searchValue" width="270" density="compact" variant="solo"
+                    hide-details single-line placeholder="Tìm tin nhắn" clear-icon="mdi-close" clearable
+                    @keydown.enter="handleSearchMessage">
                   </MSTextField>
                 </template>
                 <v-list width="350" class="mt-1">
                   <v-list-item>
                     <v-list-subheader class="justify-center">
                       <span class="font-weight-bold pr-3">{{ searchNotification }}</span>
-                      <v-progress-circular
-                        v-if="isLoadingSearch"
-                        :size="20"
-                        :width="3"
-                        color="black"
-                        indeterminate
-                      ></v-progress-circular>
+                      <v-progress-circular v-if="isLoadingSearch" :size="20" :width="3" color="black"
+                        indeterminate></v-progress-circular>
                     </v-list-subheader>
                   </v-list-item>
-                  <v-list-item
-                    class="pa-2"
-                    v-for="messageSearch in messagesSearchList"
-                    :key="messageSearch._id"
-                    @click="handleScrollMessage(messageSearch)"
-                  >
+                  <v-list-item class="pa-2" v-for="messageSearch in messagesSearchList" :key="messageSearch._id"
+                    @click="handleScrollMessage(messageSearch)">
                     <template v-slot:prepend>
                       <MSAvatar height="40" width="40" :src="messageSearch.avatarUrl"></MSAvatar>
                     </template>
                     <v-list-item-title class="pl-2">{{
                       messageSearch.senderName
                     }}</v-list-item-title>
-                    <v-list-item-subtitle class="pl-2"
-                      ><span v-html="messageSearch.content"></span
-                    ></v-list-item-subtitle>
+                    <v-list-item-subtitle class="pl-2"><span v-html="messageSearch.content"></span></v-list-item-subtitle>
                     <template v-slot:append>
                       <div>
                         {{ convertToDayOfWeek(messageSearch.createdAt) }}
@@ -121,67 +96,60 @@
         </ol>
         <ol ref="messageList" v-else>
           <li class="messageList--loading" v-if="isLoadingMessage & !flagStopCallApi">
-            <v-progress-circular
-              :size="20"
-              :width="3"
-              color="brown"
-              indeterminate
-            ></v-progress-circular>
+            <v-progress-circular :size="20" :width="3" color="brown" indeterminate></v-progress-circular>
           </li>
-          <li
-            v-for="message in messages"
-            :key="message._id"
-            :class="{
-              'my-message': message.senderId === userId,
-              'other-message': message.senderId !== userId
-            }"
-            :data-id="message._id"
-            ref="messageElement"
-          >
+          <li v-for="message in messages" :key="message._id" :class="{
+            'my-message': message.senderId === userId,
+            'other-message': message.senderId !== userId
+          }" :data-id="message._id" ref="messageElement">
             <div class="message-wrapper">
               <div class="message-content">
-                {{ message.content }}
+                <div v-if="message.media" v-for="media in message.media" class="message-content__images">
+                  <v-img height="189" width="189" :src="media.url"></v-img>
+                </div>
+                <div v-if="message.content" class="message-content__text">
+                  {{ message.content }}
+                </div>
               </div>
             </div>
           </li>
         </ol>
       </div>
 
-      <div class="content__conversation--right"></div>
+      <div class=" content__conversation--right"></div>
     </div>
 
     <!-- input -->
     <div class="content__input">
-      <div class="content__input--wrapper">
-        <div class="content__input__content">
-          <MSTextField
-            v-model="messageInput"
-            height="50"
-            prepend-inner-icon="mdi-emoticon-outline"
-            density="compact"
-            variant="solo"
-            hide-details
-            single-line
-            placeholder="Nhập tin nhắn"
-          />
+      <!-- Hiển thị thumbnail -->
+      <div class="content__input__preview" ref="previewImages">
+      </div>
+      <!-- Input -->
+      <div class="content__input__content">
+        <MSTextField v-model="messageInput" height="50" prepend-inner-icon="mdi-emoticon-outline" density="compact"
+          variant="solo" hide-details single-line placeholder="Nhập tin nhắn" />
+      </div>
+      <!-- Actions -->
+      <div class="content__input__actions">
+        <div v-if="isTyping" @click="sendMessage" class="content__input__actions__item">
+          <v-icon size="20" icon="mdi-send-variant-outline" />
         </div>
-        <div class="content__input__actions">
-          <div v-if="isTyping" @click="sendMessage" class="content__input__actions__item">
-            <v-icon size="20" icon="mdi-send-variant-outline" />
-          </div>
-          <div v-if="!isTyping" class="content__input__actions__item">
-            <v-icon size="20" icon="mdi-microphone-outline" />
-          </div>
-          <div v-if="!isTyping" class="content__input__actions__item">
-            <v-icon size="20" icon="mdi-card-account-details-outline " />
-          </div>
-          <div v-if="!isTyping" class="content__input__actions__item">
-            <v-icon size="20" icon="mdi-camera-outline" />
-          </div>
-          <div v-if="!isTyping" class="content__input__actions__item">
-            <v-icon size="20" icon="mdi-dots-horizontal" />
-          </div>
+        <div v-if="!isTyping" class="content__input__actions__item">
+          <v-icon size="20" icon="mdi-microphone-outline" />
         </div>
+        <div v-if="!isTyping" class="content__input__actions__item">
+          <v-icon size="20" icon="mdi-card-account-details-outline " />
+        </div>
+        <div v-if="!isTyping" class="content__input__actions__item">
+          <v-icon size="20" icon="mdi-camera-outline" />
+          <!-- Dropzone -->
+          <form ref="myDropzone" action="/file-upload" class="dropzone" id="my-great-dropzone">
+          </form>
+        </div>
+        <div v-if="!isTyping" class="content__input__actions__item">
+          <v-icon size="20" icon="mdi-dots-horizontal" />
+        </div>
+
       </div>
     </div>
   </div>
@@ -195,6 +163,9 @@ import { getConservationByRoomIdAPI, searchMessageByRoomAPI } from '@/services/M
 import ChatService from '@/socket/ChatService.cjs'
 import { useUsersInfoStore } from '@/stores/UsersInfoStore'
 import { convertToDayOfWeek } from '@/helper/ConvertDate'
+import Dropzone from 'dropzone';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '@/firebase/index.js';
 
 export default {
   components: {
@@ -222,7 +193,10 @@ export default {
       currentSearchMessage: 0,
       totalSearchMessage: 0,
       messagesSearchList: [],
-      searchNotification: 'Nhấn "Enter" để tìm tin nhắn'
+      searchNotification: 'Nhấn "Enter" để tìm tin nhắn',
+      fileThumbnail: [],
+      filesToUpload: [],
+      dropzoneInstance: null,
     }
   },
 
@@ -253,21 +227,34 @@ export default {
     },
 
     //Hàm gửi tin nhắn
-    sendMessage() {
-      if (this.messageInput.length === 0) return
-      const content = this.messageInput
-      const lastMessage = {
-        roomId: this.roomId,
-        content: content
-      }
+    async sendMessage() {
+      if (this.messageInput.length === 0 && this.filesToUpload.length === 0) return;
+
+      // Khởi tạo đối tượng tin nhắn
       const message = {
-        ...lastMessage,
+        roomId: this.roomId,
         senderId: this.userId
+      };
+
+      // Xử lý media và content
+      if (this.filesToUpload.length > 0) {
+        const media = await this.getUrlOfMedia();
+        message.media = media;
       }
-      ChatService.sendMessage(message)
-      ChatService.setLastMessage(lastMessage)
-      this.messageInput = ''
+
+      if (this.messageInput.length > 0) {
+        // Nếu có nội dung tin nhắn
+        message.content = this.messageInput;
+      }
+
+      // Gửi tin nhắn
+      ChatService.sendMessage(message);
+
+      // Xóa nội dung tin nhắn và danh sách file
+      this.messageInput = '';
+      this.filesToUpload = [];
     },
+
 
     //Hàm xử lý tìm kiếm tin nhắn
     handleSearchMessage() {
@@ -362,18 +349,75 @@ export default {
       })
     },
 
-    convertToDayOfWeek(dateString) {
-      return convertToDayOfWeek(dateString)
+    async getUrlOfMedia() {
+      // Xử lý các tệp đã lưu
+      const uploadPromises = this.filesToUpload.map(async (file) => {
+        const roomId = localStorage.getItem('roomId');
+        const storageRef = ref(storage, `rooms/${roomId}/files/${file.name}`);
+
+        try {
+          await uploadBytes(storageRef, file);
+          const downloadURL = await getDownloadURL(storageRef);
+
+          return {
+            name: file.name,
+            url: downloadURL,
+            type: file.type
+          };
+        } catch (error) {
+          console.error("Error uploading file:", file.name, error);
+        }
+      });
+
+      try {
+        const mediaArray = await Promise.all(uploadPromises);
+        return mediaArray;
+      } catch (error) {
+        console.error("Error uploading files:", error);
+      }
     }
   },
 
   mounted() {
+    var that = this
     this.userId = localStorage.getItem('userId')
 
     // Set up socket listener for incoming messages
     ChatService.onMessageReceived((message) => {
       this.messages.unshift(message)
     })
+
+    //Setup dropzone
+    this.myDropzone = new Dropzone(this.$refs.myDropzone, {
+      paramName: "file",
+      maxFilesize: 2, // Kích thước tối đa của file (MB)
+      autoProcessQueue: false, // Ngăn Dropzone tự động gửi tệp
+      previewsContainer: this.$refs.previewImages,
+      init: function () {
+        this.on("addedfile", function (file) {
+          if (!this.filesToUpload) {
+            this.filesToUpload = [];
+          }
+          that.filesToUpload.push(file);
+          that.isTyping = true
+        }.bind(this));
+
+        this.on("thumbnail", function (file, dataUrl) {
+          // Logic tùy chỉnh khi ảnh thu nhỏ được tạo
+          let removeButton = Dropzone.createElement('<i class="mdi mdi-close-circle dz-remove-btn"></i>');
+          file.previewElement.appendChild(removeButton);
+
+          removeButton.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.removeFile(file);
+            // Xóa tệp khỏi mảng khi bị xóa
+            this.filesToUpload = this.filesToUpload.filter(f => f !== file);
+          }.bind(this));
+        });
+      }
+    });
+
   },
 
   computed: {
@@ -389,6 +433,7 @@ export default {
       //reset when room change
       this.room = newVal
       this.roomId = newVal._id
+      localStorage.setItem('roomId', this.roomId)
       this.messages = []
       this.offset = 0
       this.skeletonLoadingConversation = true
@@ -409,6 +454,10 @@ export default {
 
       // Thiết lập sự kiện cuộn
       this.setupScrollTopListMessageListener()
+
+      if (this.dropzoneInstance) {
+        this.dropzoneInstance.destroy();
+      }
     },
 
     //Theo dõi input nhắn tin
@@ -422,7 +471,7 @@ export default {
         this.searchNotification = 'Nhấn "Enter" để tìm tin nhắn'
         this.messagesSearchList = []
       }
-    }
+    },
   }
 }
 </script>
@@ -488,6 +537,7 @@ export default {
 }
 
 .content__input {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -513,6 +563,7 @@ export default {
   }
 
   .content__input__actions__item {
+    position: relative;
     cursor: pointer;
     background-color: var(--background-icon-color);
     border-radius: 50%;
@@ -523,10 +574,53 @@ export default {
     width: 50px;
     margin: 0 4px;
   }
+
+  .content__input__preview {
+    display: flex;
+    position: absolute;
+    bottom: 70px;
+    max-width: 60%;
+    overflow-x: auto;
+    background-color: var(--background-icon-color);
+    border-radius: 16px;
+
+    .dz-image-preview {
+      position: relative;
+      padding: 8px 8px;
+
+      img {
+        border-radius: 8px;
+      }
+    }
+
+    .dz-success-mark {
+      display: none;
+    }
+
+    .dz-error-mark {
+      display: none;
+    }
+
+    .dz-details {
+      display: none;
+    }
+
+    .dz-remove-btn {
+      position: absolute;
+      top: -4px;
+      right: 2px;
+      cursor: pointer;
+      font-size: 20px;
+    }
+  }
+
+  .content__input__preview::-webkit-scrollbar {
+    height: 12px;
+  }
 }
 
+
 .content__conversation {
-  display: flex;
   height: calc(100vh - 60px - 86px);
   width: 100%;
   justify-content: center;
@@ -619,6 +713,20 @@ export default {
     overflow: hidden;
     align-items: stretch;
     min-width: 30px;
+  }
+}
+
+.message-content__images {
+  padding: 0 4px;
+}
+
+.dropzone {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+
+  .dz-button {
+    display: none;
   }
 }
 </style>
