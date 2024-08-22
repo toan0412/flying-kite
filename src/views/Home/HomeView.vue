@@ -1,41 +1,68 @@
 
 <template>
   <div class="content-wrapper">
+    <!-- Header  -->
     <div class="content__header">
-      <v-skeleton-loader v-if="skeletonLoadingRoomInfo" width="270" type="list-item-avatar"></v-skeleton-loader>
+      <v-skeleton-loader
+        v-if="skeletonLoadingRoomInfo"
+        width="270"
+        type="list-item-avatar"
+      ></v-skeleton-loader>
       <div v-else class="content__header__info">
         <MSAvatar width="40" height="40" :alt="room.fullname" :src="room.avatarUrl"></MSAvatar>
         <p class="content__header__info__name">{{ room.displayName || '' }}</p>
       </div>
-      <!-- header -->
+      <!-- Header actions -->
       <div class="content__header__actions">
+        <!-- Tìm kiếm tin nhắn -->
         <div class="content__header__actions__searchfield">
           <v-expand-x-transition>
             <div class="content__header__actions__searchfield__wrapper" v-if="isSearchField">
               <v-menu transition="scroll-y-transition">
                 <template v-slot:activator="{ props }">
-                  <MSTextField v-bind="props" v-model="searchValue" width="270" density="compact" variant="solo"
-                    hide-details single-line placeholder="Tìm tin nhắn" clear-icon="mdi-close" clearable
-                    @keydown.enter="handleSearchMessage">
+                  <MSTextField
+                    v-bind="props"
+                    v-model="searchValue"
+                    width="270"
+                    density="compact"
+                    variant="solo"
+                    hide-details
+                    single-line
+                    placeholder="Tìm tin nhắn"
+                    clear-icon="mdi-close"
+                    clearable
+                    @keydown.enter="handleSearchMessage"
+                  >
                   </MSTextField>
                 </template>
                 <v-list width="350" class="mt-1">
                   <v-list-item>
                     <v-list-subheader class="justify-center">
                       <span class="font-weight-bold pr-3">{{ searchNotification }}</span>
-                      <v-progress-circular v-if="isLoadingSearch" :size="20" :width="3" color="black"
-                        indeterminate></v-progress-circular>
+                      <v-progress-circular
+                        v-if="isLoadingSearch"
+                        :size="20"
+                        :width="3"
+                        color="black"
+                        indeterminate
+                      ></v-progress-circular>
                     </v-list-subheader>
                   </v-list-item>
-                  <v-list-item class="pa-2" v-for="messageSearch in messagesSearchList" :key="messageSearch._id"
-                    @click="handleScrollMessage(messageSearch)">
+                  <v-list-item
+                    class="pa-2"
+                    v-for="messageSearch in messagesSearchList"
+                    :key="messageSearch._id"
+                    @click="handleScrollMessage(messageSearch)"
+                  >
                     <template v-slot:prepend>
                       <MSAvatar height="40" width="40" :src="messageSearch.avatarUrl"></MSAvatar>
                     </template>
                     <v-list-item-title class="pl-2">{{
                       messageSearch.senderName
                     }}</v-list-item-title>
-                    <v-list-item-subtitle class="pl-2"><span v-html="messageSearch.content"></span></v-list-item-subtitle>
+                    <v-list-item-subtitle class="pl-2"
+                      ><span v-html="messageSearch.content"></span
+                    ></v-list-item-subtitle>
                     <template v-slot:append>
                       <div>
                         {{ convertToDayOfWeek(messageSearch.createdAt) }}
@@ -62,7 +89,7 @@
       </div>
     </div>
 
-    <!-- conversation -->
+    <!-- Conversation -->
     <div class="content__conversation">
       <div class="content__conversation--left"></div>
       <div class="content__conversation--main">
@@ -96,17 +123,59 @@
         </ol>
         <ol ref="messageList" v-else>
           <li class="messageList--loading" v-if="isLoadingMessage & !flagStopCallApi">
-            <v-progress-circular :size="20" :width="3" color="brown" indeterminate></v-progress-circular>
+            <v-progress-circular
+              :size="20"
+              :width="3"
+              color="brown"
+              indeterminate
+            ></v-progress-circular>
           </li>
-          <li v-for="message in messages" :key="message._id" :class="{
-            'my-message': message.senderId === userId,
-            'other-message': message.senderId !== userId
-          }" :data-id="message._id" ref="messageElement">
+          <!-- Message -->
+          <li
+            v-for="message in messages"
+            :key="message._id"
+            :class="{
+              'my-message': message.senderId === userId,
+              'other-message': message.senderId !== userId
+            }"
+            :data-id="message._id"
+            ref="messageElement"
+          >
             <div class="message-wrapper">
+              <div v-if="message.media" class="message-content__images">
+                <v-row dense>
+                  <v-col
+                    v-for="(media, index) in message.media"
+                    :key="index"
+                    :cols="12 / getColumnCount(message.media.length)"
+                  >
+                    <v-img
+                      aspect-ratio="1"
+                      cover
+                      height="140"
+                      width="140"
+                      :src="media.url"
+                      @click="openImageDialog(media.url)"
+                      class="cursor-pointer"
+                    ></v-img>
+
+                    <!-- Dialog để hiển thị ảnh lớn -->
+                    <v-dialog v-model="imageDialog" max-width="600px">
+                      <v-card>
+                        <v-card-title class="d-flex justify-space-between align-center">
+                          <v-btn
+                            icon="mdi-close"
+                            variant="text"
+                            @click="imageDialog = false"
+                          ></v-btn>
+                        </v-card-title>
+                        <v-img :src="imageSelected" contain height="100%"></v-img>
+                      </v-card>
+                    </v-dialog>
+                  </v-col>
+                </v-row>
+              </div>
               <div class="message-content">
-                <div v-if="message.media" v-for="media in message.media" class="message-content__images">
-                  <v-img height="189" width="189" :src="media.url"></v-img>
-                </div>
                 <div v-if="message.content" class="message-content__text">
                   {{ message.content }}
                 </div>
@@ -116,23 +185,37 @@
         </ol>
       </div>
 
-      <div class=" content__conversation--right"></div>
+      <div class="content__conversation--right"></div>
     </div>
 
-    <!-- input -->
+    <!-- Footer Input -->
     <div class="content__input">
       <!-- Hiển thị thumbnail -->
-      <div class="content__input__preview" ref="previewImages">
-      </div>
+      <div class="content__input__preview" ref="previewImages"></div>
       <!-- Input -->
       <div class="content__input__content">
-        <MSTextField v-model="messageInput" height="50" prepend-inner-icon="mdi-emoticon-outline" density="compact"
-          variant="solo" hide-details single-line placeholder="Nhập tin nhắn" />
+        <MSTextField
+          v-model="messageInput"
+          height="50"
+          prepend-inner-icon="mdi-emoticon-outline"
+          density="compact"
+          variant="solo"
+          hide-details
+          single-line
+          placeholder="Nhập tin nhắn"
+        />
       </div>
       <!-- Actions -->
       <div class="content__input__actions">
-        <div v-if="isTyping" @click="sendMessage" class="content__input__actions__item">
-          <v-icon size="20" icon="mdi-send-variant-outline" />
+        <div v-if="isTyping" class="content__input__actions__item">
+          <v-progress-circular
+            v-if="isSendingMessage"
+            :size="20"
+            :width="3"
+            color="black"
+            indeterminate
+          ></v-progress-circular>
+          <v-icon v-else size="20" @click="sendMessage" icon="mdi-send-variant-outline" />
         </div>
         <div v-if="!isTyping" class="content__input__actions__item">
           <v-icon size="20" icon="mdi-microphone-outline" />
@@ -140,16 +223,14 @@
         <div v-if="!isTyping" class="content__input__actions__item">
           <v-icon size="20" icon="mdi-card-account-details-outline " />
         </div>
-        <div v-if="!isTyping" class="content__input__actions__item">
+        <div class="content__input__actions__item">
           <v-icon size="20" icon="mdi-camera-outline" />
           <!-- Dropzone -->
-          <form ref="myDropzone" action="/file-upload" class="dropzone" id="my-great-dropzone">
-          </form>
+          <form ref="myDropzone" class="dropzone"></form>
         </div>
         <div v-if="!isTyping" class="content__input__actions__item">
           <v-icon size="20" icon="mdi-dots-horizontal" />
         </div>
-
       </div>
     </div>
   </div>
@@ -162,10 +243,9 @@ import { useRoomInfoStore } from '@/stores/RoomInfoStore'
 import { getConservationByRoomIdAPI, searchMessageByRoomAPI } from '@/services/MessageService'
 import ChatService from '@/socket/ChatService.cjs'
 import { useUsersInfoStore } from '@/stores/UsersInfoStore'
-import { convertToDayOfWeek } from '@/helper/ConvertDate'
-import Dropzone from 'dropzone';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '@/firebase/index.js';
+import Dropzone from 'dropzone'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { storage } from '@/firebase/index.js'
 
 export default {
   components: {
@@ -179,6 +259,7 @@ export default {
       messages: [],
       messageInput: '',
       isTyping: false,
+      isSendingMessage: false,
       userId: '',
       roomId: '',
       skeletonLoadingRoomInfo: true,
@@ -196,7 +277,9 @@ export default {
       searchNotification: 'Nhấn "Enter" để tìm tin nhắn',
       fileThumbnail: [],
       filesToUpload: [],
-      dropzoneInstance: null,
+      imageDialog: false,
+      imageSelected: '',
+      myDropzone: null
     }
   },
 
@@ -228,33 +311,40 @@ export default {
 
     //Hàm gửi tin nhắn
     async sendMessage() {
-      if (this.messageInput.length === 0 && this.filesToUpload.length === 0) return;
+      this.isSendingMessage = true
+      if (this.messageInput.length === 0 && this.filesToUpload.length === 0) return
 
-      // Khởi tạo đối tượng tin nhắn
       const message = {
         roomId: this.roomId,
         senderId: this.userId
-      };
+      }
 
-      // Xử lý media và content
       if (this.filesToUpload.length > 0) {
-        const media = await this.getUrlOfMedia();
-        message.media = media;
+        message.media = await this.getUrlOfMedia()
       }
 
       if (this.messageInput.length > 0) {
-        // Nếu có nội dung tin nhắn
-        message.content = this.messageInput;
+        message.content = this.messageInput
       }
 
-      // Gửi tin nhắn
-      ChatService.sendMessage(message);
+      //Nếu có cả content và media -> Chia thành gửi 2 tin nhắn
+      if (message.content && message.media) {
+        const { media, ...messageNoContent } = message
+        const { content, ...messageNoMedia } = message
+        ChatService.sendMessage(messageNoContent)
+        ChatService.sendMessage(messageNoMedia)
+      } else {
+        ChatService.sendMessage(message)
+      }
+      ChatService.setLastMessage(message)
+
+      this.isSendingMessage = false
 
       // Xóa nội dung tin nhắn và danh sách file
-      this.messageInput = '';
-      this.filesToUpload = [];
+      this.messageInput = ''
+      this.filesToUpload = []
+      this.myDropzone.removeAllFiles(true)
     },
-
 
     //Hàm xử lý tìm kiếm tin nhắn
     handleSearchMessage() {
@@ -352,72 +442,99 @@ export default {
     async getUrlOfMedia() {
       // Xử lý các tệp đã lưu
       const uploadPromises = this.filesToUpload.map(async (file) => {
-        const roomId = localStorage.getItem('roomId');
-        const storageRef = ref(storage, `rooms/${roomId}/files/${file.name}`);
+        const roomId = localStorage.getItem('roomId')
+        const storageRef = ref(storage, `rooms/${roomId}/files/${file.name}`)
 
         try {
-          await uploadBytes(storageRef, file);
-          const downloadURL = await getDownloadURL(storageRef);
+          await uploadBytes(storageRef, file)
+          const downloadURL = await getDownloadURL(storageRef)
 
           return {
             name: file.name,
             url: downloadURL,
             type: file.type
-          };
+          }
         } catch (error) {
-          console.error("Error uploading file:", file.name, error);
+          console.error('Error uploading file:', file.name, error)
         }
-      });
+      })
 
       try {
-        const mediaArray = await Promise.all(uploadPromises);
-        return mediaArray;
+        const mediaArray = await Promise.all(uploadPromises)
+        return mediaArray
       } catch (error) {
-        console.error("Error uploading files:", error);
+        console.error('Error uploading files:', error)
       }
+    },
+
+    getColumnCount(length) {
+      if (length === 1) return 1
+      if (length === 2) return 2
+      if (length === 4) return 4
+      return 3
+    },
+
+    openImageDialog(imageUrl) {
+      this.imageSelected = imageUrl
+      this.imageDialog = true
+    },
+
+    setupDropzone() {
+      var that = this
+      // Nếu Dropzone đã được khởi tạo, hủy bỏ nó
+      if (this.myDropzone) {
+        this.myDropzone.destroy()
+      }
+
+      // Khởi tạo Dropzone mới
+      this.myDropzone = new Dropzone(this.$refs.myDropzone, {
+        url: '/noNeed',
+        paramName: 'file',
+        maxFilesize: 2, // Kích thước tối đa của file (MB)
+        autoProcessQueue: false, // Ngăn Dropzone tự động gửi tệp
+        previewsContainer: this.$refs.previewImages,
+        init: function () {
+          this.on(
+            'addedfile',
+            function (file) {
+              that.filesToUpload.push(file)
+              that.isTyping = true
+            }.bind(this)
+          )
+
+          this.on('thumbnail', function (file) {
+            // Logic tùy chỉnh khi ảnh thu nhỏ được tạo
+            let removeButton = Dropzone.createElement(
+              '<i class="mdi mdi-close-circle dz-remove-btn"></i>'
+            )
+            file.previewElement.appendChild(removeButton)
+
+            removeButton.addEventListener(
+              'click',
+              function (e) {
+                e.preventDefault()
+                e.stopPropagation()
+                this.removeFile(file)
+                // Xóa tệp khỏi mảng khi bị xóa
+                that.filesToUpload = that.filesToUpload.filter((f) => f !== file)
+              }.bind(this)
+            )
+          })
+        }
+      })
     }
   },
 
   mounted() {
-    var that = this
     this.userId = localStorage.getItem('userId')
+
+    //Setup dropzone
+    this.setupDropzone()
 
     // Set up socket listener for incoming messages
     ChatService.onMessageReceived((message) => {
       this.messages.unshift(message)
     })
-
-    //Setup dropzone
-    this.myDropzone = new Dropzone(this.$refs.myDropzone, {
-      paramName: "file",
-      maxFilesize: 2, // Kích thước tối đa của file (MB)
-      autoProcessQueue: false, // Ngăn Dropzone tự động gửi tệp
-      previewsContainer: this.$refs.previewImages,
-      init: function () {
-        this.on("addedfile", function (file) {
-          if (!this.filesToUpload) {
-            this.filesToUpload = [];
-          }
-          that.filesToUpload.push(file);
-          that.isTyping = true
-        }.bind(this));
-
-        this.on("thumbnail", function (file, dataUrl) {
-          // Logic tùy chỉnh khi ảnh thu nhỏ được tạo
-          let removeButton = Dropzone.createElement('<i class="mdi mdi-close-circle dz-remove-btn"></i>');
-          file.previewElement.appendChild(removeButton);
-
-          removeButton.addEventListener('click', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            this.removeFile(file);
-            // Xóa tệp khỏi mảng khi bị xóa
-            this.filesToUpload = this.filesToUpload.filter(f => f !== file);
-          }.bind(this));
-        });
-      }
-    });
-
   },
 
   computed: {
@@ -454,10 +571,6 @@ export default {
 
       // Thiết lập sự kiện cuộn
       this.setupScrollTopListMessageListener()
-
-      if (this.dropzoneInstance) {
-        this.dropzoneInstance.destroy();
-      }
     },
 
     //Theo dõi input nhắn tin
@@ -472,6 +585,11 @@ export default {
         this.messagesSearchList = []
       }
     },
+
+    //Theo dõi input ảnh
+    filesToUpload(newVal) {
+      this.isTyping = newVal.length > 0
+    }
   }
 }
 </script>
@@ -619,7 +737,6 @@ export default {
   }
 }
 
-
 .content__conversation {
   height: calc(100vh - 60px - 86px);
   width: 100%;
@@ -670,8 +787,7 @@ export default {
       padding: 4px 0;
       display: flex;
       justify-content: flex-end;
-
-      .message-wrapper {
+      .message-content__text {
         background-color: var(--background-message-color);
       }
     }
@@ -680,8 +796,7 @@ export default {
       padding: 4px 0;
       display: flex;
       justify-content: start;
-
-      .message-wrapper {
+      .message-content__text {
         background-color: #f1f1f1;
       }
     }
@@ -696,6 +811,17 @@ export default {
       font-size: 14px;
       overflow-wrap: break-word;
       color: var(--text-color);
+    }
+
+    .message-content__text {
+      padding: 4px 8px;
+      border-radius: 12px;
+    }
+
+    .message-content__images {
+      .v-img__img {
+        border-radius: 8px;
+      }
     }
   }
 
