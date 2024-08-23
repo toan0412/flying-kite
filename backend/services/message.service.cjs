@@ -1,5 +1,7 @@
 const MessageModel = require("../models/message.model.cjs");
 const RoomService = require("../services/room.service.cjs");
+const { BadRequestError, NotFoundError } = require('../core/error.response.cjs');
+
 
 class MessageService {
 
@@ -18,6 +20,22 @@ class MessageService {
         });
 
         return newMessage;
+    }
+
+    deleteMessage = async (messageId) => {
+        //Check xem tin nhắn có tồn tại không
+        const existMessage = await MessageModel.findById(messageId)
+
+        if (!existMessage) throw new NotFoundError('Không tìm thấy tin nhắn')
+
+        if (existMessage.media) {
+            existMessage.media = []
+        }
+
+        existMessage.content = "Tin nhắn đã bị xóa"
+
+        existMessage.save()
+        return existMessage
     }
 
     //Lấy tin nhắn theo phòng

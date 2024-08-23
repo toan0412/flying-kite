@@ -85,6 +85,29 @@ function setupSocket(server) {
       }
     });
 
+    socket.on('deleteMessage', async (message, ack) => {
+      try {
+        const { roomId, messageId } = message;
+
+        // Xóa tin nhắn bằng dịch vụ
+        const deletedMessage = await MessageService.deleteMessage(messageId);
+
+        console.log('Deleted message:', deletedMessage);
+
+        // Phát lại sự kiện xóa tin nhắn đến tất cả các client trong phòng
+        io.to(roomId).emit('receiveDeletedMessage', deletedMessage);
+
+        // Trả về acknowledgement thành công cho client
+        if (ack) ack({ success: true, message: 'Message deleted successfully!' });
+      } catch (error) {
+        console.error('Error handling message:', error);
+
+        // Trả về acknowledgement thất bại cho client
+        if (ack) ack({ success: false, message: error.message });
+      }
+    });
+
+
     // Lắng nghe sự kiện 'disconnect'
     socket.on('disconnect', () => {
       console.log('A user disconnected:', socket.id);

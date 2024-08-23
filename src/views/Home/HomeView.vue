@@ -3,11 +3,7 @@
   <div class="content-wrapper">
     <!-- Header  -->
     <div class="content__header">
-      <v-skeleton-loader
-        v-if="skeletonLoadingRoomInfo"
-        width="270"
-        type="list-item-avatar"
-      ></v-skeleton-loader>
+      <v-skeleton-loader v-if="skeletonLoadingRoomInfo" width="270" type="list-item-avatar"></v-skeleton-loader>
       <div v-else class="content__header__info">
         <MSAvatar width="40" height="40" :alt="room.fullname" :src="room.avatarUrl"></MSAvatar>
         <p class="content__header__info__name">{{ room.displayName || '' }}</p>
@@ -20,49 +16,28 @@
             <div class="content__header__actions__searchfield__wrapper" v-if="isSearchField">
               <v-menu transition="scroll-y-transition">
                 <template v-slot:activator="{ props }">
-                  <MSTextField
-                    v-bind="props"
-                    v-model="searchValue"
-                    width="270"
-                    density="compact"
-                    variant="solo"
-                    hide-details
-                    single-line
-                    placeholder="Tìm tin nhắn"
-                    clear-icon="mdi-close"
-                    clearable
-                    @keydown.enter="handleSearchMessage"
-                  >
+                  <MSTextField v-bind="props" v-model="searchValue" width="270" density="compact" variant="solo"
+                    hide-details single-line placeholder="Tìm tin nhắn" clear-icon="mdi-close" clearable
+                    @keydown.enter="handleSearchMessage">
                   </MSTextField>
                 </template>
                 <v-list width="350" class="mt-1">
                   <v-list-item>
                     <v-list-subheader class="justify-center">
                       <span class="font-weight-bold pr-3">{{ searchNotification }}</span>
-                      <v-progress-circular
-                        v-if="isLoadingSearch"
-                        :size="20"
-                        :width="3"
-                        color="black"
-                        indeterminate
-                      ></v-progress-circular>
+                      <v-progress-circular v-if="isLoadingSearch" :size="20" :width="3" color="black"
+                        indeterminate></v-progress-circular>
                     </v-list-subheader>
                   </v-list-item>
-                  <v-list-item
-                    class="pa-2"
-                    v-for="messageSearch in messagesSearchList"
-                    :key="messageSearch._id"
-                    @click="handleScrollMessage(messageSearch)"
-                  >
+                  <v-list-item class="pa-2" v-for="messageSearch in messagesSearchList" :key="messageSearch._id"
+                    @click="handleScrollMessage(messageSearch)">
                     <template v-slot:prepend>
                       <MSAvatar height="40" width="40" :src="messageSearch.avatarUrl"></MSAvatar>
                     </template>
                     <v-list-item-title class="pl-2">{{
                       messageSearch.senderName
                     }}</v-list-item-title>
-                    <v-list-item-subtitle class="pl-2"
-                      ><span v-html="messageSearch.content"></span
-                    ></v-list-item-subtitle>
+                    <v-list-item-subtitle class="pl-2"><span v-html="messageSearch.content"></span></v-list-item-subtitle>
                     <template v-slot:append>
                       <div>
                         {{ convertToDayOfWeek(messageSearch.createdAt) }}
@@ -95,79 +70,35 @@
       <div class="content__conversation--main">
         <!-- skeleton loading -->
         <ol v-if="skeletonLoadingConversation">
-          <li class="my-message">
-            <v-skeleton-loader width="400" type="paragraph"></v-skeleton-loader>
-          </li>
-          <li class="other-message">
-            <v-skeleton-loader width="400" type="paragraph"></v-skeleton-loader>
-          </li>
-          <li class="my-message">
-            <v-skeleton-loader width="400" type="paragraph"></v-skeleton-loader>
-          </li>
-          <li class="other-message">
-            <v-skeleton-loader width="400" type="paragraph"></v-skeleton-loader>
-          </li>
-          <li class="my-message">
-            <v-skeleton-loader width="400" type="paragraph"></v-skeleton-loader>
-          </li>
-          <li class="other-message">
-            <v-skeleton-loader width="400" type="paragraph"></v-skeleton-loader>
-          </li>
-          <li class="my-message">
-            <v-skeleton-loader width="400" type="paragraph"></v-skeleton-loader>
-          </li>
-          <li class="other-message">
-            <v-skeleton-loader width="400" type="paragraph"></v-skeleton-loader>
-          </li>
-          <!-- Add more skeleton loaders as needed -->
+          <ConversationSkeletonLoading />
         </ol>
         <ol ref="messageList" v-else>
           <li class="messageList--loading" v-if="isLoadingMessage & !flagStopCallApi">
-            <v-progress-circular
-              :size="20"
-              :width="3"
-              color="brown"
-              indeterminate
-            ></v-progress-circular>
+            <v-progress-circular :size="20" :width="3" color="brown" indeterminate></v-progress-circular>
           </li>
           <!-- Message -->
-          <li
-            v-for="message in messages"
-            :key="message._id"
-            :class="{
-              'my-message': message.senderId === userId,
-              'other-message': message.senderId !== userId
-            }"
-            :data-id="message._id"
-            ref="messageElement"
-          >
+          <li v-for="message in messages" :key="message._id" :class="{
+            'my-message': message.senderId === userId,
+            'other-message': message.senderId !== userId
+          }" :data-id="message._id" ref="messageElement">
+            <div class="message-actions">
+              <v-icon color="grey-darken-1
+" size="18" icon="mdi-trash-can-outline" @click="showDeleteMessageDialog(message)">
+              </v-icon>
+            </div>
             <div class="message-wrapper">
               <div v-if="message.media" class="message-content__images">
                 <v-row dense>
-                  <v-col
-                    v-for="(media, index) in message.media"
-                    :key="index"
-                    :cols="12 / getColumnCount(message.media.length)"
-                  >
-                    <v-img
-                      aspect-ratio="1"
-                      cover
-                      height="140"
-                      width="140"
-                      :src="media.url"
-                      @click="openImageDialog(media.url)"
-                      class="cursor-pointer"
-                    ></v-img>
+                  <v-col v-for="(media, index) in message.media" :key="index"
+                    :cols="12 / getColumnCount(message.media.length)">
+                    <v-img aspect-ratio="1" cover height="140" width="140" :src="media.url"
+                      @click="openImageDialog(media.url)" class="cursor-pointer"></v-img>
 
                     <!-- Dialog để hiển thị ảnh lớn -->
                     <v-dialog v-model="imageDialog" max-width="600px">
                       <v-card>
                         <v-card-title class="d-flex justify-space-between align-center">
-                          <v-btn
-                            icon="mdi-close"
-                            variant="text"
-                            @click="imageDialog = false"
-                          ></v-btn>
+                          <v-btn icon="mdi-close" variant="text" @click="imageDialog = false"></v-btn>
                         </v-card-title>
                         <v-img :src="imageSelected" contain height="100%"></v-img>
                       </v-card>
@@ -194,27 +125,14 @@
       <div class="content__input__preview" ref="previewImages"></div>
       <!-- Input -->
       <div class="content__input__content">
-        <MSTextField
-          v-model="messageInput"
-          height="50"
-          prepend-inner-icon="mdi-emoticon-outline"
-          density="compact"
-          variant="solo"
-          hide-details
-          single-line
-          placeholder="Nhập tin nhắn"
-        />
+        <MSTextField v-model="messageInput" height="50" prepend-inner-icon="mdi-emoticon-outline" density="compact"
+          variant="solo" hide-details single-line placeholder="Nhập tin nhắn" />
       </div>
       <!-- Actions -->
       <div class="content__input__actions">
         <div v-if="isTyping" class="content__input__actions__item">
-          <v-progress-circular
-            v-if="isSendingMessage"
-            :size="20"
-            :width="3"
-            color="black"
-            indeterminate
-          ></v-progress-circular>
+          <v-progress-circular v-if="isSendingMessage" :size="20" :width="3" color="black"
+            indeterminate></v-progress-circular>
           <v-icon v-else size="20" @click="sendMessage" icon="mdi-send-variant-outline" />
         </div>
         <div v-if="!isTyping" class="content__input__actions__item">
@@ -234,11 +152,14 @@
       </div>
     </div>
   </div>
+  <ConfirmDialog ref="deleteMessageDialog" title="Xóa tin nhắn" message="Bạn có chắc chắn muốn xoá tin nhắn này không?"
+    @response="handleResponseDeleteMessageDialog" />
 </template>
 
 <script>
-import MSAvatar from '@/components/avatar/MSAvatar.vue'
-import MSTextField from '@/components/textfield/MSTextField.vue'
+import MSAvatar from '@/components/CustomAvatar/MSAvatar.vue'
+import MSTextField from '@/components/CustomTextField/MSTextField.vue'
+import ConversationSkeletonLoading from '@/components/SkeletonLoading/ConversationSkeletonLoading.vue'
 import { useRoomInfoStore } from '@/stores/RoomInfoStore'
 import { getConservationByRoomIdAPI, searchMessageByRoomAPI } from '@/services/MessageService'
 import ChatService from '@/socket/ChatService.cjs'
@@ -246,40 +167,42 @@ import { useUsersInfoStore } from '@/stores/UsersInfoStore'
 import Dropzone from 'dropzone'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { storage } from '@/firebase/index.js'
+import ConfirmDialog from '@/components/Dialog/ConfirmDialog.vue'
+import { convertToDayOfWeek } from '@/helper/ConvertDate'
 
 export default {
   components: {
     MSTextField,
-    MSAvatar
+    MSAvatar,
+    ConversationSkeletonLoading,
+    ConfirmDialog
   },
 
   data() {
     return {
       room: {},
-      messages: [],
-      messageInput: '',
-      isTyping: false,
-      isSendingMessage: false,
       userId: '',
       roomId: '',
-      skeletonLoadingRoomInfo: true,
-      skeletonLoadingConversation: true,
+      messageInput: '',
+      searchValue: '',
+      imageSelected: '',
+      searchNotification: 'Nhấn "Enter" để tìm tin nhắn',
+      messages: [],
+      isTyping: false,
+      isSendingMessage: false,
       isLoadingMessage: true,
       isLoadingSearch: false,
+      isSearchField: false,
+      flagStopCallApi: false,
+      imageDialog: false,
+      skeletonLoadingConversation: true,
+      skeletonLoadingRoomInfo: true,
       offset: 0,
       limit: 30,
-      isSearchField: false,
-      searchValue: '',
-      flagStopCallApi: false,
-      currentSearchMessage: 0,
-      totalSearchMessage: 0,
       messagesSearchList: [],
-      searchNotification: 'Nhấn "Enter" để tìm tin nhắn',
-      fileThumbnail: [],
       filesToUpload: [],
-      imageDialog: false,
-      imageSelected: '',
-      myDropzone: null
+      myDropzone: null,
+      selectedMessage: {}
     }
   },
 
@@ -336,6 +259,7 @@ export default {
       } else {
         ChatService.sendMessage(message)
       }
+
       ChatService.setLastMessage(message)
 
       this.isSendingMessage = false
@@ -407,7 +331,6 @@ export default {
         this.handleScrollMessage(messageSelected)
         return
       }
-
       messageSelectedElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
       messageSelectedElement.classList.add('highlight-text')
     },
@@ -433,12 +356,15 @@ export default {
 
     // Xóa lớp 'highlight-text' khỏi tất cả các thẻ <li>
     removeHighLightTextClass() {
-      const allItems = this.$el.querySelectorAll('li.highlight-text')
+      const allItems = this.$refs.messageList.querySelectorAll('li .highlight-text');
+
+      if (!allItems) return
       allItems.forEach((item) => {
         item.classList.remove('highlight-text')
       })
     },
 
+    //Lấy URL của ảnh khi gửi tin nhắn
     async getUrlOfMedia() {
       // Xử lý các tệp đã lưu
       const uploadPromises = this.filesToUpload.map(async (file) => {
@@ -522,7 +448,32 @@ export default {
           })
         }
       })
+    },
+
+    //Hàm xóa tin nhắnh
+    handleDeleteMessage() {
+      const message = {
+        roomId: this.roomId,
+        messageId: this.selectedMessage._id,
+      }
+      ChatService.deleteMessage(message)
+    },
+
+    showDeleteMessageDialog(message) {
+      this.selectedMessage = message
+      this.$refs.deleteMessageDialog.openDialog()
+    },
+
+    handleResponseDeleteMessageDialog(answer) {
+      if (!answer) return
+      this.handleDeleteMessage()
+    },
+
+    //Hàm convert date
+    convertToDayOfWeek(dateString) {
+      return convertToDayOfWeek(dateString)
     }
+
   },
 
   mounted() {
@@ -535,6 +486,16 @@ export default {
     ChatService.onMessageReceived((message) => {
       this.messages.unshift(message)
     })
+
+    ChatService.onDeletedMessageReceived((deletedMessage) => {
+      this.messages = this.messages.map((message) => {
+        if (message._id === deletedMessage._id) {
+          return deletedMessage;
+        }
+        return message;
+      });
+    });
+
   },
 
   computed: {
@@ -589,7 +550,8 @@ export default {
     //Theo dõi input ảnh
     filesToUpload(newVal) {
       this.isTyping = newVal.length > 0
-    }
+    },
+
   }
 }
 </script>
@@ -765,10 +727,11 @@ export default {
       flex-direction: column-reverse;
       padding: 0 8px;
       height: 100%;
+
     }
 
     .highlight-text {
-      .message-content {
+      .message-content__text {
         background: var(--highlight-text-color);
       }
     }
@@ -784,38 +747,52 @@ export default {
     }
 
     .my-message {
-      padding: 4px 0;
       display: flex;
       justify-content: flex-end;
-      .message-content__text {
+
+      .message-content {
         background-color: var(--background-message-color);
+      }
+
+
+      &:hover {
+        .message-actions {
+          display: flex;
+          align-items: center;
+        }
       }
     }
 
+    .message-actions {
+      display: none;
+    }
+
     .other-message {
-      padding: 4px 0;
       display: flex;
       justify-content: start;
-      .message-content__text {
+
+      .message-content {
         background-color: #f1f1f1;
       }
     }
 
+    .message-content__text {
+      margin: 4px 12px;
+    }
+
     .message-wrapper {
-      padding: 4px 12px;
+      display: flex;
+      flex-direction: column;
       border-radius: 8px;
       max-width: 70%;
     }
 
     .message-content {
+      margin: 4px 8px;
+      border-radius: 12px;
       font-size: 14px;
       overflow-wrap: break-word;
       color: var(--text-color);
-    }
-
-    .message-content__text {
-      padding: 4px 8px;
-      border-radius: 12px;
     }
 
     .message-content__images {

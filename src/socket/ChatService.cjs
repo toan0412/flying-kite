@@ -29,7 +29,9 @@ const ChatService = {
 
   setLastMessage(message, callback) {
     const { roomId, content } = message;
-    socket.emit('sendLastMessage', { roomId, lastMessage: content }, (ack) => {
+    const lastMessage = content || "Phương tiện"; // Nếu không có content thì là gửi media
+
+    socket.emit('sendLastMessage', { roomId, lastMessage }, (ack) => {
       if (ack.success) {
         if (callback) callback(null, ack);
       } else {
@@ -42,6 +44,22 @@ const ChatService = {
   onLastMessageReceived(callback) {
     socket.on('receiveLastMessage', callback);
   },
+
+  deleteMessage(message, callback) {
+    socket.emit('deleteMessage', message, (ack) => {
+      if (ack.success) {
+        if (callback) callback(null, ack)
+      }
+      else {
+        console.log('Error delete message', ack.message)
+        if (callback) callback(new Error(ack.message), null)
+      }
+    })
+  },
+
+  onDeletedMessageReceived(callback) {
+    socket.on('receiveDeletedMessage', callback)
+  }
 };
 
 export default ChatService;

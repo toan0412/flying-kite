@@ -1,10 +1,12 @@
 <template>
+  <!-- Sidebar -->
   <div class="sidebar">
     <div class="sidebar-search pt-3 pl-3">
       <MSTextField v-model="searchValue" width="298" append-inner-icon="mdi-magnify" density="compact" variant="solo"
         hide-details single-line placeholder="Tìm kiếm" clear-icon="mdi-close-circle-outline" clearable>
       </MSTextField>
     </div>
+    <!-- Status bar -->
     <div class="sidebar__statusbar">
       <div v-if="skeletonLoadingUserInfo" class="sidebar__statusbar__item">
         <v-skeleton-loader width="240" type="list-item-avatar"></v-skeleton-loader>
@@ -47,11 +49,7 @@
       </div>
       <ul class="sidebar__main__content">
         <div v-if="skeletonLoadingConversations">
-          <v-skeleton-loader width="270" type="list-item-avatar"></v-skeleton-loader>
-          <v-skeleton-loader width="270" type="list-item-avatar"></v-skeleton-loader>
-          <v-skeleton-loader width="270" type="list-item-avatar"></v-skeleton-loader>
-          <v-skeleton-loader width="270" type="list-item-avatar"></v-skeleton-loader>
-          <v-skeleton-loader width="270" type="list-item-avatar"></v-skeleton-loader>
+          <SidebarSkeletonLoading />
         </div>
         <div v-else-if="noConversation">
           Bạn chưa có cuộc trò chuyện nào
@@ -85,8 +83,9 @@
   </div>
 </template>
 <script>
-import MSTextField from '@/components/textfield/MSTextField.vue'
-import MSAvatar from '@/components/avatar/MSAvatar.vue'
+import MSTextField from '@/components/CustomTextField/MSTextField.vue'
+import MSAvatar from '@/components/CustomAvatar/MSAvatar.vue'
+import SidebarSkeletonLoading from '@/components/SkeletonLoading/SidebarConversationsSkeletonLoading.vue'
 import { getConservationsAPI, getOrCreatePrivateRoomAPI } from '@/services/RoomServices'
 import { searchUserAPI, getUserAPI, getAllUsersAPI, logoutAPI } from '@/services/UserServices'
 import { convertToDayOfWeek } from '@/helper/ConvertDate'
@@ -113,7 +112,8 @@ export default {
   },
   components: {
     MSTextField,
-    MSAvatar
+    MSAvatar,
+    SidebarSkeletonLoading
   },
   methods: {
     async fetchUserInfo() {
@@ -255,7 +255,7 @@ export default {
       const roomIndex = this.rooms.findIndex((room) => room._id === updatedRoom._id)
 
       if (roomIndex !== -1) {
-        // Nếu phòng đã tồn tại, cập nhật tin nhắn cuối cùng và thời gian
+        // Nếu phòng tồn tại, cập nhật tin nhắn cuối cùng và thời gian
         this.rooms[roomIndex].lastMessage = updatedRoom.lastMessage
         this.rooms[roomIndex].lastMessageAt = updatedRoom.lastMessageAt
 
