@@ -25,7 +25,7 @@ const roomSchema = new Schema({
     }
   }
   ],
-  avatar: {
+  avatarUrl: {
     type: String,
     default: ''
   },

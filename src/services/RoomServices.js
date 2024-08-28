@@ -5,8 +5,8 @@ const getConservationsAPI = () => {
   return axiosInstance.get(`v1/api/rooms/${userId}`)
 }
 
-const getOrCreatePrivateRoomAPI = (members) => {
-  return axiosInstance.post('v1/api/rooms', { members: members })
+const createRoomAPI = (members, roomName, type, avatarUrl) => {
+  return axiosInstance.post('v1/api/rooms', { members, roomName, type, avatarUrl })
 }
 
-export { getConservationsAPI, getOrCreatePrivateRoomAPI }
+export { getConservationsAPI, createRoomAPI }

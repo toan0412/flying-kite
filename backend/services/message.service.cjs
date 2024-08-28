@@ -73,7 +73,19 @@ class MessageService {
         }
 
         return matchedMessages
+    }
 
+    // Kiểm tra xem có phải tin nhắn cuối cùng không
+    isRecentlyMessage = async (roomId, messageId) => {
+        const room = await RoomService.checkExistRoomById(roomId)
+        const lastMessage = room.lastMessageAt
+        const message = await MessageModel.findById(messageId)
+
+        if (!lastMessage || !message) {
+            return false
+        }
+
+        return lastMessage.toString() === message.createdAt.toString()
     }
 
 }

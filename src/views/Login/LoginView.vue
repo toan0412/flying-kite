@@ -31,77 +31,34 @@
               <div class="form-field-wrapper">
                 <div class="text-field-box">
                   <label for="email" class="field-label-2">Email</label>
-                  <input
-                    type="email"
-                    v-model="email"
-                    class="input_register w-input"
-                    maxlength="256"
-                    name="email"
-                    placeholder="Nhập email"
-                    id="email"
-                    required=""
-                  />
+                  <input type="email" v-model="email" class="input_register w-input" maxlength="256" name="email"
+                    placeholder="Nhập email" id="email" required="" />
                 </div>
                 <div class="text-field-box">
                   <label for="username" class="field-label-2">Username</label>
-                  <input
-                    v-model="username"
-                    class="input_register w-input"
-                    maxlength="256"
-                    name="username"
-                    placeholder="Nhập tên đăng nhập"
-                    id="username"
-                    required=""
-                  />
+                  <input v-model="username" class="input_register w-input" maxlength="256" name="username"
+                    placeholder="Nhập tên đăng nhập" id="username" required="" />
                 </div>
                 <div class="text-field-box">
                   <label for="password" class="field-label-2">Password</label>
-                  <input
-                    v-model="password"
-                    type="password"
-                    class="input_register w-input"
-                    maxlength="256"
-                    name="password"
-                    placeholder="Nhập mật khẩu"
-                    id="password"
-                    required=""
-                  />
+                  <input v-model="password" type="password" class="input_register w-input" maxlength="256" name="password"
+                    placeholder="Nhập mật khẩu" id="password" required="" />
                 </div>
                 <div class="text-field-box">
                   <label for="confirmPassword" class="field-label-2">Confirm Password</label>
-                  <input
-                    v-model="confirmPassword"
-                    type="password"
-                    class="input_register w-input"
-                    maxlength="256"
-                    name="confirmPassword"
-                    placeholder="Nhập lại mật khẩu"
-                    id="confirmPassword"
-                    required=""
-                  />
+                  <input v-model="confirmPassword" type="password" class="input_register w-input" maxlength="256"
+                    name="confirmPassword" placeholder="Nhập lại mật khẩu" id="confirmPassword" required="" />
                 </div>
                 <div class="text-field-box">
                   <label for="fullname" class="field-label-2">Tên đầy đủ</label>
-                  <input
-                    v-model="fullname"
-                    class="input_register w-input"
-                    maxlength="256"
-                    name="fullname"
-                    placeholder="Nhập tên của bạn"
-                    id="fullname"
-                    required=""
-                  />
+                  <input v-model="fullname" class="input_register w-input" maxlength="256" name="fullname"
+                    placeholder="Nhập tên của bạn" id="fullname" required="" />
                 </div>
               </div>
               <div class="error-message" v-if="errorMessage">{{ errorMessage }}</div>
               <button type="submit" name="btn-register" class="large-button w-button">
                 Tạo tài khoản
-                <v-progress-circular
-                  v-if="isLoading"
-                  size="20"
-                  color="white"
-                  indeterminate
-                ></v-progress-circular>
+                <v-progress-circular v-if="isLoading" size="20" color="white" indeterminate></v-progress-circular>
               </button>
             </form>
           </div>
@@ -128,41 +85,20 @@
               <div class="form-field-wrapper">
                 <div class="text-field-box">
                   <label for="username" class="field-label-2">Username</label>
-                  <input
-                    v-model="username"
-                    class="input_register w-input"
-                    maxlength="256"
-                    name="username"
-                    placeholder="Nhập tên đăng nhập"
-                    id="username"
-                    required=""
-                  />
+                  <input v-model="username" class="input_register w-input" maxlength="256" name="username"
+                    placeholder="Nhập tên đăng nhập" id="username" required="" />
                 </div>
                 <div class="text-field-box">
                   <label for="password" class="field-label-2">Password</label>
-                  <input
-                    v-model="password"
-                    type="password"
-                    class="input_register w-input"
-                    maxlength="256"
-                    name="password"
-                    placeholder="Nhập mật khẩu"
-                    id="password"
-                    required=""
-                  />
+                  <input v-model="password" type="password" class="input_register w-input" maxlength="256" name="password"
+                    placeholder="Nhập mật khẩu" id="password" required="" />
                 </div>
               </div>
               <div class="error-message" v-if="errorMessage">{{ errorMessage }}</div>
               <button type="submit" name="btn-register" class="large-button w-button">
                 Đăng nhập
-                <v-progress-circular
-                  class="ml-2"
-                  v-if="isLoading"
-                  size="16"
-                  width="3"
-                  color="white"
-                  indeterminate
-                ></v-progress-circular>
+                <v-progress-circular class="ml-2" v-if="isLoading" size="16" width="3" color="white"
+                  indeterminate></v-progress-circular>
               </button>
             </form>
             <div class="div-block-95">
@@ -182,8 +118,8 @@
 
 <script>
 import { loginAPI, signUpAPI } from '@/services/UserServices.js'
-import { createAvatar } from '@dicebear/core'
-import { croodles } from '@dicebear/collection'
+import { generateAvatarBlob } from '@/helper/GenerateAvatarBlob'
+import { uploadFilesAndGetUrls } from '@/helper/GetUrlOfMedia'
 
 export default {
   data() {
@@ -221,11 +157,11 @@ export default {
         })
     },
 
-    handleSignUp() {
+    async handleSignUp() {
       this.error = ''
       this.isLoading = true
       if (this.confirmPassword !== this.password) return
-      const avatarUrl = this.generateAvatarUrl(this.username)
+      const avatarUrl = await this.generateAvatarUrl(this.username)
       const signUpInfo = {
         username: this.username,
         password: this.password,
@@ -260,12 +196,12 @@ export default {
     },
 
     //Tạo avataUrl theo seed và background
-    generateAvatarUrl(username) {
-      const avatar = createAvatar(croodles, {
-        seed: username,
-        backgroundColor: '#ffdbea'
-      })
-      return avatar.toDataUri()
+    async generateAvatarUrl(username) {
+      const avatarBlob = generateAvatarBlob(username)
+      console.log(avatarBlob)
+      const path = `avatars/users/${username}/`
+      const avatarUrl = await uploadFilesAndGetUrls([avatarBlob], path);
+      return avatarUrl[0].url;
     }
   }
 }

@@ -1,7 +1,7 @@
 <template>
   <div v-if="isAuth" class="main">
     <div class="sidebar-wrapper">
-      <Sidebar @is-auth="handleAuthStatus" @select-room="handleRoomSelected" />
+      <Sidebar @is-auth="handleAuthStatus" />
     </div>
     <div class="main-wrapper">
       <IntroductionView v-if="isIntroduction" />
@@ -18,6 +18,7 @@ import Sidebar from '@/components/layout/sidebar/Sidebar.vue'
 import LoginView from './views/Login/LoginView.vue'
 import HomeView from './views/Home/HomeView.vue'
 import IntroductionView from './views/Introduction/IntroductionView.vue'
+import { useRoomInfoStore } from '@/stores/RoomInfoStore'
 
 export default {
   data() {
@@ -35,6 +36,8 @@ export default {
   },
 
   created() {
+    const roomInfoStore = useRoomInfoStore()
+    console.log(roomInfoStore.roomInfo)
     const accessToken = localStorage.getItem('accessToken')
     const userId = localStorage.getItem('userId')
     if (accessToken && userId) {
@@ -42,13 +45,26 @@ export default {
     }
   },
 
+  computed: {
+    currentRoom() {
+      const roomInfoStore = useRoomInfoStore()
+      return roomInfoStore.roomInfo
+    }
+  },
+
+  watch: {
+    currentRoom(newRoom) {
+      if (!newRoom) return
+      if (this.isIntroduction) {
+        this.isIntroduction = false
+      }
+    }
+  },
+
   methods: {
     handleAuthStatus(isAuth) {
       this.isAuth = isAuth
     },
-    handleRoomSelected() {
-      this.isIntroduction = false
-    }
   }
 }
 </script>

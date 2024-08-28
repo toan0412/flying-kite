@@ -43,6 +43,18 @@
     </div>
     <!--Sidebar-content -->
     <div class="sidebar__main">
+      <div class="sidebar__main__header">
+        <div @click.stop="showPrivateRoomDialog = true" class="sidebar__main__header__item">
+          <v-icon icon="mdi-account-plus-outline"></v-icon>
+          <span class="sidebar__main__header__item--title">Tin nhắn riêng mới</span>
+        </div>
+        <CreatePrivateRoomDialog v-model:visible="showPrivateRoomDialog" @close="showPrivateRoomDialog = false" />
+        <div @click.stop="showPublicRoomDialog = true" class="sidebar__main__header__item">
+          <v-icon icon="mdi-account-multiple-plus-outline"></v-icon>
+          <span class="sidebar__main__header__item--title">Tin nhắn nhóm mới</span>
+        </div>
+        <CreatePublicRoomDialog v-model:visible="showPublicRoomDialog" @close="showPublicRoomDialog = false" />
+      </div>
       <div class="sidebar__main__filter">
         Cuộc trò chuyện gần đây
         <v-icon size="14" icon="mdi-chevron-down" />
@@ -51,22 +63,23 @@
         <div v-if="skeletonLoadingConversations">
           <SidebarSkeletonLoading />
         </div>
-        <div v-else-if="noConversation">
-          Bạn chưa có cuộc trò chuyện nào
-          <v-img src="mdi-forum-outline"></v-img>
+        <div v-else-if="!skeletonLoadingConversations && !rooms.length">
+          <EmptyCard image-width="300" title="Bạn chưa có cuộc trò chuyện nào"
+            subtitle="Hãy bắt đầu tạo cuộc trò chuyện riêng mới hoặc tạo nhóm mới" />
         </div>
         <div v-else>
-          <li @click="handleChangeRoom(conservation)" v-for="(conservation, index) in rooms" :key="index"
+          <li @click="handleChangeRoom(conservation)"
+            v-for="conservation in (searchRoomsList.length ? searchRoomsList : rooms)" :key="conservation.id"
             class="sidebar__main__content__item">
             <div class="main__content_item__avatar">
-              <MSAvatar alt="John" :src="conservation.avatarUrl"></MSAvatar>
+              <MSAvatar width="40" height="40" cover alt="John" :src="conservation.avatarUrl"></MSAvatar>
             </div>
             <div class="main__content_item--wrap">
               <div class="main__content_item__fullname">
-                {{ conservation.displayName || conservation.fullname }}
+                {{ conservation.displayName }}
               </div>
               <div class="main__content_item__message--recently">
-                {{ conservation.lastMessage || '@' + conservation.username }}
+                {{ conservation.lastMessage }}
               </div>
             </div>
             <div class="d-flex position-absolute align-center right-0 top-0 pt-2 pr-2">
@@ -86,13 +99,17 @@
 import MSTextField from '@/components/CustomTextField/MSTextField.vue'
 import MSAvatar from '@/components/CustomAvatar/MSAvatar.vue'
 import SidebarSkeletonLoading from '@/components/SkeletonLoading/SidebarConversationsSkeletonLoading.vue'
-import { getConservationsAPI, getOrCreatePrivateRoomAPI } from '@/services/RoomServices'
-import { searchUserAPI, getUserAPI, getAllUsersAPI, logoutAPI } from '@/services/UserServices'
+import EmptyCard from '@/components/Card/EmptyCard.vue'
+import { getConservationsAPI } from '@/services/RoomServices'
+import { getUserAPI, getAllUsersAPI, logoutAPI } from '@/services/UserServices'
 import { convertToDayOfWeek } from '@/helper/ConvertDate'
 import { useRoomInfoStore } from '@/stores/RoomInfoStore'
-import { useUsersInfoStore } from '@/stores/UsersInfoStore'
+import { useAllUsersInfoStore } from '@/stores/AllUsersInfoStore'
 import { useUserInfoStore } from '@/stores/UserInfoStore'
+import { useConversationsStore } from '@/stores/ConversationsStore'
 import ChatService from '@/socket/ChatService.cjs'
+import CreatePrivateRoomDialog from '@/components/Dialog/CreatePrivateRoomDialog.vue'
+import CreatePublicRoomDialog from '@/components/Dialog/CreatePublicRoomDialog.vue'
 import lodash from 'lodash'
 
 export default {
@@ -105,17 +122,21 @@ export default {
       skeletonLoadingUserInfo: true,
       skeletonLoadingConversations: true,
       noneConversations: true,
-      isRequestInProgress: false,
-      selectedRoomId: null,
-      noConversation: false
+      showPrivateRoomDialog: false,
+      showPublicRoomDialog: false,
+      searchRoomsList: [],
     }
   },
   components: {
     MSTextField,
     MSAvatar,
-    SidebarSkeletonLoading
+    SidebarSkeletonLoading,
+    CreatePrivateRoomDialog,
+    CreatePublicRoomDialog,
+    EmptyCard
   },
   methods: {
+    //Láy thông tin người dùng
     async fetchUserInfo() {
       await getUserAPI().then((res) => {
         this.userInfo = res.data.user
@@ -127,95 +148,110 @@ export default {
 
     async getAllUsers() {
       await getAllUsersAPI().then((res) => {
-        const usersInfoStore = useUsersInfoStore()
-        usersInfoStore.setUsersInfo(res.data)
+        const allUsersInfoStore = useAllUsersInfoStore()
+        allUsersInfoStore.setAllUsersInfo(res.data)
       })
     },
 
+    //Lấy các cuộc trò chuyện
     async fetchConservations() {
-      await getConservationsAPI()
-        .then((res) => {
-          this.skeletonLoadingConversations = false
-          //Kiểm tra xem có cuộc trò chuyện nào chưa
-          if (res.data.length === 0) {
-            this.noConversation = true
-            return
-          }
-          this.noConversation = false
-          const conversations = this.generateConversationWithUsersInfo(res.data)
-          this.rooms = conversations
-        })
-        .catch((err) => {
-          console.log('Error fetching rooms: ', err)
-        })
+      try {
+        this.skeletonLoadingConversations = true;
+        const res = await getConservationsAPI();
+
+        this.rooms = this.generateConversationWithUsersInfo(res.data);
+      } catch (err) {
+        console.log('Error fetching rooms: ', err);
+      } finally {
+        this.skeletonLoadingConversations = false;
+      }
     },
+
 
     convertToDayOfWeek(dateString) {
       return convertToDayOfWeek(dateString)
     },
 
-    handleSearch() {
-      searchUserAPI(this.searchValue).then((res) => {
-        this.rooms = res.data
-        this.skeletonLoadingConversations = false
-      })
-    },
-
-    //debounce search
-    debounceSearch: lodash.debounce(function (data) {
-      this.handleSearch(data)
+    //Hàm tìm kiếm phòng
+    debounceSearch: lodash.debounce(function (searchValue) {
+      this.handleSearchRoom(searchValue)
     }, 300),
+
+    handleSearchRoom(searchValue) {
+      searchValue = searchValue.trim();
+
+      if (!searchValue) {
+        this.searchRoomsList = this.rooms;
+        return;
+      }
+
+      this.searchRoomsList = this.rooms.filter(roomInfo => {
+        const displayName = roomInfo.displayName || ''
+        const lastMessage = roomInfo.lastMessage || ''
+
+        return displayName.includes(searchValue) || lastMessage.includes(searchValue)
+      });
+    },
 
     //Xử lý onclick vào thẻ li trong sidebar
     async handleChangeRoom(room) {
-      if (this.isRequestInProgress || room._id === this.selectedRoomId) return
-      //Gửi sự kiện chọn phòng để tắt introduction view
-      this.$emit('select-room', true)
-      this.isRequestInProgress = true
-      const receiver = room.receiverId || room._id
-      //Tao phòng nếu chưa có (lấy phòng nếu đã tồn tại)
-      await getOrCreatePrivateRoomAPI([receiver])
-        .then((res) => {
-          const roomInfo = this.generateConversationWithUsersInfo([res.data])
-          const roomInfoStore = useRoomInfoStore()
-          roomInfoStore.setRoomInfo(roomInfo[0])
-          this.isRequestInProgress = false
-          this.selectedRoomId = room._id
-        })
-        .catch((err) => {
-          console.log('Không tạo (lấy) được thông tin phòng: ', err)
-          this.isRequestInProgress = false
-        })
+      const roomId = localStorage.getItem('roomId')
+      if (roomId == room._id) return
+      const roomInfoStore = useRoomInfoStore()
+      roomInfoStore.setRoomInfo(room)
+      this.selectedRoomId = room._id
     },
 
     generateConversationWithUsersInfo(rooms) {
-      const conversations = []
-      const usersInfoStore = useUsersInfoStore()
-      const UsersInfo = usersInfoStore.usersInfo
+      const conversations = [];
+      const allUsersInfoStore = useAllUsersInfoStore();
+      const allUsersInfo = allUsersInfoStore.allUsersInfo;
+
+      if (!Array.isArray(rooms)) {
+        rooms = [rooms]
+      }
+
+      // Tạo một Map để tra cứu nhanh userInfo theo userId
+      const allUsersInfoMap = new Map(allUsersInfo.map(user => [user._id, user]));
 
       rooms.forEach((room) => {
-        // Tìm người dùng còn lại trong phòng (khác với người dùng hiện tại)
-        const remainUser = room.members.find((member) => member.userId !== this.userInfo._id)
-        if (!remainUser) return
+        if (room.type == "private") {
+          // Tìm người dùng còn lại trong phòng (khác với người dùng hiện tại)
+          const remainUser = room.members.find((member) => member.userId !== this.userInfo._id);
+          if (!remainUser) return;
 
-        // Tìm thông tin của người dùng còn lại trong UsersInfo
-        const userInfo = UsersInfo.find((user) => user._id === remainUser.userId)
-        if (userInfo) {
-          // Thêm thông tin vào danh sách cuộc trò chuyện
+          // Lấy thông tin người dùng từ Map
+          const userInfo = allUsersInfoMap.get(remainUser.userId);
+          if (userInfo) {
+            // Thêm thông tin vào danh sách cuộc trò chuyện
+            conversations.push({
+              _id: room._id,
+              type: room.type,
+              receiverId: userInfo._id,
+              displayName: userInfo.fullname,
+              avatarUrl: userInfo.avatarUrl,
+              lastMessage: room.lastMessage || '',
+              lastMessageAt: room.lastMessageAt,
+              updatedAt: room.updatedAt
+            });
+          }
+        }
+        else {
           conversations.push({
             _id: room._id,
-            receiverId: userInfo._id,
-            displayName: userInfo.fullname,
-            avatarUrl: userInfo.avatarUrl,
-            lastMessage: room.lastMessage,
+            type: room.type,
+            displayName: room.roomName,
+            avatarUrl: room.avatarUrl,
+            lastMessage: room.lastMessage || '',
             lastMessageAt: room.lastMessageAt,
             updatedAt: room.updatedAt
-          })
+          });
         }
-      })
 
-      return conversations
+      });
+      return conversations;
     },
+
 
     logout() {
       logoutAPI()
@@ -263,16 +299,23 @@ export default {
         const updatedRoomData = this.rooms.splice(roomIndex, 1)[0]
         this.rooms.unshift(updatedRoomData)
       }
+      else {
+        const newRoom = this.generateConversationWithUsersInfo(updatedRoom)
+        this.rooms.unshift(newRoom[0])
+      }
     })
   },
 
   watch: {
-    searchValue(newInput) {
-      this.skeletonLoadingConversations = true
-      if (newInput.length === 0) {
-        this.fetchConservations()
-      } else {
-        this.debounceSearch(newInput)
+    searchValue(newVal) {
+      this.debounceSearch(newVal)
+    },
+
+    rooms(newVal) {
+      if (newVal) {
+        const conversationsStore = useConversationsStore()
+        conversationsStore.setConversations(newVal)
+        console.log(conversationsStore.conversations)
       }
     }
   }
@@ -324,6 +367,39 @@ export default {
   padding: 8px;
 }
 
+.sidebar__main__header {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  height: 68px;
+  width: 100%;
+}
+
+.sidebar__main__header__item {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 48%;
+  border: 1px solid var(--border-color);
+  padding: 4px;
+  margin: 0 4px;
+  border-radius: 8px;
+}
+
+.sidebar__main__header__item:hover {
+  background-color: var(--background-sidebar-color)
+}
+
+.sidebar__main__header__item--title {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+}
+
 .sidebar__main__filter {
   padding: 8px;
   display: flex;
@@ -339,6 +415,9 @@ export default {
 }
 
 .sidebar__main__content {
+  height: calc(100vh - 268px);
+  overflow-y: hidden;
+
   .main__content_item__avatar {
     height: 40px;
     width: 40px;
@@ -395,10 +474,11 @@ export default {
     cursor: inherit;
   }
 
-  .texting-time {
-    font-size: 12px;
-    color: var(--lighter-text-color);
-  }
+}
+
+.sidebar__main__content:hover {
+  z-index: 1;
+  overflow-y: auto;
 }
 
 .sidebar-search {
@@ -407,8 +487,8 @@ export default {
   }
 }
 
-.v-avatar {
-  border: 1px solid var(--border-avatar-color);
-  background-color: var(--avatar-color) !important;
+.texting-time {
+  font-size: 12px;
+  color: var(--lighter-text-color);
 }
 </style>

@@ -8,49 +8,51 @@ const RoleRoom = {
 }
 
 class RoomService {
-  findByRoom = async (
-    roomName,
-    select = {
-      roomName: 1,
-      created_by: 1,
-      status: 1
-    }
-  ) => {
-    return await RoomModel.findOne({ roomName: roomName }).select(select).lean()
-  }
 
+  //Hàm tìm phòng
   findByRoom = async (roomName, select = {
     roomName: 1, createdBy: 1, status: 1
   }) => {
     return await RoomModel.findOne({ roomName: roomName }).select(select).lean();
   };
 
-  //Tạo phòng mới nếu chưa có (Lấy phòng nếu đã có)
-  getOrCreateRoom = async (req) => {
-    const { members = [], roomName = '' } = req.body;
-
+  //Tạo phòng 
+  createRoom = async (req) => {
+    const { members = [], roomName, type, avatarUrl } = req.body;
     const userId = req.headers['x-client-id'];
+
+    // Tạo danh sách thành viên với người tạo phòng là chủ phòng
     const membersRoom = [{ userId: userId, role: RoleRoom.ADMIN }];
 
-    // Check xem member trong phòng có tồn tại không
-    await UserService.findByFilter(userId)
+    // Kiểm tra số lượng thành viên
+    if (members.length < 1) {
+      throw new BadRequestError('Create room with at least 2 members');
+    }
 
-    // Thêm từng thành viên vào danh sách membersRoom
+    // Thêm các thành viên vào danh sách thành viên của phòng
     for (const memberId of members) {
+      const member = await UserService.findByUser(memberId);
+      if (!member) {
+        throw new BadRequestError(`Member not found`);
+      }
       membersRoom.push({ userId: memberId, role: RoleRoom.MEMBER });
     }
 
     // Xác định loại phòng
-    const type = (members.length > 2) ? "public" : "private"
+    const roomType = type || (membersRoom.length > 2 ? "public" : "private");
 
-    //Nếu phòng là private thì check xem phòng đã tồn tại chưa
-    if (type == 'private') {
-      const existPrivateRoom = await RoomModel.findOne({
+    // Nếu loại phòng là 'private', kiểm tra phòng đã tồn tại chưa
+    if (roomType === 'private') {
+      const memberIds = membersRoom.map(member => member.userId);
+      memberIds.push(userId);
+
+      const existingRoom = await RoomModel.findOne({
         type: 'private',
-        members: { $all: [{ $elemMatch: { userId: userId } }, { $elemMatch: { userId: members[0] } }] }
-      }).lean();
-      if (existPrivateRoom) {
-        return existPrivateRoom
+        members: { $all: memberIds }
+      });
+
+      if (existingRoom) {
+        return existingRoom; // Trả về phòng đã tồn tại
       }
     }
 
@@ -58,12 +60,15 @@ class RoomService {
     const newRoom = await RoomModel.create({
       createdBy: userId,
       members: membersRoom,
-      roomname: roomName,
-      type: type
+      roomName: roomName || "",
+      type: roomType,
+      avatarUrl: avatarUrl || "",
     });
 
     return newRoom;
   };
+
+
 
 
   //Cập nhât phòng
@@ -112,8 +117,8 @@ class RoomService {
       members: { $elemMatch: { userId: userId } },
       lastMessageAt: { $ne: '' }
     })
-    .sort({ updatedAt: -1 }) 
-    .lean();
+      .sort({ updatedAt: -1 })
+      .lean();
 
     if (rooms.length === 0) {
       return []

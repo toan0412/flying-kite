@@ -5,7 +5,7 @@
     <div class="content__header">
       <v-skeleton-loader v-if="skeletonLoadingRoomInfo" width="270" type="list-item-avatar"></v-skeleton-loader>
       <div v-else class="content__header__info">
-        <MSAvatar width="40" height="40" :alt="room.fullname" :src="room.avatarUrl"></MSAvatar>
+        <MSAvatar width="40" height="40" cover :alt="room.fullname" :src="room.avatarUrl"></MSAvatar>
         <p class="content__header__info__name">{{ room.displayName || '' }}</p>
       </div>
       <!-- Header actions -->
@@ -39,7 +39,7 @@
                     }}</v-list-item-title>
                     <v-list-item-subtitle class="pl-2"><span v-html="messageSearch.content"></span></v-list-item-subtitle>
                     <template v-slot:append>
-                      <div>
+                      <div class="texting-time">
                         {{ convertToDayOfWeek(messageSearch.createdAt) }}
                       </div>
                     </template>
@@ -163,12 +163,11 @@ import ConversationSkeletonLoading from '@/components/SkeletonLoading/Conversati
 import { useRoomInfoStore } from '@/stores/RoomInfoStore'
 import { getConservationByRoomIdAPI, searchMessageByRoomAPI } from '@/services/MessageService'
 import ChatService from '@/socket/ChatService.cjs'
-import { useUsersInfoStore } from '@/stores/UsersInfoStore'
+import { useAllUsersInfoStore } from '@/stores/AllUsersInfoStore'
 import Dropzone from 'dropzone'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { storage } from '@/firebase/index.js'
 import ConfirmDialog from '@/components/Dialog/ConfirmDialog.vue'
 import { convertToDayOfWeek } from '@/helper/ConvertDate'
+import { uploadFilesAndGetUrls } from '@/helper/GetUrlOfMedia';
 
 export default {
   components: {
@@ -260,8 +259,6 @@ export default {
         ChatService.sendMessage(message)
       }
 
-      ChatService.setLastMessage(message)
-
       this.isSendingMessage = false
 
       // Xóa nội dung tin nhắn và danh sách file
@@ -272,43 +269,48 @@ export default {
 
     //Hàm xử lý tìm kiếm tin nhắn
     handleSearchMessage() {
-      if (this.searchValue.length === 0) return
+      if (this.searchValue.length === 0) return;
 
-      this.isLoadingSearch = true
+      this.isLoadingSearch = true;
 
       searchMessageByRoomAPI(this.roomId, this.searchValue)
         .then((res) => {
-          const messagesSearchList = res.data
+          const messagesSearchList = res.data;
 
           if (messagesSearchList.length === 0) {
-            this.searchNotification = 'Không tìm thấy kết quả nào, thử lại'
-            return
+            this.searchNotification = 'Không tìm thấy kết quả nào, thử lại';
+            return;
           }
 
-          const usersInfoStore = useUsersInfoStore()
-          const usersInfo = usersInfoStore.usersInfo
+          const allUsersInfoStore = useAllUsersInfoStore();
+          const allUsersInfo = allUsersInfoStore.allUsersInfo;
+
+          const allUsersInfoMap = new Map(allUsersInfo.map(user => [user._id, user]));
 
           this.messagesSearchList = messagesSearchList.map((message) => {
-            const user = usersInfo.find((user) => user._id === message.senderId)
-            message.senderName = user ? user.fullname : 'Unknown'
-            message.avatarUrl = user ? user.avatarUrl : ''
+            const user = allUsersInfoMap.get(message.senderId);
+            if (user) {
+              message.senderName = user.fullname;
+              message.avatarUrl = user.avatarUrl;
+            }
             message.content = message.content.replace(
               new RegExp(this.searchValue, 'gi'),
               `<b>${this.searchValue}</b>`
-            )
-            return message
-          })
+            );
+            return message;
+          });
         })
         .catch((error) => {
-          console.error(error)
+          console.error(error);
         })
         .finally(() => {
-          this.isLoadingSearch = false
+          this.isLoadingSearch = false;
           if (this.messagesSearchList.length > 0) {
-            this.searchNotification = 'Tìm thấy ' + this.messagesSearchList.length + ' kết quả'
+            this.searchNotification = 'Tìm thấy ' + this.messagesSearchList.length + ' kết quả';
           }
-        })
+        });
     },
+
 
     //Hàm toggle field nhập tìm kiếm tin nhắn
     toggleSearchField() {
@@ -366,31 +368,10 @@ export default {
 
     //Lấy URL của ảnh khi gửi tin nhắn
     async getUrlOfMedia() {
-      // Xử lý các tệp đã lưu
-      const uploadPromises = this.filesToUpload.map(async (file) => {
-        const roomId = localStorage.getItem('roomId')
-        const storageRef = ref(storage, `rooms/${roomId}/files/${file.name}`)
-
-        try {
-          await uploadBytes(storageRef, file)
-          const downloadURL = await getDownloadURL(storageRef)
-
-          return {
-            name: file.name,
-            url: downloadURL,
-            type: file.type
-          }
-        } catch (error) {
-          console.error('Error uploading file:', file.name, error)
-        }
-      })
-
-      try {
-        const mediaArray = await Promise.all(uploadPromises)
-        return mediaArray
-      } catch (error) {
-        console.error('Error uploading files:', error)
-      }
+      const roomId = localStorage.getItem('roomId');
+      const path = `rooms/${roomId}/files`
+      const mediaArray = await uploadFilesAndGetUrls(this.filesToUpload, path);
+      return mediaArray;
     },
 
     getColumnCount(length) {
@@ -506,40 +487,36 @@ export default {
   },
 
   watch: {
-    async currentRoom(newVal, oldVal) {
-      if (!newVal) return
-      //reset when room change
-      this.room = newVal
-      this.roomId = newVal._id
-      localStorage.setItem('roomId', this.roomId)
-      this.messages = []
-      this.offset = 0
-      this.skeletonLoadingConversation = true
-      this.skeletonLoadingRoomInfo = true
-      this.flagStopCallApi = false
-      this.isSearchField = false
+    currentRoom: {
+      async handler(newVal, oldVal) {
+        // Reset khi thay đổi phòng
+        localStorage.setItem('roomId', newVal._id)
+        this.room = newVal
+        this.roomId = newVal._id
+        this.messages = []
+        this.offset = 0
+        this.skeletonLoadingConversation = true
+        this.skeletonLoadingRoomInfo = true
+        this.flagStopCallApi = false
+        this.isSearchField = false
 
-      // Xóa người dùng khỏi phòng cũ nếu oldVal tồn tại
-      if (oldVal._id) {
-        ChatService.leaveRoom(oldVal._id)
-      }
+        // Xóa người dùng khỏi phòng cũ nếu oldVal tồn tại
+        if (oldVal && oldVal._id) {
+          ChatService.leaveRoom(oldVal._id)
+        }
 
-      // Thêm người dùng vào phòng mới
-      ChatService.joinRoom(this.roomId)
+        // Thêm người dùng vào phòng mới
+        ChatService.joinRoom(this.roomId)
 
-      // Lấy cuộc hội thoại theo phòng mới
-      await this.getConservationByRoomId()
+        // Lấy cuộc hội thoại theo phòng mới
+        await this.getConservationByRoomId()
 
-      // Thiết lập sự kiện cuộn
-      this.setupScrollTopListMessageListener()
+        // Thiết lập sự kiện cuộn
+        this.setupScrollTopListMessageListener()
+      },
+      immediate: true
     },
 
-    //Theo dõi input nhắn tin
-    messageInput(newMessage) {
-      this.isTyping = newMessage.length > 0
-    },
-
-    //Theo dõi input search
     searchValue(newVal, oldVal) {
       if (newVal != oldVal) {
         this.searchNotification = 'Nhấn "Enter" để tìm tin nhắn'
@@ -547,12 +524,16 @@ export default {
       }
     },
 
-    //Theo dõi input ảnh
-    filesToUpload(newVal) {
-      this.isTyping = newVal.length > 0
+    messageInput(newMessage) {
+      this.isTyping = newMessage.length > 0
     },
 
+    filesToUpload(newVal) {
+      this.isTyping = newVal.length > 0
+    }
   }
+
+
 }
 </script>
 
@@ -604,6 +585,7 @@ export default {
 }
 
 .content__header__actions__item {
+  cursor: pointer;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -653,6 +635,10 @@ export default {
     height: 46px;
     width: 50px;
     margin: 0 4px;
+  }
+
+  .content__input__actions__item:hover {
+    opacity: 0.7;
   }
 
   .content__input__preview {

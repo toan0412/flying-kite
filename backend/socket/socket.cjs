@@ -43,6 +43,19 @@ function setupSocket(server) {
         // Phát lại tin nhắn đến tất cả các client trong phòng
         io.to(roomId).emit('receiveMessage', newMessage);
 
+        const updatedRoom = await RoomService.updateRoom({ roomId, lastMessage: content });
+
+        console.log('Updated room:', updatedRoom);
+
+        const members = updatedRoom.members
+
+        // Phát lại tin nhắn đến các client là thành viên trong phòng
+        members.forEach(member => {
+          console.log(member.userId.toString())
+          io.to(member.userId.toString()).emit('receiveLastMessage', updatedRoom)
+        });
+
+
         // Gửi acknowledgement cho client
         if (ack) {
           ack({ success: true, message: 'Message sent successfully!' });
@@ -58,33 +71,6 @@ function setupSocket(server) {
     });
 
 
-    socket.on('sendLastMessage', async (message, ack) => {
-      try {
-        const { roomId, lastMessage } = message;
-
-        // Cập nhật tin nhắn cuối cùng của phòng
-        const updatedRoom = await RoomService.updateRoom({ roomId, lastMessage });
-
-        console.log('Updated room:', updatedRoom);
-
-        const members = updatedRoom.members
-
-        // Phát lại tin nhắn đến các client là thành viên trong phòng
-        members.forEach(member => {
-          console.log(member.userId.toString())
-          io.to(member.userId.toString()).emit('receiveLastMessage', updatedRoom)
-        });
-
-        // Gửi acknowledgement cho client (nếu cần)
-        if (ack) ack({ success: true, message: 'Last message updated successfully!' })
-      } catch (error) {
-        console.error('Error handling message:', error)
-
-        // Gửi thông báo lỗi cho client qua acknowledgement
-        if (ack) ack({ success: false, message: error.message })
-      }
-    });
-
     socket.on('deleteMessage', async (message, ack) => {
       try {
         const { roomId, messageId } = message;
@@ -94,8 +80,23 @@ function setupSocket(server) {
 
         console.log('Deleted message:', deletedMessage);
 
+
         // Phát lại sự kiện xóa tin nhắn đến tất cả các client trong phòng
         io.to(roomId).emit('receiveDeletedMessage', deletedMessage);
+        
+        //Nếu là tin nhắn gần nhất, thì cập nhật lại tin nhắn cuối cùng của phòng
+        const isRecentlyMessage = await MessageService.isRecentlyMessage(roomId, messageId)
+        
+        if (isRecentlyMessage){
+          const updatedRoom = await RoomService.updateRoom({ roomId, lastMessage: 'Tin nhắn đã bị xóa' });
+          const members = updatedRoom.members
+          
+          members.forEach(member => {
+            console.log(member.userId.toString())
+            io.to(member.userId.toString()).emit('receiveLastMessage', updatedRoom)
+          });
+          
+        }
 
         // Trả về acknowledgement thành công cho client
         if (ack) ack({ success: true, message: 'Message deleted successfully!' });
