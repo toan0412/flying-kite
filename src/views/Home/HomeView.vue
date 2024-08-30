@@ -1,11 +1,20 @@
-
 <template>
   <div class="content-wrapper">
     <!-- Header  -->
     <div class="content__header">
-      <v-skeleton-loader v-if="skeletonLoadingRoomInfo" width="270" type="list-item-avatar"></v-skeleton-loader>
+      <v-skeleton-loader
+        v-if="skeletonLoadingRoomInfo"
+        width="270"
+        type="list-item-avatar"
+      ></v-skeleton-loader>
       <div v-else class="content__header__info">
-        <MSAvatar width="40" height="40" cover :alt="room.fullname" :src="room.avatarUrl"></MSAvatar>
+        <MSAvatar
+          width="40"
+          height="40"
+          cover
+          :alt="room.fullname"
+          :src="room.avatarUrl"
+        ></MSAvatar>
         <p class="content__header__info__name">{{ room.displayName || '' }}</p>
       </div>
       <!-- Header actions -->
@@ -16,28 +25,49 @@
             <div class="content__header__actions__searchfield__wrapper" v-if="isSearchField">
               <v-menu transition="scroll-y-transition">
                 <template v-slot:activator="{ props }">
-                  <MSTextField v-bind="props" v-model="searchValue" width="270" density="compact" variant="solo"
-                    hide-details single-line placeholder="Tìm tin nhắn" clear-icon="mdi-close" clearable
-                    @keydown.enter="handleSearchMessage">
+                  <MSTextField
+                    v-bind="props"
+                    v-model="searchValue"
+                    width="270"
+                    density="compact"
+                    variant="solo"
+                    hide-details
+                    single-line
+                    placeholder="Tìm tin nhắn"
+                    clear-icon="mdi-close"
+                    clearable
+                    @keydown.enter="handleSearchMessage"
+                  >
                   </MSTextField>
                 </template>
-                <v-list width="350" class="mt-1">
+                <v-list width="350" max-height="450" class="mt-1">
                   <v-list-item>
                     <v-list-subheader class="justify-center">
                       <span class="font-weight-bold pr-3">{{ searchNotification }}</span>
-                      <v-progress-circular v-if="isLoadingSearch" :size="20" :width="3" color="black"
-                        indeterminate></v-progress-circular>
+                      <v-progress-circular
+                        v-if="isLoadingSearch"
+                        :size="20"
+                        :width="3"
+                        color="black"
+                        indeterminate
+                      ></v-progress-circular>
                     </v-list-subheader>
                   </v-list-item>
-                  <v-list-item class="pa-2" v-for="messageSearch in messagesSearchList" :key="messageSearch._id"
-                    @click="handleScrollMessage(messageSearch)">
+                  <v-list-item
+                    class="pa-2"
+                    v-for="messageSearch in messagesSearchList"
+                    :key="messageSearch._id"
+                    @click="handleScrollMessage(messageSearch)"
+                  >
                     <template v-slot:prepend>
                       <MSAvatar height="40" width="40" :src="messageSearch.avatarUrl"></MSAvatar>
                     </template>
                     <v-list-item-title class="pl-2">{{
                       messageSearch.senderName
                     }}</v-list-item-title>
-                    <v-list-item-subtitle class="pl-2"><span v-html="messageSearch.content"></span></v-list-item-subtitle>
+                    <v-list-item-subtitle class="pl-2"
+                      ><span v-html="messageSearch.content"></span
+                    ></v-list-item-subtitle>
                     <template v-slot:append>
                       <div class="texting-time">
                         {{ convertToDayOfWeek(messageSearch.createdAt) }}
@@ -74,31 +104,69 @@
         </ol>
         <ol ref="messageList" v-else>
           <li class="messageList--loading" v-if="isLoadingMessage & !flagStopCallApi">
-            <v-progress-circular :size="20" :width="3" color="brown" indeterminate></v-progress-circular>
+            <v-progress-circular
+              :size="20"
+              :width="3"
+              color="brown"
+              indeterminate
+            ></v-progress-circular>
           </li>
           <!-- Message -->
-          <li v-for="message in messages" :key="message._id" :class="{
-            'my-message': message.senderId === userId,
-            'other-message': message.senderId !== userId
-          }" :data-id="message._id" ref="messageElement">
+          <li
+            v-for="message in messages"
+            :key="message._id"
+            :class="{
+              'my-message': message.senderId === userId,
+              'other-message': message.senderId !== userId
+            }"
+            :data-id="message._id"
+            ref="messageElement"
+          >
             <div class="message-actions">
-              <v-icon color="grey-darken-1
-" size="18" icon="mdi-trash-can-outline" @click="showDeleteMessageDialog(message)">
-              </v-icon>
+              <div>
+                <v-icon color="grey-darken-1" size="18">mdi-reply-outline</v-icon>
+                <v-tooltip activator="parent" location="top">Trả lời</v-tooltip>
+              </div>
+
+              <div>
+                <v-icon color="grey-darken-1" size="18">mdi-share-outline</v-icon>
+                <v-tooltip activator="parent" location="top">Chuyển tiếp</v-tooltip>
+              </div>
+
+              <div>
+                <v-icon @click="showDeleteMessageDialog(message)" color="grey-darken-1" size="18"
+                  >mdi-trash-can-outline</v-icon
+                >
+                <v-tooltip activator="parent" location="top">Xóa</v-tooltip>
+              </div>
             </div>
             <div class="message-wrapper">
-              <div v-if="message.media" class="message-content__images">
+              <div v-if="message.isDelete" class="message-content">Tin nhắn đã bị xóa</div>
+              <div v-else-if="message.media" class="message-content__images">
                 <v-row dense>
-                  <v-col v-for="(media, index) in message.media" :key="index"
-                    :cols="12 / getColumnCount(message.media.length)">
-                    <v-img aspect-ratio="1" cover height="140" width="140" :src="media.url"
-                      @click="openImageDialog(media.url)" class="cursor-pointer"></v-img>
-
+                  <v-col
+                    v-for="(media, index) in message.media"
+                    :key="index"
+                    :cols="12 / getColumnCount(message.media.length)"
+                  >
+                    <v-img
+                      aspect-ratio="1"
+                      cover
+                      height="140"
+                      width="140"
+                      :src="media.url"
+                      @click="openImageDialog(media.url)"
+                      class="cursor-pointer"
+                    ></v-img>
                     <!-- Dialog để hiển thị ảnh lớn -->
                     <v-dialog v-model="imageDialog" max-width="600px">
                       <v-card>
                         <v-card-title class="d-flex justify-space-between align-center">
-                          <v-btn icon="mdi-close" variant="text" @click="imageDialog = false"></v-btn>
+                          <v-btn
+                            icon="mdi-close"
+                            variant="text"
+                            @click="imageDialog = false"
+                          ></v-btn>
                         </v-card-title>
                         <v-img :src="imageSelected" contain height="100%"></v-img>
                       </v-card>
@@ -106,8 +174,8 @@
                   </v-col>
                 </v-row>
               </div>
-              <div class="message-content">
-                <div v-if="message.content" class="message-content__text">
+              <div v-else-if="!message.isDelete && message.content" class="message-content">
+                <div class="message-content__text">
                   {{ message.content }}
                 </div>
               </div>
@@ -125,14 +193,39 @@
       <div class="content__input__preview" ref="previewImages"></div>
       <!-- Input -->
       <div class="content__input__content">
-        <MSTextField v-model="messageInput" height="50" prepend-inner-icon="mdi-emoticon-outline" density="compact"
-          variant="solo" hide-details single-line placeholder="Nhập tin nhắn" />
+        <Picker v-if="showEmojiPicker" :data="emojiIndex" set="twitter" @select="showEmoji" />
+        <v-text-field
+          ref="messageInput"
+          auto-focus
+          class="custom-textfield"
+          v-model="messageInput"
+          height="50"
+          @keydown.enter="sendMessage"
+          density="compact"
+          variant="solo"
+          hide-details
+          single-line
+          placeholder="Nhập tin nhắn"
+        >
+          <template v-slot:prepend>
+            <v-icon
+              icon="mdi-emoticon-outline"
+              clickable
+              @click="showEmojiPicker = !showEmojiPicker"
+            ></v-icon>
+          </template>
+        </v-text-field>
       </div>
       <!-- Actions -->
       <div class="content__input__actions">
         <div v-if="isTyping" class="content__input__actions__item">
-          <v-progress-circular v-if="isSendingMessage" :size="20" :width="3" color="black"
-            indeterminate></v-progress-circular>
+          <v-progress-circular
+            v-if="isSendingMessage"
+            :size="20"
+            :width="3"
+            color="black"
+            indeterminate
+          ></v-progress-circular>
           <v-icon v-else size="20" @click="sendMessage" icon="mdi-send-variant-outline" />
         </div>
         <div v-if="!isTyping" class="content__input__actions__item">
@@ -152,13 +245,18 @@
       </div>
     </div>
   </div>
-  <ConfirmDialog ref="deleteMessageDialog" title="Xóa tin nhắn" message="Bạn có chắc chắn muốn xoá tin nhắn này không?"
-    @response="handleResponseDeleteMessageDialog" />
+  <ConfirmDialog
+    ref="deleteMessageDialog"
+    title="Xóa tin nhắn"
+    message="Bạn có chắc chắn muốn xoá tin nhắn này không?"
+    @response="handleResponseDeleteMessageDialog"
+  />
 </template>
 
 <script>
 import MSAvatar from '@/components/CustomAvatar/MSAvatar.vue'
 import MSTextField from '@/components/CustomTextField/MSTextField.vue'
+import MSButton from '@/components/CustomButton/MSButton.vue'
 import ConversationSkeletonLoading from '@/components/SkeletonLoading/ConversationSkeletonLoading.vue'
 import { useRoomInfoStore } from '@/stores/RoomInfoStore'
 import { getConservationByRoomIdAPI, searchMessageByRoomAPI } from '@/services/MessageService'
@@ -167,14 +265,21 @@ import { useAllUsersInfoStore } from '@/stores/AllUsersInfoStore'
 import Dropzone from 'dropzone'
 import ConfirmDialog from '@/components/Dialog/ConfirmDialog.vue'
 import { convertToDayOfWeek } from '@/helper/ConvertDate'
-import { uploadFilesAndGetUrls } from '@/helper/GetUrlOfMedia';
+import { uploadFilesAndGetUrls } from '@/helper/GetUrlOfMedia'
+import data from 'emoji-mart-vue-fast/data/all.json'
+import 'emoji-mart-vue-fast/css/emoji-mart.css'
+import { Picker, EmojiIndex } from 'emoji-mart-vue-fast/src'
+
+let emojiIndex = new EmojiIndex(data)
 
 export default {
   components: {
     MSTextField,
     MSAvatar,
+    MSButton,
     ConversationSkeletonLoading,
-    ConfirmDialog
+    ConfirmDialog,
+    Picker
   },
 
   data() {
@@ -201,7 +306,9 @@ export default {
       messagesSearchList: [],
       filesToUpload: [],
       myDropzone: null,
-      selectedMessage: {}
+      selectedMessage: {},
+      emojiIndex: emojiIndex,
+      showEmojiPicker: false
     }
   },
 
@@ -269,48 +376,47 @@ export default {
 
     //Hàm xử lý tìm kiếm tin nhắn
     handleSearchMessage() {
-      if (this.searchValue.length === 0) return;
+      if (this.searchValue.length === 0) return
 
-      this.isLoadingSearch = true;
+      this.isLoadingSearch = true
 
       searchMessageByRoomAPI(this.roomId, this.searchValue)
         .then((res) => {
-          const messagesSearchList = res.data;
+          const messagesSearchList = res.data
 
           if (messagesSearchList.length === 0) {
-            this.searchNotification = 'Không tìm thấy kết quả nào, thử lại';
-            return;
+            this.searchNotification = 'Không tìm thấy kết quả nào, thử lại'
+            return
           }
 
-          const allUsersInfoStore = useAllUsersInfoStore();
-          const allUsersInfo = allUsersInfoStore.allUsersInfo;
+          const allUsersInfoStore = useAllUsersInfoStore()
+          const allUsersInfo = allUsersInfoStore.allUsersInfo
 
-          const allUsersInfoMap = new Map(allUsersInfo.map(user => [user._id, user]));
+          const allUsersInfoMap = new Map(allUsersInfo.map((user) => [user._id, user]))
 
           this.messagesSearchList = messagesSearchList.map((message) => {
-            const user = allUsersInfoMap.get(message.senderId);
+            const user = allUsersInfoMap.get(message.senderId)
             if (user) {
-              message.senderName = user.fullname;
-              message.avatarUrl = user.avatarUrl;
+              message.senderName = user.fullname
+              message.avatarUrl = user.avatarUrl
             }
             message.content = message.content.replace(
               new RegExp(this.searchValue, 'gi'),
               `<b>${this.searchValue}</b>`
-            );
-            return message;
-          });
+            )
+            return message
+          })
         })
         .catch((error) => {
-          console.error(error);
+          console.error(error)
         })
         .finally(() => {
-          this.isLoadingSearch = false;
+          this.isLoadingSearch = false
           if (this.messagesSearchList.length > 0) {
-            this.searchNotification = 'Tìm thấy ' + this.messagesSearchList.length + ' kết quả';
+            this.searchNotification = 'Tìm thấy ' + this.messagesSearchList.length + ' kết quả'
           }
-        });
+        })
     },
-
 
     //Hàm toggle field nhập tìm kiếm tin nhắn
     toggleSearchField() {
@@ -358,7 +464,7 @@ export default {
 
     // Xóa lớp 'highlight-text' khỏi tất cả các thẻ <li>
     removeHighLightTextClass() {
-      const allItems = this.$refs.messageList.querySelectorAll('li .highlight-text');
+      const allItems = this.$refs.messageList.querySelectorAll('li .highlight-text')
 
       if (!allItems) return
       allItems.forEach((item) => {
@@ -368,10 +474,10 @@ export default {
 
     //Lấy URL của ảnh khi gửi tin nhắn
     async getUrlOfMedia() {
-      const roomId = localStorage.getItem('roomId');
+      const roomId = localStorage.getItem('roomId')
       const path = `rooms/${roomId}/files`
-      const mediaArray = await uploadFilesAndGetUrls(this.filesToUpload, path);
-      return mediaArray;
+      const mediaArray = await uploadFilesAndGetUrls(this.filesToUpload, path)
+      return mediaArray
     },
 
     getColumnCount(length) {
@@ -435,7 +541,7 @@ export default {
     handleDeleteMessage() {
       const message = {
         roomId: this.roomId,
-        messageId: this.selectedMessage._id,
+        messageId: this.selectedMessage._id
       }
       ChatService.deleteMessage(message)
     },
@@ -453,12 +559,17 @@ export default {
     //Hàm convert date
     convertToDayOfWeek(dateString) {
       return convertToDayOfWeek(dateString)
-    }
+    },
 
+    showEmoji(emoji) {
+      this.messageInput += emoji.native
+    }
   },
 
   mounted() {
     this.userId = localStorage.getItem('userId')
+
+    this.$refs.messageInput.$el.querySelector('input').focus()
 
     //Setup dropzone
     this.setupDropzone()
@@ -471,12 +582,11 @@ export default {
     ChatService.onDeletedMessageReceived((deletedMessage) => {
       this.messages = this.messages.map((message) => {
         if (message._id === deletedMessage._id) {
-          return deletedMessage;
+          return deletedMessage
         }
-        return message;
-      });
-    });
-
+        return message
+      })
+    })
   },
 
   computed: {
@@ -532,11 +642,8 @@ export default {
       this.isTyping = newVal.length > 0
     }
   }
-
-
 }
 </script>
-
 
 <style lang="scss">
 .content-wrapper {
@@ -582,6 +689,14 @@ export default {
   display: flex;
   align-items: center;
   height: 100%;
+
+  .v-list {
+    overflow-y: hidden !important;
+  }
+
+  .v-list:hover {
+    overflow-y: auto !important;
+  }
 }
 
 .content__header__actions__item {
@@ -605,6 +720,7 @@ export default {
   justify-content: center;
   height: 86px;
   width: 100%;
+  border-top: 1px solid var(--border-color);
 
   .content__input--wrapper {
     display: flex;
@@ -683,6 +799,17 @@ export default {
   .content__input__preview::-webkit-scrollbar {
     height: 12px;
   }
+
+  .emoji-mart {
+    position: absolute;
+    bottom: 84px;
+    width: 300px;
+    height: 300px;
+
+    .emoji-mart-preview {
+      display: none;
+    }
+  }
 }
 
 .content__conversation {
@@ -711,9 +838,8 @@ export default {
       overflow-y: auto;
       display: flex;
       flex-direction: column-reverse;
-      padding: 0 8px;
+      padding: 12px 8px;
       height: 100%;
-
     }
 
     .highlight-text {
@@ -739,7 +865,6 @@ export default {
       .message-content {
         background-color: var(--background-message-color);
       }
-
 
       &:hover {
         .message-actions {

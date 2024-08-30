@@ -3,23 +3,24 @@ const compression = require('compression')
 const { default: helmet } = require('helmet')
 const morgan = require('morgan')
 const router = require('./routes/index.cjs')
-const cors = require('cors');
+const cors = require('cors')
 
 const app = express()
 
 // Cài đặt middleware
-app.use(morgan('dev')); // Ghi log cho môi trường phát triển
-app.use(helmet()); // Bảo mật HTTP headers
-app.use(compression()); // Nén response để cải thiện hiệu suất
+app.use(morgan('dev')) // Ghi log cho môi trường phát triển
+app.use(helmet()) // Bảo mật HTTP headers
+app.use(compression()) // Nén response để cải thiện hiệu suất
 
 // Phân tích JSON body và URL-encoded data
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cors({
-  credentials: true,
-  origin: '*'
-}));
-
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
+app.use(
+  cors({
+    credentials: true,
+    origin: '*'
+  })
+)
 
 // init db
 require('./dbs/init.mongodb.cjs')
@@ -42,6 +43,5 @@ app.use((err, req, res, next) => {
     message: err.message || 'Internal Server Error'
   })
 })
-
 
 module.exports = app

@@ -2,8 +2,18 @@
   <!-- Sidebar -->
   <div class="sidebar">
     <div class="sidebar-search pt-3 pl-3">
-      <MSTextField v-model="searchValue" width="298" append-inner-icon="mdi-magnify" density="compact" variant="solo"
-        hide-details single-line placeholder="Tìm kiếm" clear-icon="mdi-close-circle-outline" clearable>
+      <MSTextField
+        v-model="searchValue"
+        width="298"
+        append-inner-icon="mdi-magnify"
+        density="compact"
+        variant="solo"
+        hide-details
+        single-line
+        placeholder="Tìm kiếm"
+        clear-icon="mdi-close-circle-outline"
+        clearable
+      >
       </MSTextField>
     </div>
     <!-- Status bar -->
@@ -48,12 +58,18 @@
           <v-icon icon="mdi-account-plus-outline"></v-icon>
           <span class="sidebar__main__header__item--title">Tin nhắn riêng mới</span>
         </div>
-        <CreatePrivateRoomDialog v-model:visible="showPrivateRoomDialog" @close="showPrivateRoomDialog = false" />
+        <CreatePrivateRoomDialog
+          v-model:visible="showPrivateRoomDialog"
+          @close="showPrivateRoomDialog = false"
+        />
         <div @click.stop="showPublicRoomDialog = true" class="sidebar__main__header__item">
           <v-icon icon="mdi-account-multiple-plus-outline"></v-icon>
           <span class="sidebar__main__header__item--title">Tin nhắn nhóm mới</span>
         </div>
-        <CreatePublicRoomDialog v-model:visible="showPublicRoomDialog" @close="showPublicRoomDialog = false" />
+        <CreatePublicRoomDialog
+          v-model:visible="showPublicRoomDialog"
+          @close="showPublicRoomDialog = false"
+        />
       </div>
       <div class="sidebar__main__filter">
         Cuộc trò chuyện gần đây
@@ -64,15 +80,27 @@
           <SidebarSkeletonLoading />
         </div>
         <div v-else-if="!skeletonLoadingConversations && !rooms.length">
-          <EmptyCard image-width="300" title="Bạn chưa có cuộc trò chuyện nào"
-            subtitle="Hãy bắt đầu tạo cuộc trò chuyện riêng mới hoặc tạo nhóm mới" />
+          <EmptyCard
+            image-width="300"
+            title="Bạn chưa có cuộc trò chuyện nào"
+            subtitle="Hãy bắt đầu tạo cuộc trò chuyện riêng mới hoặc tạo nhóm mới"
+          />
         </div>
         <div v-else>
-          <li @click="handleChangeRoom(conservation)"
-            v-for="conservation in (searchRoomsList.length ? searchRoomsList : rooms)" :key="conservation.id"
-            class="sidebar__main__content__item">
+          <li
+            @click="handleChangeRoom(conservation)"
+            v-for="conservation in searchRoomsList.length ? searchRoomsList : rooms"
+            :key="conservation.id"
+            class="sidebar__main__content__item"
+          >
             <div class="main__content_item__avatar">
-              <MSAvatar width="40" height="40" cover alt="John" :src="conservation.avatarUrl"></MSAvatar>
+              <MSAvatar
+                width="40"
+                height="40"
+                cover
+                alt="John"
+                :src="conservation.avatarUrl"
+              ></MSAvatar>
             </div>
             <div class="main__content_item--wrap">
               <div class="main__content_item__fullname">
@@ -124,7 +152,7 @@ export default {
       noneConversations: true,
       showPrivateRoomDialog: false,
       showPublicRoomDialog: false,
-      searchRoomsList: [],
+      searchRoomsList: []
     }
   },
   components: {
@@ -156,17 +184,16 @@ export default {
     //Lấy các cuộc trò chuyện
     async fetchConservations() {
       try {
-        this.skeletonLoadingConversations = true;
-        const res = await getConservationsAPI();
+        this.skeletonLoadingConversations = true
+        const res = await getConservationsAPI()
 
-        this.rooms = this.generateConversationWithUsersInfo(res.data);
+        this.rooms = this.generateConversationWithUsersInfo(res.data)
       } catch (err) {
-        console.log('Error fetching rooms: ', err);
+        console.log('Error fetching rooms: ', err)
       } finally {
-        this.skeletonLoadingConversations = false;
+        this.skeletonLoadingConversations = false
       }
     },
-
 
     convertToDayOfWeek(dateString) {
       return convertToDayOfWeek(dateString)
@@ -178,19 +205,16 @@ export default {
     }, 300),
 
     handleSearchRoom(searchValue) {
-      searchValue = searchValue.trim();
+      searchValue = searchValue.trim()
 
       if (!searchValue) {
-        this.searchRoomsList = this.rooms;
-        return;
+        this.searchRoomsList = this.rooms
+        return
       }
 
-      this.searchRoomsList = this.rooms.filter(roomInfo => {
-        const displayName = roomInfo.displayName || ''
-        const lastMessage = roomInfo.lastMessage || ''
-
-        return displayName.includes(searchValue) || lastMessage.includes(searchValue)
-      });
+      this.searchRoomsList = this.rooms.filter((roomInfo) => {
+        return roomInfo.displayName.toLowerCase().includes(searchValue.toLowerCase())
+      })
     },
 
     //Xử lý onclick vào thẻ li trong sidebar
@@ -203,25 +227,25 @@ export default {
     },
 
     generateConversationWithUsersInfo(rooms) {
-      const conversations = [];
-      const allUsersInfoStore = useAllUsersInfoStore();
-      const allUsersInfo = allUsersInfoStore.allUsersInfo;
+      const conversations = []
+      const allUsersInfoStore = useAllUsersInfoStore()
+      const allUsersInfo = allUsersInfoStore.allUsersInfo
 
       if (!Array.isArray(rooms)) {
         rooms = [rooms]
       }
 
       // Tạo một Map để tra cứu nhanh userInfo theo userId
-      const allUsersInfoMap = new Map(allUsersInfo.map(user => [user._id, user]));
+      const allUsersInfoMap = new Map(allUsersInfo.map((user) => [user._id, user]))
 
       rooms.forEach((room) => {
-        if (room.type == "private") {
+        if (room.type == 'private') {
           // Tìm người dùng còn lại trong phòng (khác với người dùng hiện tại)
-          const remainUser = room.members.find((member) => member.userId !== this.userInfo._id);
-          if (!remainUser) return;
+          const remainUser = room.members.find((member) => member.userId !== this.userInfo._id)
+          if (!remainUser) return
 
           // Lấy thông tin người dùng từ Map
-          const userInfo = allUsersInfoMap.get(remainUser.userId);
+          const userInfo = allUsersInfoMap.get(remainUser.userId)
           if (userInfo) {
             // Thêm thông tin vào danh sách cuộc trò chuyện
             conversations.push({
@@ -233,10 +257,9 @@ export default {
               lastMessage: room.lastMessage || '',
               lastMessageAt: room.lastMessageAt,
               updatedAt: room.updatedAt
-            });
+            })
           }
-        }
-        else {
+        } else {
           conversations.push({
             _id: room._id,
             type: room.type,
@@ -245,13 +268,11 @@ export default {
             lastMessage: room.lastMessage || '',
             lastMessageAt: room.lastMessageAt,
             updatedAt: room.updatedAt
-          });
+          })
         }
-
-      });
-      return conversations;
+      })
+      return conversations
     },
-
 
     logout() {
       logoutAPI()
@@ -298,8 +319,7 @@ export default {
         // Di chuyển phòng đã cập nhật lên đầu danh sách
         const updatedRoomData = this.rooms.splice(roomIndex, 1)[0]
         this.rooms.unshift(updatedRoomData)
-      }
-      else {
+      } else {
         const newRoom = this.generateConversationWithUsersInfo(updatedRoom)
         this.rooms.unshift(newRoom[0])
       }
@@ -391,7 +411,7 @@ export default {
 }
 
 .sidebar__main__header__item:hover {
-  background-color: var(--background-sidebar-color)
+  background-color: var(--background-sidebar-color);
 }
 
 .sidebar__main__header__item--title {
@@ -473,7 +493,6 @@ export default {
     color: rgb(43, 44, 51);
     cursor: inherit;
   }
-
 }
 
 .sidebar__main__content:hover {

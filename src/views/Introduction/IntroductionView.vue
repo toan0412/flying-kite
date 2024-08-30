@@ -26,15 +26,14 @@
               </v-card-title>
 
               <v-card-text>
-                <div>Whitehaven Beach</div>
-
-                <div>Whitsunday Island, Whitsunday Islands</div>
+                <div>Tìm kiếm mọi người một cách dễ dàng</div>
+                <div>Tạo tin nhắn riêng hoặc tin nhắn nhóm mới</div>
               </v-card-text>
 
               <v-card-actions>
-                <v-btn color="purple" text="Tìm kiếm"></v-btn>
+                <v-btn color="brown" text="Tin nhắn riêng"></v-btn>
 
-                <v-btn color="purple" text="Explore"></v-btn>
+                <v-btn color="brown" text="Tạo nhóm nhóm"></v-btn>
               </v-card-actions>
             </v-card>
           </div>

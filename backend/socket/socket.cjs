@@ -80,7 +80,6 @@ function setupSocket(server) {
 
         console.log('Deleted message:', deletedMessage);
 
-
         // Phát lại sự kiện xóa tin nhắn đến tất cả các client trong phòng
         io.to(roomId).emit('receiveDeletedMessage', deletedMessage);
         
@@ -95,7 +94,6 @@ function setupSocket(server) {
             console.log(member.userId.toString())
             io.to(member.userId.toString()).emit('receiveLastMessage', updatedRoom)
           });
-          
         }
 
         // Trả về acknowledgement thành công cho client

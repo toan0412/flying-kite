@@ -5,7 +5,7 @@
     </div>
     <div class="main-wrapper">
       <IntroductionView v-if="isIntroduction" />
-      <HomeView v-else />
+      <router-view v-else />
     </div>
   </div>
   <div v-else>
@@ -15,9 +15,9 @@
 
 <script>
 import Sidebar from '@/components/layout/sidebar/Sidebar.vue'
-import LoginView from './views/Login/LoginView.vue'
-import HomeView from './views/Home/HomeView.vue'
-import IntroductionView from './views/Introduction/IntroductionView.vue'
+import LoginView from '@/views/Login/LoginView.vue'
+import HomeView from '@/views/Home/HomeView.vue'
+import IntroductionView from '@/views/Introduction/IntroductionView.vue'
 import { useRoomInfoStore } from '@/stores/RoomInfoStore'
 
 export default {
@@ -29,15 +29,14 @@ export default {
   },
 
   components: {
+    HomeView,
     Sidebar,
     LoginView,
-    HomeView,
     IntroductionView
   },
 
   created() {
-    const roomInfoStore = useRoomInfoStore()
-    console.log(roomInfoStore.roomInfo)
+    localStorage.setItem('roomId', '')
     const accessToken = localStorage.getItem('accessToken')
     const userId = localStorage.getItem('userId')
     if (accessToken && userId) {
@@ -64,11 +63,10 @@ export default {
   methods: {
     handleAuthStatus(isAuth) {
       this.isAuth = isAuth
-    },
+    }
   }
 }
 </script>
-
 
 <style lang="scss">
 #app {
