@@ -18,4 +18,7 @@ export default {
     font-size: 13px;
   }
 }
+.v-btn--variant-elevated {
+  box-shadow: unset !important;
+}
 </style>

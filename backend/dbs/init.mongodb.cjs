@@ -12,22 +12,6 @@ class Database {
     this.connect()
   }
 
-  async updateAllDocuments() {
-    try {
-      const db = mongoose.connection.db
-      const collection = db.collection('Messages')
-      // Cập nhật tất cả các tài liệu trong collection
-      const result = await collection.updateMany(
-        {}, // Lọc tất cả các tài liệu
-        { $set: { isDelete: false } } // Thêm trường isDelete với giá trị mặc định false
-      )
-
-      console.log(`${result.modifiedCount} documents were updated.`)
-    } catch (err) {
-      console.error('Error updating documents:', err)
-    }
-  }
-
   connect(type = 'mongodb') {
     mongoose
       .connect(connectString)
@@ -43,5 +27,4 @@ class Database {
 }
 
 const instanceMongDB = Database.getInstance()
-this.updateAllDocuments()
 module.exports = instanceMongDB

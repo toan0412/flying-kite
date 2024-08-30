@@ -24,4 +24,9 @@ const getAllUsersAPI = () => {
   return axiosInstance.get('v1/api/users')
 }
 
-export { loginAPI, signUpAPI, getUserAPI, searchUserAPI, getAllUsersAPI, logoutAPI }
+const updateUserAPI = (userInfo) => {
+  const { fullname, email } = userInfo
+  return axiosInstance.patch('/v1/api/users/update', { fullname, email })
+}
+
+export { loginAPI, signUpAPI, getUserAPI, searchUserAPI, getAllUsersAPI, logoutAPI, updateUserAPI }

@@ -82,8 +82,13 @@
         <div class="content__header__actions__item">
           <v-icon size="20" icon="mdi-magnify" @click="toggleSearchField"></v-icon>
         </div>
-        <div class="content__header__actions__item">
-          <v-icon size="20" icon="mdi-account-plus-outline"> </v-icon>
+        <div v-if="room.type == 'public'" class="content__header__actions__item">
+          <v-icon size="20" icon="mdi-account-plus-outline" @click="showAddMemberDialog = true">
+          </v-icon>
+          <AddMemberDialog
+            v-model:visible="showAddMemberDialog"
+            @close="showAddMemberDialog = false"
+          />
         </div>
         <div class="content__header__actions__item ml-1 header-action-background">
           <v-icon color="white" size="20" icon="mdi-video-outline"></v-icon>
@@ -141,8 +146,7 @@
               </div>
             </div>
             <div class="message-wrapper">
-              <div v-if="message.isDelete" class="message-content">Tin nhắn đã bị xóa</div>
-              <div v-else-if="message.media" class="message-content__images">
+              <div v-if="message.media" class="message-content__images">
                 <v-row dense>
                   <v-col
                     v-for="(media, index) in message.media"
@@ -158,6 +162,7 @@
                       @click="openImageDialog(media.url)"
                       class="cursor-pointer"
                     ></v-img>
+
                     <!-- Dialog để hiển thị ảnh lớn -->
                     <v-dialog v-model="imageDialog" max-width="600px">
                       <v-card>
@@ -174,8 +179,9 @@
                   </v-col>
                 </v-row>
               </div>
-              <div v-else-if="!message.isDelete && message.content" class="message-content">
-                <div class="message-content__text">
+              <div class="message-content">
+                <div v-if="message.isDelete" class="message-content__text">Tin nhắn đã bị xóa</div>
+                <div v-else-if="!message.isDelete && message.content" class="message-content__text">
                   {{ message.content }}
                 </div>
               </div>
@@ -256,16 +262,17 @@
 <script>
 import MSAvatar from '@/components/CustomAvatar/MSAvatar.vue'
 import MSTextField from '@/components/CustomTextField/MSTextField.vue'
-import MSButton from '@/components/CustomButton/MSButton.vue'
-import ConversationSkeletonLoading from '@/components/SkeletonLoading/ConversationSkeletonLoading.vue'
-import { useRoomInfoStore } from '@/stores/RoomInfoStore'
-import { getConservationByRoomIdAPI, searchMessageByRoomAPI } from '@/services/MessageService'
-import ChatService from '@/socket/ChatService.cjs'
-import { useAllUsersInfoStore } from '@/stores/AllUsersInfoStore'
-import Dropzone from 'dropzone'
 import ConfirmDialog from '@/components/Dialog/ConfirmDialog.vue'
+import AddMemberDialog from '@/components/Dialog/AddMemberDialog.vue'
+import ChatService from '@/socket/ChatService.cjs'
+import ConversationSkeletonLoading from '@/components/SkeletonLoading/ConversationSkeletonLoading.vue'
+import { getConservationByRoomIdAPI, searchMessageByRoomAPI } from '@/services/MessageService'
+import { useRoomInfoStore } from '@/stores/RoomInfoStore'
+import { useAllUsersInfoStore } from '@/stores/AllUsersInfoStore'
 import { convertToDayOfWeek } from '@/helper/ConvertDate'
 import { uploadFilesAndGetUrls } from '@/helper/GetUrlOfMedia'
+
+import Dropzone from 'dropzone'
 import data from 'emoji-mart-vue-fast/data/all.json'
 import 'emoji-mart-vue-fast/css/emoji-mart.css'
 import { Picker, EmojiIndex } from 'emoji-mart-vue-fast/src'
@@ -276,10 +283,10 @@ export default {
   components: {
     MSTextField,
     MSAvatar,
-    MSButton,
     ConversationSkeletonLoading,
     ConfirmDialog,
-    Picker
+    Picker,
+    AddMemberDialog
   },
 
   data() {
@@ -308,7 +315,8 @@ export default {
       myDropzone: null,
       selectedMessage: {},
       emojiIndex: emojiIndex,
-      showEmojiPicker: false
+      showEmojiPicker: false,
+      showAddMemberDialog: false
     }
   },
 
@@ -599,6 +607,7 @@ export default {
   watch: {
     currentRoom: {
       async handler(newVal, oldVal) {
+        if (oldVal && oldVal._id && newVal._id == oldVal._id) return
         // Reset khi thay đổi phòng
         localStorage.setItem('roomId', newVal._id)
         this.room = newVal

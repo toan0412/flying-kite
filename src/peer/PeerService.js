@@ -25,7 +25,7 @@ const PeerService = {
       const call = peer.call(targetPeerId, mediaStream, mediaConstraints)
 
       call.on('stream', (remoteStream) => {
-        const remoteVideoElement = document.getElementById('remote-video')
+        const remoteVideoElement = document.getElementById('local-video')
         if (remoteVideoElement) {
           remoteVideoElement.srcObject = remoteStream
         }

@@ -9,4 +9,8 @@ const createRoomAPI = (members, roomName, type, avatarUrl) => {
   return axiosInstance.post('v1/api/rooms', { members, roomName, type, avatarUrl })
 }
 
-export { getConservationsAPI, createRoomAPI }
+const updateRoomAPI = (roomInfo) => {
+  return axiosInstance.patch('v1/api/rooms', roomInfo)
+}
+
+export { getConservationsAPI, createRoomAPI, updateRoomAPI }

@@ -27,8 +27,9 @@ export default {
   },
   mounted() {
     // Tạo một Peer với ID
-    const peerId = this.generatePeerId()
+    const peerId = localStorage.getItem('userId')
     console.log(peerId)
+    
     this.peer = PeerService.createPeer(peerId)
 
     // Listen for incoming calls
@@ -37,11 +38,8 @@ export default {
     })
   },
   methods: {
-    generatePeerId() {
-      // Tạo một Peer ID ngẫu nhiên hoặc có thể dùng một cơ chế khác để tạo ID
-      return `peer-${Math.random().toString(36).substr(2, 9)}`
-    },
     async makeCall() {
+      console.log(navigator.mediaDevices)
       if (!this.targetPeerId) {
         alert('Please enter a Target Peer ID')
         return
@@ -53,6 +51,7 @@ export default {
         console.error('Error making call:', error)
       }
     },
+
     async answerCall() {
       if (this.call) {
         try {

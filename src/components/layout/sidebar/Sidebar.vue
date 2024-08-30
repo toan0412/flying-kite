@@ -41,7 +41,7 @@
           </template>
 
           <v-list>
-            <v-list-item @click="openSettings">
+            <v-list-item @click="showSettingDialog = true">
               <span>Cài đặt</span>
             </v-list-item>
             <v-list-item @click="logout">
@@ -49,6 +49,7 @@
             </v-list-item>
           </v-list>
         </v-menu>
+        <SettingDialog v-model:visible="showSettingDialog" @close="showSettingDialog = false" />
       </div>
     </div>
     <!--Sidebar-content -->
@@ -138,6 +139,7 @@ import { useConversationsStore } from '@/stores/ConversationsStore'
 import ChatService from '@/socket/ChatService.cjs'
 import CreatePrivateRoomDialog from '@/components/Dialog/CreatePrivateRoomDialog.vue'
 import CreatePublicRoomDialog from '@/components/Dialog/CreatePublicRoomDialog.vue'
+import SettingDialog from '@/components/Dialog/SettingDialog.vue'
 import lodash from 'lodash'
 
 export default {
@@ -152,6 +154,7 @@ export default {
       noneConversations: true,
       showPrivateRoomDialog: false,
       showPublicRoomDialog: false,
+      showSettingDialog: false,
       searchRoomsList: []
     }
   },
@@ -161,7 +164,8 @@ export default {
     SidebarSkeletonLoading,
     CreatePrivateRoomDialog,
     CreatePublicRoomDialog,
-    EmptyCard
+    EmptyCard,
+    SettingDialog
   },
   methods: {
     //Láy thông tin người dùng
@@ -213,7 +217,9 @@ export default {
       }
 
       this.searchRoomsList = this.rooms.filter((roomInfo) => {
-        return roomInfo.displayName.toLowerCase().includes(searchValue.toLowerCase())
+        return (roomInfo?.displayName || '')
+          .toLowerCase()
+          .includes((searchValue || '').toLowerCase())
       })
     },
 
@@ -252,6 +258,7 @@ export default {
               _id: room._id,
               type: room.type,
               receiverId: userInfo._id,
+              members: room.members,
               displayName: userInfo.fullname,
               avatarUrl: userInfo.avatarUrl,
               lastMessage: room.lastMessage || '',
@@ -264,6 +271,7 @@ export default {
             _id: room._id,
             type: room.type,
             displayName: room.roomName,
+            members: room.members,
             avatarUrl: room.avatarUrl,
             lastMessage: room.lastMessage || '',
             lastMessageAt: room.lastMessageAt,
@@ -326,7 +334,22 @@ export default {
     })
   },
 
+  computed: {
+    currentUser() {
+      const userInfoStore = useUserInfoStore()
+      return userInfoStore.userInfo
+    }
+  },
+
   watch: {
+    currentUser: {
+      async handler(newVal) {
+        if (newVal) {
+          this.userInfo = newVal
+        }
+      }
+    },
+
     searchValue(newVal) {
       this.debounceSearch(newVal)
     },

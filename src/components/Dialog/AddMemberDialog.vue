@@ -2,7 +2,7 @@
   <v-dialog v-model="show" max-width="500px" class="private-room-dialog">
     <v-card>
       <v-card-title>
-        Tạo cuộc trò chuyện riêng mới
+        Thêm thành viên vào nhóm
         <v-btn icon="mdi-close" flat @click.stop="show = false"></v-btn>
       </v-card-title>
       <v-text-field
@@ -14,33 +14,56 @@
         class="create-room-search"
       ></v-text-field>
       <v-list height="450" v-if="searchUsersList.length > 0" lines="one">
-        <v-list-item
-          v-for="user in searchUsersList"
-          :key="user._id"
-          clickable
-          @click="createPrivateRoom(user)"
-        >
+        <v-list-item v-for="user in searchUsersList" :key="user._id" :value="user" clickable>
           <template v-slot:prepend>
             <v-img width="40" height="40" :src="user.avatarUrl" />
           </template>
           <v-list-item-title class="ml-3">{{ user.fullname }}</v-list-item-title>
           <v-list-item-subtitle class="ml-3">@{{ user.username }}</v-list-item-subtitle>
+          <template v-slot:append>
+            <v-checkbox-btn
+              color="deep-orange-darken-1"
+              :input-value="isSelected(user._id)"
+              @change="toggleSelection(user._id)"
+              width="40"
+              height="40"
+            />
+          </template>
         </v-list-item>
       </v-list>
       <EmptyCard
+        style="height: 450px"
         v-else
         title="Không tìm thấy người dùng"
         subtitle="Người dùng không tìm thấy hoặc không tồn tại, vui lòng thử lại"
       />
+      <div v-if="searchUsersList.length > 0" class="d-flex justify-center pa-2">
+        <MSButton
+          :disabled="selectedUserIds.length == 0"
+          @click="handleAddMembersToRoom"
+          color="deep-orange-darken-1"
+        >
+          <v-progress-circular
+            v-if="isCallingAPI"
+            :size="20"
+            :width="3"
+            color="white"
+            indeterminate
+          >
+          </v-progress-circular>
+          <span v-else>Xong</span>
+        </MSButton>
+      </div>
     </v-card>
   </v-dialog>
 </template>
 
 <script>
+import MSButton from '@/components/CustomButton/MSButton.vue'
+import { updateRoomAPI } from '@/services/RoomServices'
 import { useAllUsersInfoStore } from '@/stores/AllUsersInfoStore'
 import { useConversationsStore } from '@/stores/ConversationsStore'
 import { useRoomInfoStore } from '@/stores/RoomInfoStore'
-import { createRoomAPI } from '@/services/RoomServices'
 import EmptyCard from '@/components/Card/EmptyCard.vue'
 import lodash from 'lodash'
 
@@ -54,12 +77,16 @@ export default {
       searchValue: '',
       searchUsersList: [],
       allUsersInfo: [],
-      conversations: []
+      conversations: [],
+      selectedUserIds: [],
+      isAddingMember: false,
+      isCallingAPI: false
     }
   },
 
   components: {
-    EmptyCard
+    EmptyCard,
+    MSButton
   },
 
   computed: {
@@ -77,54 +104,6 @@ export default {
     }
   },
   methods: {
-    async createPrivateRoom(user) {
-      const roomInfoStore = useRoomInfoStore()
-      const receiverId = user._id
-      this.show = false
-
-      // Tìm phòng riêng tư tồn tại
-      const privateRoomExist = this.conversations.find((room) => {
-        if (room.type === 'public') return false
-        return room.receiverId === receiverId
-      })
-
-      if (privateRoomExist) {
-        roomInfoStore.setRoomInfo(privateRoomExist)
-        return
-      } else {
-        try {
-          // Tạo phòng mới nếu chưa tồn tại
-          const res = await createRoomAPI([receiverId])
-          const roomInfo = res.data
-
-          const userId = localStorage.getItem('userId')
-          const allUsersInfoMap = new Map(this.allUsersInfo.map((user) => [user._id, user]))
-
-          // Tìm thông tin người dùng nhận
-          const receiver = roomInfo.members.find((member) => member.userId !== userId)
-          if (!receiver) return
-
-          const receiverInfo = allUsersInfoMap.get(receiver.userId)
-
-          // Tạo thông tin phòng mới
-          const newRoom = {
-            _id: roomInfo._id,
-            receiverId: receiverInfo._id,
-            displayName: receiverInfo.fullname,
-            avatarUrl: receiverInfo.avatarUrl
-          }
-
-          // Cập nhật thông tin phòng mới vào store
-          roomInfoStore.setRoomInfo(newRoom)
-
-          // (Tùy chọn) Cập nhật danh sách các phòng nếu cần
-          this.conversations.push(newRoom)
-        } catch (err) {
-          console.error('Không tạo (lấy) được thông tin phòng:', err)
-        }
-      }
-    },
-
     debounceSearch: lodash.debounce(function (searchValue) {
       this.handleSearchUser(searchValue)
     }, 300),
@@ -134,16 +113,52 @@ export default {
         (userInfo) =>
           userInfo.username.includes(searchValue) || userInfo.fullname.includes(searchValue)
       )
+    },
+
+    isSelected(userId) {
+      return this.selectedUserIds.includes(userId)
+    },
+
+    toggleSelection(userId) {
+      const index = this.selectedUserIds.indexOf(userId)
+      if (index === -1) {
+        this.selectedUserIds.push(userId)
+      } else {
+        this.selectedUserIds.splice(index, 1)
+      }
+    },
+
+    async handleAddMembersToRoom() {
+      this.isCallingAPI = true
+      const roomId = localStorage.getItem('roomId')
+      const newMembers = this.selectedUserIds
+      try {
+        const res = await updateRoomAPI({ roomId, newMembers })
+        const updatedRoom = res.data
+        const roomInfoStore = useRoomInfoStore()
+        roomInfoStore.setRoomInfo(updatedRoom)
+      } catch (error) {
+        console.error('Error adding new members to room: ', error)
+      } finally {
+        this.show = false
+        this.isCallingAPI = false
+        this.selectedUserIds = []
+      }
     }
   },
 
   watch: {
-    visible(newValue, oldValue) {
+    visible(newValue) {
       if (newValue) {
-        const allUsersInfoStore = useAllUsersInfoStore()
-        const conversationsStore = useConversationsStore()
-        this.searchUsersList = allUsersInfoStore.allUsersInfo
-        this.conversations = conversationsStore.conversations
+        const allUsersInfo = useAllUsersInfoStore().allUsersInfo
+        const roomInfo = useRoomInfoStore().roomInfo
+        const membersInRoom = roomInfo.members
+
+        const usersNotInRoom = allUsersInfo.filter(
+          (user) => !membersInRoom.some((member) => member.userId === user._id)
+        )
+
+        this.searchUsersList = usersNotInRoom
         this.allUsersInfo = this.searchUsersList
       }
     },

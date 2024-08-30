@@ -89,6 +89,11 @@ class AccessService {
 
     // Phương thức đăng ký
     static signUp = async ({ fullname, email, password, username, avatarUrl }) => {
+        const checkExistEmail = await userModel.findOne({ email }).lean();
+        if (checkExistEmail) {
+            throw new BadRequestError('Email đã được dùng');
+        }
+
         // Kiểm tra xem user đã tồn tại chưa
         const checkExistUser = await userModel.findOne({ username }).lean();
         if (checkExistUser) {
