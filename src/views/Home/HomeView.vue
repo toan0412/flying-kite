@@ -15,7 +15,17 @@
           :alt="room.fullname"
           :src="room.avatarUrl"
         ></MSAvatar>
-        <p class="content__header__info__name">{{ room.displayName || '' }}</p>
+        <p class="content__header__info__name">{{ room.roomName || '' }}</p>
+        <v-icon
+          v-if="room.type === 'public'"
+          icon="mdi-cog"
+          @click="showRoomInfoDialog = true"
+        ></v-icon>
+        <RoomInfoDialog
+          @open-add-member-dialog="openAddMemberDialog"
+          v-model:visible="showRoomInfoDialog"
+          @close="showRoomInfoDialog = false"
+        />
       </div>
       <!-- Header actions -->
       <div class="content__header__actions">
@@ -116,6 +126,13 @@
               indeterminate
             ></v-progress-circular>
           </li>
+          <!-- Notify typing -->
+          <li class="notify-typing">
+            <div class="message__notify">
+              {{ notifyTyping }}
+            </div>
+          </li>
+
           <!-- Message -->
           <li
             v-for="message in messages"
@@ -128,17 +145,17 @@
             ref="messageElement"
           >
             <div class="message-actions">
-              <div>
+              <div class="message-actions__item">
                 <v-icon color="grey-darken-1" size="18">mdi-reply-outline</v-icon>
                 <v-tooltip activator="parent" location="top">Trả lời</v-tooltip>
               </div>
 
-              <div>
+              <div class="message-actions__item">
                 <v-icon color="grey-darken-1" size="18">mdi-share-outline</v-icon>
                 <v-tooltip activator="parent" location="top">Chuyển tiếp</v-tooltip>
               </div>
 
-              <div>
+              <div class="message-actions__item">
                 <v-icon @click="showDeleteMessageDialog(message)" color="grey-darken-1" size="18"
                   >mdi-trash-can-outline</v-icon
                 >
@@ -264,9 +281,11 @@ import MSAvatar from '@/components/CustomAvatar/MSAvatar.vue'
 import MSTextField from '@/components/CustomTextField/MSTextField.vue'
 import ConfirmDialog from '@/components/Dialog/ConfirmDialog.vue'
 import AddMemberDialog from '@/components/Dialog/AddMemberDialog.vue'
-import ChatService from '@/socket/ChatService.cjs'
+import RoomInfoDialog from '@/components/Dialog/RoomInfoDialog.vue'
+import ChatService from '@/socket/ChatService'
 import ConversationSkeletonLoading from '@/components/SkeletonLoading/ConversationSkeletonLoading.vue'
 import { getConservationByRoomIdAPI, searchMessageByRoomAPI } from '@/services/MessageService'
+import { useUserInfoStore } from '@/stores/UserInfoStore'
 import { useRoomInfoStore } from '@/stores/RoomInfoStore'
 import { useAllUsersInfoStore } from '@/stores/AllUsersInfoStore'
 import { convertToDayOfWeek } from '@/helper/ConvertDate'
@@ -286,22 +305,25 @@ export default {
     ConversationSkeletonLoading,
     ConfirmDialog,
     Picker,
-    AddMemberDialog
+    AddMemberDialog,
+    RoomInfoDialog
   },
 
   data() {
     return {
       room: {},
       userId: '',
+      userName: '',
       roomId: '',
       messageInput: '',
       searchValue: '',
       imageSelected: '',
       searchNotification: 'Nhấn "Enter" để tìm tin nhắn',
+      notifyTyping: '',
       messages: [],
       isTyping: false,
       isSendingMessage: false,
-      isLoadingMessage: true,
+      isLoadingMessage: false,
       isLoadingSearch: false,
       isSearchField: false,
       flagStopCallApi: false,
@@ -316,16 +338,17 @@ export default {
       selectedMessage: {},
       emojiIndex: emojiIndex,
       showEmojiPicker: false,
-      showAddMemberDialog: false
+      showAddMemberDialog: false,
+      showRoomInfoDialog: false
     }
   },
 
   methods: {
     //Lấy cuộc hội thoại theo id phòng
     async getConservationByRoomId() {
-      if (!this.roomId || this.flagStopCallApi || this.isLoadingMessages) return
+      if (!this.roomId || this.flagStopCallApi || this.isLoadingMessage) return
 
-      this.isLoadingMessages = true
+      this.isLoadingMessage = true
 
       try {
         const res = await getConservationByRoomIdAPI(this.roomId, this.limit, this.offset)
@@ -342,7 +365,7 @@ export default {
       } catch (error) {
         console.error(error)
       } finally {
-        this.isLoadingMessages = false // Đánh dấu cuộc gọi API đã hoàn tất
+        this.isLoadingMessage = false // Đánh dấu cuộc gọi API đã hoàn tất
       }
     },
 
@@ -375,7 +398,7 @@ export default {
       }
 
       this.isSendingMessage = false
-
+      this.showEmojiPicker = false
       // Xóa nội dung tin nhắn và danh sách file
       this.messageInput = ''
       this.filesToUpload = []
@@ -554,6 +577,22 @@ export default {
       ChatService.deleteMessage(message)
     },
 
+    //Hàm gửi sự kiện người dùng đang nhập tin nhắn
+    sendNotifyTyping() {
+      const userInfoStore = useUserInfoStore()
+      const roomId = this.roomId
+      const senderName = userInfoStore.userInfo.fullname
+      const senderId = this.userId
+      const isTyping = this.isTyping
+      ChatService.sendNotifyTyping({ roomId, senderId, senderName, isTyping })
+    },
+
+    //Mở Add member dialog từ Room info dialog
+    openAddMemberDialog() {
+      this.showRoomInfoDialog = false
+      this.showAddMemberDialog = true
+    },
+
     showDeleteMessageDialog(message) {
       this.selectedMessage = message
       this.$refs.deleteMessageDialog.openDialog()
@@ -595,6 +634,23 @@ export default {
         return message
       })
     })
+
+    ChatService.onNotifyTypingReceived((notify) => {
+      if (notify) {
+        if (notify.senderId !== this.userId && notify.isTyping == true) {
+          this.notifyTyping = `${notify.senderName} đang nhập tin nhắn ...`
+        } else {
+          this.notifyTyping = ''
+        }
+      }
+    })
+
+    ChatService.onUpdatedRoomReceived((updatedRoom) => {
+      if (updatedRoom.type == 'private') return
+      const roomInfoStore = useRoomInfoStore()
+      roomInfoStore.setRoomInfo(updatedRoom)
+      this.room = updatedRoom
+    })
   },
 
   computed: {
@@ -618,6 +674,8 @@ export default {
         this.skeletonLoadingRoomInfo = true
         this.flagStopCallApi = false
         this.isSearchField = false
+        this.notifyTyping = ''
+        this.messageInput = ''
 
         // Xóa người dùng khỏi phòng cũ nếu oldVal tồn tại
         if (oldVal && oldVal._id) {
@@ -649,6 +707,10 @@ export default {
 
     filesToUpload(newVal) {
       this.isTyping = newVal.length > 0
+    },
+
+    isTyping() {
+      this.sendNotifyTyping()
     }
   }
 }
@@ -867,6 +929,17 @@ export default {
       align-items: center;
     }
 
+    .notify-typing {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      .message__notify {
+        opacity: 0.7;
+        font-size: 14px;
+      }
+    }
+
     .my-message {
       display: flex;
       justify-content: flex-end;
@@ -890,9 +963,21 @@ export default {
     .other-message {
       display: flex;
       justify-content: start;
+      flex-direction: row-reverse;
 
       .message-content {
         background-color: #f1f1f1;
+      }
+
+      &:hover {
+        .message-actions {
+          display: flex;
+          align-items: center;
+
+          .message-actions__item:nth-child(3) {
+            display: none;
+          }
+        }
       }
     }
 

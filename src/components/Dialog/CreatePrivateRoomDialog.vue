@@ -21,7 +21,7 @@
           @click="createPrivateRoom(user)"
         >
           <template v-slot:prepend>
-            <v-img width="40" height="40" :src="user.avatarUrl" />
+            <MSAvatar width="40" height="40" :src="user.avatarUrl" />
           </template>
           <v-list-item-title class="ml-3">{{ user.fullname }}</v-list-item-title>
           <v-list-item-subtitle class="ml-3">@{{ user.username }}</v-list-item-subtitle>
@@ -37,6 +37,7 @@
 </template>
 
 <script>
+import MSAvatar from '@/components/CustomAvatar/MSAvatar.vue'
 import { useAllUsersInfoStore } from '@/stores/AllUsersInfoStore'
 import { useConversationsStore } from '@/stores/ConversationsStore'
 import { useRoomInfoStore } from '@/stores/RoomInfoStore'
@@ -59,7 +60,8 @@ export default {
   },
 
   components: {
-    EmptyCard
+    EmptyCard,
+    MSAvatar
   },
 
   computed: {
@@ -110,7 +112,7 @@ export default {
           const newRoom = {
             _id: roomInfo._id,
             receiverId: receiverInfo._id,
-            displayName: receiverInfo.fullname,
+            roomName: receiverInfo.fullname,
             avatarUrl: receiverInfo.avatarUrl
           }
 

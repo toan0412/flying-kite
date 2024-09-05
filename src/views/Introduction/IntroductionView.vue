@@ -17,13 +17,15 @@
         <div class="introduction__main__content_body">
           <div class="introduction__main__content_body__item">
             <v-card class="mx-auto" max-width="400">
-              <v-img class="align-end text-white" height="200" src="https://cdn.vuetifyjs.com/images/cards/docks.jpg"
-                cover>
+              <v-img
+                class="align-end text-white"
+                height="200"
+                src="https://cdn.vuetifyjs.com/images/cards/docks.jpg"
+                cover
+              >
               </v-img>
 
-              <v-card-title class="pt-4">
-                Dễ dàng trò chuyện với bất cứ ai
-              </v-card-title>
+              <v-card-title class="pt-4"> Dễ dàng trò chuyện với bất cứ ai </v-card-title>
 
               <v-card-text>
                 <div>Tìm kiếm mọi người một cách dễ dàng</div>
@@ -39,13 +41,15 @@
           </div>
           <div class="introduction__main__content_body__item">
             <v-card class="mx-auto" max-width="400">
-              <v-img class="align-end text-white" height="200" src="https://cdn.vuetifyjs.com/images/cards/docks.jpg"
-                cover>
+              <v-img
+                class="align-end text-white"
+                height="200"
+                src="https://cdn.vuetifyjs.com/images/cards/docks.jpg"
+                cover
+              >
               </v-img>
 
-              <v-card-title class="pt-4">
-                Dễ dàng trò chuyện với bất cứ ai
-              </v-card-title>
+              <v-card-title class="pt-4"> Dễ dàng trò chuyện với bất cứ ai </v-card-title>
 
               <v-card-text>
                 <div>Whitehaven Beach</div>
@@ -63,9 +67,7 @@
         </div>
       </div>
 
-      <div class="introduction__main__footer">
-        Bạn đã đăng nhập bằng {{ userInfo.email }}
-      </div>
+      <div class="introduction__main__footer">Bạn đã đăng nhập bằng {{ userInfo.email }}</div>
     </div>
   </div>
 </template>
@@ -82,23 +84,22 @@ export default {
   },
 
   mounted() {
-    const userInfoStore = useUserInfoStore();
-    this.userInfo = userInfoStore.userInfo;
+    const userInfoStore = useUserInfoStore()
+    this.userInfo = userInfoStore.userInfo
 
     this.$watch(
       () => userInfoStore.userInfo,
       (newValue) => {
-        this.userInfo = newValue;
+        this.userInfo = newValue
         if (newValue) {
-          this.isUserInfoLoaded = true;
+          this.isUserInfoLoaded = true
         }
       },
       { immediate: true }
-    );
+    )
   }
 }
 </script>
-
 
 <style lang="scss">
 .introduction__wrapper {
