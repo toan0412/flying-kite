@@ -105,7 +105,7 @@
             </div>
             <div class="main__content_item--wrap">
               <div class="main__content_item__fullname">
-                {{ conservation.displayName }}
+                {{ conservation.roomName }}
               </div>
               <div class="main__content_item__message--recently">
                 {{ conservation.lastMessage }}
@@ -136,7 +136,7 @@ import { useRoomInfoStore } from '@/stores/RoomInfoStore'
 import { useAllUsersInfoStore } from '@/stores/AllUsersInfoStore'
 import { useUserInfoStore } from '@/stores/UserInfoStore'
 import { useConversationsStore } from '@/stores/ConversationsStore'
-import ChatService from '@/socket/ChatService.cjs'
+import ChatService from '@/socket/ChatService.js'
 import CreatePrivateRoomDialog from '@/components/Dialog/CreatePrivateRoomDialog.vue'
 import CreatePublicRoomDialog from '@/components/Dialog/CreatePublicRoomDialog.vue'
 import SettingDialog from '@/components/Dialog/SettingDialog.vue'
@@ -217,9 +217,7 @@ export default {
       }
 
       this.searchRoomsList = this.rooms.filter((roomInfo) => {
-        return (roomInfo?.displayName || '')
-          .toLowerCase()
-          .includes((searchValue || '').toLowerCase())
+        return (roomInfo?.roomName || '').toLowerCase().includes((searchValue || '').toLowerCase())
       })
     },
 
@@ -258,8 +256,9 @@ export default {
               _id: room._id,
               type: room.type,
               receiverId: userInfo._id,
+              createdBy: room.createdBy,
               members: room.members,
-              displayName: userInfo.fullname,
+              roomName: userInfo.fullname,
               avatarUrl: userInfo.avatarUrl,
               lastMessage: room.lastMessage || '',
               lastMessageAt: room.lastMessageAt,
@@ -270,7 +269,8 @@ export default {
           conversations.push({
             _id: room._id,
             type: room.type,
-            displayName: room.roomName,
+            roomName: room.roomName,
+            createdBy: room.createdBy,
             members: room.members,
             avatarUrl: room.avatarUrl,
             lastMessage: room.lastMessage || '',
@@ -315,12 +315,15 @@ export default {
 
   mounted() {
     //Client nhận tin nhắn
-    ChatService.onLastMessageReceived((updatedRoom) => {
+    ChatService.onUpdatedRoomReceived((updatedRoom) => {
       // Tìm chỉ mục của phòng trong danh sách phòng hiện tại
       const roomIndex = this.rooms.findIndex((room) => room._id === updatedRoom._id)
 
       if (roomIndex !== -1) {
         // Nếu phòng tồn tại, cập nhật tin nhắn cuối cùng và thời gian
+        if (updatedRoom.avatarUrl) {
+          this.rooms[roomIndex].lastMessage = updatedRoom.avatarUrl
+        }
         this.rooms[roomIndex].lastMessage = updatedRoom.lastMessage
         this.rooms[roomIndex].lastMessageAt = updatedRoom.lastMessageAt
 
@@ -330,6 +333,13 @@ export default {
       } else {
         const newRoom = this.generateConversationWithUsersInfo(updatedRoom)
         this.rooms.unshift(newRoom[0])
+      }
+    })
+
+    ChatService.onLeavedRoomReceived((updatedRoom) => {
+      const roomIndex = this.rooms.findIndex((room) => room._id === updatedRoom._id)
+      if (roomIndex !== -1) {
+        this.rooms.splice(roomIndex, 1)
       }
     })
   },

@@ -19,6 +19,7 @@ import LoginView from '@/views/Login/LoginView.vue'
 import HomeView from '@/views/Home/HomeView.vue'
 import IntroductionView from '@/views/Introduction/IntroductionView.vue'
 import { useRoomInfoStore } from '@/stores/RoomInfoStore'
+import ChatService from '@/socket/ChatService'
 
 export default {
   data() {
@@ -49,6 +50,12 @@ export default {
       const roomInfoStore = useRoomInfoStore()
       return roomInfoStore.roomInfo
     }
+  },
+
+  mounted() {
+    ChatService.onLeavedRoomReceived(() => {
+      this.isIntroduction = true
+    })
   },
 
   watch: {

@@ -63,7 +63,7 @@
         <v-list height="450" v-if="searchUsersList.length > 0" lines="one">
           <v-list-item v-for="user in searchUsersList" :key="user._id" :value="user" clickable>
             <template v-slot:prepend>
-              <v-img width="40" height="40" :src="user.avatarUrl" />
+              <MSAvatar width="40" height="40" :src="user.avatarUrl" />
             </template>
             <v-list-item-title class="ml-3">{{ user.fullname }}</v-list-item-title>
             <v-list-item-subtitle class="ml-3">@{{ user.username }}</v-list-item-subtitle>
@@ -108,6 +108,7 @@
 </template>
 
 <script>
+import MSAvatar from '@/components/CustomAvatar/MSAvatar.vue'
 import MSButton from '@/components/CustomButton/MSButton.vue'
 import { useAllUsersInfoStore } from '@/stores/AllUsersInfoStore'
 import { useRoomInfoStore } from '@/stores/RoomInfoStore'
@@ -138,7 +139,8 @@ export default {
 
   components: {
     EmptyCard,
-    MSButton
+    MSButton,
+    MSAvatar
   },
 
   computed: {
@@ -176,7 +178,8 @@ export default {
         const newRoom = {
           _id: res.data._id,
           type: res.data.type,
-          displayName: res.data.roomName,
+          roomName: res.data.roomName,
+          createdBy: res.data.createdBy,
           avatarUrl: res.data.avatarUrl,
           lastMessageAt: res.data.lastMessageAt
         }
