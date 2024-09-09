@@ -1,27 +1,43 @@
 <template>
   <li class="my-message">
-    <v-skeleton-loader width="400" type="paragraph"></v-skeleton-loader>
+    <div class="message-wrapper">
+      <v-skeleton-loader width="400" type="paragraph"></v-skeleton-loader>
+    </div>
   </li>
   <li class="other-message">
-    <v-skeleton-loader width="400" type="paragraph"></v-skeleton-loader>
+    <div class="message-wrapper">
+      <v-skeleton-loader width="400" type="paragraph"></v-skeleton-loader>
+    </div>
   </li>
   <li class="my-message">
-    <v-skeleton-loader width="400" type="paragraph"></v-skeleton-loader>
+    <div class="message-wrapper">
+      <v-skeleton-loader width="400" type="paragraph"></v-skeleton-loader>
+    </div>
   </li>
   <li class="other-message">
-    <v-skeleton-loader width="400" type="paragraph"></v-skeleton-loader>
+    <div class="message-wrapper">
+      <v-skeleton-loader width="400" type="paragraph"></v-skeleton-loader>
+    </div>
   </li>
   <li class="my-message">
-    <v-skeleton-loader width="400" type="paragraph"></v-skeleton-loader>
+    <div class="message-wrapper">
+      <v-skeleton-loader width="400" type="paragraph"></v-skeleton-loader>
+    </div>
   </li>
   <li class="other-message">
-    <v-skeleton-loader width="400" type="paragraph"></v-skeleton-loader>
+    <div class="message-wrapper">
+      <v-skeleton-loader width="400" type="paragraph"></v-skeleton-loader>
+    </div>
   </li>
   <li class="my-message">
-    <v-skeleton-loader width="400" type="paragraph"></v-skeleton-loader>
+    <div class="message-wrapper">
+      <v-skeleton-loader width="400" type="paragraph"></v-skeleton-loader>
+    </div>
   </li>
   <li class="other-message">
-    <v-skeleton-loader width="400" type="paragraph"></v-skeleton-loader>
+    <div class="message-wrapper">
+      <v-skeleton-loader width="400" type="paragraph"></v-skeleton-loader>
+    </div>
   </li>
 </template>
 

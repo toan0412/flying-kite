@@ -32,7 +32,12 @@
   --scrollbar-thumb: var(--ms-word-pink);
   --scrollbar-track: var(--ms-soft-cream);
   --scrollbar-thumb-hover: var(--ms-brick-red);
-  --search-background-color: linear-gradient(to right, var(--ms-coral-pink), var(--ms-word-pink), var(--ms-brick-red));
+  --search-background-color: linear-gradient(
+    to right,
+    var(--ms-coral-pink),
+    var(--ms-word-pink),
+    var(--ms-brick-red)
+  );
 }
 
 *,

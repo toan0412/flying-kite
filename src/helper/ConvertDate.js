@@ -17,8 +17,19 @@ const convertToDayOfWeek = (dateString) => {
     return format(date, 'dd/MM/yy', { locale: vi })
   }
 
-  // Chuyển đổi sang dạng ngày trong tuần (Thứ Hai, Thứ Ba, ...)
-  return format(date, 'iiii', { locale: vi })
+  // Chuyển đổi sang dạng ngày trong tuần rút gọn (T2, T3, T4, ...)
+  const dayOfWeek = format(date, 'EEEE', { locale: vi })
+  const shortDayMap = {
+    'Thứ Hai': 'T2',
+    'Thứ Ba': 'T3',
+    'Thứ Tư': 'T4',
+    'Thứ Năm': 'T5',
+    'Thứ Sáu': 'T6',
+    'Thứ Bảy': 'T7',
+    'Chủ Nhật': 'CN'
+  }
+
+  return shortDayMap[dayOfWeek] || dayOfWeek
 }
 
 export { convertToDayOfWeek }

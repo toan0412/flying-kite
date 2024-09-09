@@ -6,7 +6,7 @@ class MessageService {
   //Tạo tin nhắn
   createMessage = async (req) => {
     const { roomId } = req.params
-    const { senderId, content, media } = req.body
+    const { senderId, content, media, replyTo } = req.body
     // Check xem người gửi có trong phòng chat không
     RoomService.checkExistMemberInRoom(roomId, senderId)
 
@@ -14,7 +14,8 @@ class MessageService {
       roomId: roomId,
       senderId: senderId,
       content: content,
-      media: media
+      media: media,
+      replyTo: replyTo
     })
 
     return newMessage

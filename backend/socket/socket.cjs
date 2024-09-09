@@ -29,12 +29,13 @@ function setupSocket(server) {
     // Lắng nghe sự kiện 'sendMessage'
     socket.on('sendMessage', async (message, ack) => {
       try {
-        const { roomId, senderId, content, media } = message
+        const { roomId, senderId, content, media, replyTo } = message
+        console.log(replyTo)
 
         // Tạo tin nhắn mới
         const newMessage = await MessageService.createMessage({
           params: { roomId },
-          body: { senderId, content, media }
+          body: { senderId, content, media, replyTo }
         })
 
         console.log('New message:', newMessage)

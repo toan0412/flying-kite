@@ -9,11 +9,6 @@ const getConservationByRoomIdAPI = (roomId, limit, offset) => {
   })
 }
 
-const sendMessageAPI = (req) => {
-  const { roomId, senderId, content } = req
-  return axiosInstance.post(`v1/api/messages/${roomId}`, { senderId, content })
-}
-
 const searchMessageByRoomAPI = (roomId, searchString) => {
   return axiosInstance.get(`v1/api/messages/search`, {
     params: {
@@ -23,5 +18,4 @@ const searchMessageByRoomAPI = (roomId, searchString) => {
   })
 }
 
-
-export { getConservationByRoomIdAPI, sendMessageAPI, searchMessageByRoomAPI }
+export { getConservationByRoomIdAPI, searchMessageByRoomAPI }

@@ -155,7 +155,8 @@ export default {
       showPrivateRoomDialog: false,
       showPublicRoomDialog: false,
       showSettingDialog: false,
-      searchRoomsList: []
+      searchRoomsList: [],
+      allUsersInfo: null
     }
   },
   components: {
@@ -182,6 +183,7 @@ export default {
       await getAllUsersAPI().then((res) => {
         const allUsersInfoStore = useAllUsersInfoStore()
         allUsersInfoStore.setAllUsersInfo(res.data)
+        this.allUsersInfo = allUsersInfoStore.allUsersInfo
       })
     },
 
@@ -232,15 +234,13 @@ export default {
 
     generateConversationWithUsersInfo(rooms) {
       const conversations = []
-      const allUsersInfoStore = useAllUsersInfoStore()
-      const allUsersInfo = allUsersInfoStore.allUsersInfo
 
       if (!Array.isArray(rooms)) {
         rooms = [rooms]
       }
 
       // Tạo một Map để tra cứu nhanh userInfo theo userId
-      const allUsersInfoMap = new Map(allUsersInfo.map((user) => [user._id, user]))
+      const allUsersInfoMap = new Map(this.allUsersInfo.map((user) => [user._id, user]))
 
       rooms.forEach((room) => {
         if (room.type == 'private') {

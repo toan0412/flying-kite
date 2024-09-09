@@ -135,72 +135,113 @@
 
           <!-- Message -->
           <li
-            v-for="message in messages"
+            v-for="(message, index) in messages"
             :key="message._id"
-            :class="{
-              'my-message': message.senderId === userId,
-              'other-message': message.senderId !== userId
-            }"
+            :class="[
+              message.senderId === userId ? 'my-message' : 'other-message',
+              isLastMessageOfSender(index) ? 'first-message' : '',
+              isLastMessageOfTime(index) ? 'time-separator' : ''
+            ]"
             :data-id="message._id"
-            ref="messageElement"
           >
-            <div class="message-actions">
-              <div class="message-actions__item">
-                <v-icon color="grey-darken-1" size="18">mdi-reply-outline</v-icon>
-                <v-tooltip activator="parent" location="top">Trả lời</v-tooltip>
-              </div>
-
-              <div class="message-actions__item">
-                <v-icon color="grey-darken-1" size="18">mdi-share-outline</v-icon>
-                <v-tooltip activator="parent" location="top">Chuyển tiếp</v-tooltip>
-              </div>
-
-              <div class="message-actions__item">
-                <v-icon @click="showDeleteMessageDialog(message)" color="grey-darken-1" size="18"
-                  >mdi-trash-can-outline</v-icon
-                >
-                <v-tooltip activator="parent" location="top">Xóa</v-tooltip>
-              </div>
-            </div>
             <div class="message-wrapper">
-              <div v-if="message.media" class="message-content__images">
-                <v-row dense>
-                  <v-col
-                    v-for="(media, index) in message.media"
-                    :key="index"
-                    :cols="12 / getColumnCount(message.media.length)"
-                  >
-                    <v-img
-                      aspect-ratio="1"
-                      cover
-                      height="140"
-                      width="140"
-                      :src="media.url"
-                      @click="openImageDialog(media.url)"
-                      class="cursor-pointer"
-                    ></v-img>
-
-                    <!-- Dialog để hiển thị ảnh lớn -->
-                    <v-dialog v-model="imageDialog" max-width="600px">
-                      <v-card>
-                        <v-card-title class="d-flex justify-space-between align-center">
-                          <v-btn
-                            icon="mdi-close"
-                            variant="text"
-                            @click="imageDialog = false"
-                          ></v-btn>
-                        </v-card-title>
-                        <v-img :src="imageSelected" contain height="100%"></v-img>
-                      </v-card>
-                    </v-dialog>
-                  </v-col>
-                </v-row>
+              <div class="message-sender__name">
+                {{ message.fullname }}
               </div>
-              <div class="message-content">
-                <div v-if="message.isDelete" class="message-content__text">Tin nhắn đã bị xóa</div>
-                <div v-else-if="!message.isDelete && message.content" class="message-content__text">
-                  {{ message.content }}
+
+              <div class="message-time">
+                <div class="texting-time">
+                  {{ convertToDayOfWeek(message.createdAt) }}
                 </div>
+              </div>
+
+              <div class="message-actions">
+                <div class="message-actions__item">
+                  <v-icon color="grey-darken-1" @click="openReplyMessage(message)" size="18"
+                    >mdi-reply-outline</v-icon
+                  >
+                  <v-tooltip activator="parent" location="top">Trả lời</v-tooltip>
+                </div>
+
+                <div class="message-actions__item">
+                  <v-icon color="grey-darken-1" size="18">mdi-share-outline</v-icon>
+                  <v-tooltip activator="parent" location="top">Chuyển tiếp</v-tooltip>
+                </div>
+
+                <div class="message-actions__item">
+                  <v-icon @click="showDeleteMessageDialog(message)" color="grey-darken-1" size="18"
+                    >mdi-trash-can-outline</v-icon
+                  >
+                  <v-tooltip activator="parent" location="top">Xóa</v-tooltip>
+                </div>
+              </div>
+
+              <div class="message-main">
+                <div v-if="message.media" class="message-content__images">
+                  <v-row dense>
+                    <v-col
+                      v-for="(media, index) in message.media"
+                      :key="index"
+                      :cols="12 / getColumnCount(message.media.length)"
+                    >
+                      <v-img
+                        aspect-ratio="1"
+                        cover
+                        height="140"
+                        width="140"
+                        :src="media.url"
+                        @click="openImageDialog(media.url)"
+                        class="cursor-pointer"
+                      ></v-img>
+
+                      <!-- Dialog để hiển thị ảnh lớn -->
+                      <v-dialog v-model="imageDialog" max-width="600px">
+                        <v-card>
+                          <v-card-title class="d-flex justify-space-between align-center">
+                            <v-btn
+                              icon="mdi-close"
+                              variant="text"
+                              @click="imageDialog = false"
+                            ></v-btn>
+                          </v-card-title>
+                          <v-img :src="imageSelected" contain height="100%"></v-img>
+                        </v-card>
+                      </v-dialog>
+                    </v-col>
+                  </v-row>
+                </div>
+                <div class="message-content__text-wrapper">
+                  <div
+                    class="message-content__reply"
+                    @click="handleScrollMessage(message.replyMessage)"
+                    v-if="message.replyMessage"
+                  >
+                    <v-icon icon="mdi-reply" color="grey-darken-1"></v-icon>
+                    <p class="message-content__reply__content">
+                      {{ message.replyMessage.content }}
+                    </p>
+                    <p class="message-content__reply__details">
+                      {{ message.replyMessage.fullname }},{{ message.replyMessage.createdAt }}
+                    </p>
+                  </div>
+                  <div v-if="message.isDelete" class="message-content__text">
+                    Tin nhắn đã bị xóa
+                  </div>
+                  <div
+                    v-else-if="!message.isDelete && message.content"
+                    class="message-content__text"
+                  >
+                    {{ message.content }}
+                  </div>
+                </div>
+                <v-tooltip activator="parent" location="top">{{
+                  convertToDayOfWeek(message.createdAt)
+                }}</v-tooltip>
+              </div>
+
+              <div class="message-sender__avatar">
+                <MSAvatar width="30" height="30" :alt="message.fullname" :src="message.avatarUrl">
+                </MSAvatar>
               </div>
             </div>
           </li>
@@ -214,16 +255,30 @@
     <div class="content__input">
       <!-- Hiển thị thumbnail -->
       <div class="content__input__preview" ref="previewImages"></div>
+
       <!-- Input -->
       <div class="content__input__content">
         <Picker v-if="showEmojiPicker" :data="emojiIndex" set="twitter" @select="showEmoji" />
-        <v-text-field
+        <div v-if="isReplyMessage" class="content__input__reply">
+          <div class="d-flex justify-space-between py-2">
+            <v-icon color="grey-darken-1" icon="mdi-reply"></v-icon>
+            <v-icon color="grey-darken-1" icon="mdi-close" @click="closeReplyMessage"></v-icon>
+          </div>
+          <div class="content_input__reply__message">{{ replyMessage.content }}</div>
+          <div class="content_input__reply__sender--detail">
+            {{ replyMessage.fullname }}, {{ convertToDayOfWeek(replyMessage.createdAt) }}
+          </div>
+        </div>
+        <v-textarea
           ref="messageInput"
           auto-focus
           class="custom-textfield"
           v-model="messageInput"
           height="50"
           @keydown.enter="sendMessage"
+          rows="1"
+          auto-grow
+          max-rows="3"
           density="compact"
           variant="solo"
           hide-details
@@ -237,7 +292,7 @@
               @click="showEmojiPicker = !showEmojiPicker"
             ></v-icon>
           </template>
-        </v-text-field>
+        </v-textarea>
       </div>
       <!-- Actions -->
       <div class="content__input__actions">
@@ -295,6 +350,7 @@ import Dropzone from 'dropzone'
 import data from 'emoji-mart-vue-fast/data/all.json'
 import 'emoji-mart-vue-fast/css/emoji-mart.css'
 import { Picker, EmojiIndex } from 'emoji-mart-vue-fast/src'
+import { differenceInMinutes, parseISO } from 'date-fns'
 
 let emojiIndex = new EmojiIndex(data)
 
@@ -339,16 +395,18 @@ export default {
       emojiIndex: emojiIndex,
       showEmojiPicker: false,
       showAddMemberDialog: false,
-      showRoomInfoDialog: false
+      showRoomInfoDialog: false,
+      isReplyMessage: false,
+      replyMessage: null
     }
   },
 
   methods: {
     //Lấy cuộc hội thoại theo id phòng
     async getConservationByRoomId() {
-      if (!this.roomId || this.flagStopCallApi || this.isLoadingMessage) return
+      if (!this.roomId || this.flagStopCallApi || this.isLoadingMessages) return
 
-      this.isLoadingMessage = true
+      this.isLoadingMessages = true
 
       try {
         const res = await getConservationByRoomIdAPI(this.roomId, this.limit, this.offset)
@@ -357,15 +415,41 @@ export default {
           this.flagStopCallApi = true
         }
 
-        this.messages = [...this.messages, ...res.data]
+        const messages = res.data.map((message) => {
+          const userInfo = this.allUsersInfoMap.get(message.senderId)
+
+          let replyMessage = null
+          if (message.replyTo) {
+            replyMessage = res.data.find((msg) => msg._id === message.replyTo)
+          }
+
+          return {
+            ...message,
+            avatarUrl: userInfo.avatarUrl,
+            fullname: userInfo.fullname,
+            replyMessage: replyMessage
+              ? {
+                  _id: replyMessage._id,
+                  fullname: this.allUsersInfoMap.get(replyMessage.senderId)?.fullname || 'Unknown',
+                  content: replyMessage.content,
+                  createdAt: this.convertToDayOfWeek(replyMessage.createdAt)
+                }
+              : null
+          }
+        })
+
+        console.log(messages)
+
+        this.messages = [...this.messages, ...messages]
+      } catch (error) {
+        console.error(error)
+      } finally {
+        this.isLoadingMessages = false
+        this.isLoadingMessage = false
         this.skeletonLoadingConversation = false
         this.skeletonLoadingRoomInfo = false
         this.isLoadingMessage = false
         this.offset += this.limit
-      } catch (error) {
-        console.error(error)
-      } finally {
-        this.isLoadingMessage = false // Đánh dấu cuộc gọi API đã hoàn tất
       }
     },
 
@@ -377,6 +461,10 @@ export default {
       const message = {
         roomId: this.roomId,
         senderId: this.userId
+      }
+
+      if (this.replyMessage) {
+        message.replyTo = this.replyMessage._id
       }
 
       if (this.filesToUpload.length > 0) {
@@ -400,6 +488,7 @@ export default {
       this.isSendingMessage = false
       this.showEmojiPicker = false
       // Xóa nội dung tin nhắn và danh sách file
+      this.closeReplyMessage()
       this.messageInput = ''
       this.filesToUpload = []
       this.myDropzone.removeAllFiles(true)
@@ -420,13 +509,8 @@ export default {
             return
           }
 
-          const allUsersInfoStore = useAllUsersInfoStore()
-          const allUsersInfo = allUsersInfoStore.allUsersInfo
-
-          const allUsersInfoMap = new Map(allUsersInfo.map((user) => [user._id, user]))
-
           this.messagesSearchList = messagesSearchList.map((message) => {
-            const user = allUsersInfoMap.get(message.senderId)
+            const user = this.allUsersInfoMap.get(message.senderId)
             if (user) {
               message.senderName = user.fullname
               message.avatarUrl = user.avatarUrl
@@ -495,7 +579,7 @@ export default {
 
     // Xóa lớp 'highlight-text' khỏi tất cả các thẻ <li>
     removeHighLightTextClass() {
-      const allItems = this.$refs.messageList.querySelectorAll('li .highlight-text')
+      const allItems = this.$refs.messageList.querySelectorAll('.highlight-text')
 
       if (!allItems) return
       allItems.forEach((item) => {
@@ -509,6 +593,36 @@ export default {
       const path = `rooms/${roomId}/files`
       const mediaArray = await uploadFilesAndGetUrls(this.filesToUpload, path)
       return mediaArray
+    },
+
+    // Hàm set class cho thẻ li
+    isLastMessageOfTime(index) {
+      // Nếu tin nhắn hiện tại là tin nhắn cuối cùng trong danh sách, không cần kiểm tra
+      if (index === this.messages.length - 1) {
+        return false
+      }
+
+      const currentMessage = this.messages[index]
+      const nextMessage = this.messages[index + 1]
+
+      const currentMessageTime = parseISO(currentMessage.createdAt)
+      const nextMessageTime = parseISO(nextMessage.createdAt)
+
+      // Kiểm tra khoảng cách giữa hai tin nhắn
+      return differenceInMinutes(currentMessageTime, nextMessageTime) >= 30
+    },
+
+    isLastMessageOfSender(index) {
+      // Nếu đây là tin nhắn cuối cùng trong danh sách thì đương nhiên là tin nhắn cuối của sender
+      if (index === this.messages.length - 1) {
+        return true
+      }
+
+      if (this.messages[index].senderId !== this.messages[index + 1].senderId) {
+        return true
+      }
+
+      return false
     },
 
     getColumnCount(length) {
@@ -610,19 +724,54 @@ export default {
 
     showEmoji(emoji) {
       this.messageInput += emoji.native
+    },
+
+    closeReplyMessage() {
+      this.isReplyMessage = false
+      this.replyMessage = null
+    },
+
+    openReplyMessage(message) {
+      this.isReplyMessage = true
+      this.replyMessage = message
     }
   },
 
   mounted() {
     this.userId = localStorage.getItem('userId')
 
-    this.$refs.messageInput.$el.querySelector('input').focus()
+    this.$refs.messageInput.$el.querySelector('textarea').focus()
+
+    const allUsersInfoStore = useAllUsersInfoStore()
+    const allUsersInfo = allUsersInfoStore.allUsersInfo
+
+    this.allUsersInfoMap = new Map(allUsersInfo.map((user) => [user._id, user]))
 
     //Setup dropzone
     this.setupDropzone()
 
-    // Set up socket listener for incoming messages
-    ChatService.onMessageReceived((message) => {
+    // Lắng nghe tin nhắn đã gửi
+    ChatService.onMessageReceived((messageReceived) => {
+      let replyMessage = null
+
+      if (messageReceived.replyTo) {
+        replyMessage = this.messages.find((msg) => msg._id === messageReceived.replyTo)
+      }
+
+      replyMessage = messageReceived.replyTo
+        ? {
+            _id: replyMessage._id,
+            fullname: this.allUsersInfoMap.get(replyMessage.senderId)?.fullname || 'Unknown',
+            content: replyMessage.content,
+            createdAt: this.convertToDayOfWeek(replyMessage.createdAt)
+          }
+        : null
+
+      const message = {
+        ...messageReceived,
+        replyMessage
+      }
+
       this.messages.unshift(message)
     })
 
@@ -718,6 +867,8 @@ export default {
 
 <style lang="scss">
 .content-wrapper {
+  display: flex;
+  flex-direction: column;
   height: 100%;
   width: 100%;
 }
@@ -787,9 +938,9 @@ export default {
 .content__input {
   position: relative;
   display: flex;
-  align-items: center;
+  padding: 12px 0;
+  align-items: end;
   justify-content: center;
-  height: 86px;
   width: 100%;
   border-top: 1px solid var(--border-color);
 
@@ -802,7 +953,46 @@ export default {
 
   .content__input__content {
     display: flex;
+    flex-direction: column;
     width: 50%;
+  }
+
+  .content__input__reply {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    margin-bottom: 12px;
+    height: fit-content;
+    background-color: var(--background-icon-color);
+    border-radius: 18px;
+    padding: 4px 16px;
+  }
+
+  .content_input__reply__message {
+    position: relative;
+    display: inline;
+    flex-grow: 0;
+    flex-shrink: 0;
+    overflow: hidden;
+    white-space: pre;
+    text-overflow: ellipsis;
+    color: var(--text-color);
+    align-self: stretch;
+    cursor: inherit;
+  }
+
+  .content_input__reply__sender--detail {
+    position: relative;
+    display: inline;
+    flex-grow: 0;
+    flex-shrink: 0;
+    font-size: 12px;
+    overflow: hidden;
+    white-space: pre;
+    text-overflow: ellipsis;
+    color: var(--text-color);
+    align-self: stretch;
+    cursor: inherit;
   }
 
   .content__input__actions {
@@ -884,16 +1074,17 @@ export default {
 }
 
 .content__conversation {
-  height: calc(100vh - 60px - 86px);
   width: 100%;
   justify-content: center;
   position: relative;
   display: flex;
+  padding: 4px 0;
   flex-direction: row;
   overflow: hidden;
   align-items: stretch;
 
   .content__conversation--main {
+    min-height: calc(100vh - 60px - 86px);
     position: relative;
     display: flex;
     flex-direction: column;
@@ -911,6 +1102,99 @@ export default {
       flex-direction: column-reverse;
       padding: 12px 8px;
       height: 100%;
+      list-style-type: none;
+
+      .message-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+
+        .message-sender__name {
+          display: none;
+        }
+      }
+
+      .time-separator {
+        .message-time {
+          display: flex;
+          position: absolute;
+          width: 100%;
+          top: -46px;
+          justify-content: center;
+          margin: 8px 0;
+        }
+
+        .message-sender__avatar {
+          .v-img {
+            display: block;
+          }
+        }
+      }
+
+      .my-message.time-separator {
+        padding-top: 56px;
+      }
+
+      .other-message.time-separator {
+        padding-top: 38px;
+
+        .message-sender__name {
+          display: block;
+        }
+
+        .message-sender__name {
+          display: flex;
+          position: absolute;
+          width: 100%;
+          top: -16px;
+          font-size: 12px;
+          justify-content: start;
+          padding-left: 48px;
+          color: var(--text-color);
+        }
+      }
+
+      .my-message {
+        .message-sender__avatar {
+          display: none;
+        }
+      }
+
+      .message-sender__avatar {
+        width: 30px;
+        height: 30px;
+        .v-img {
+          display: none;
+        }
+      }
+
+      .other-message.first-message {
+        .message-sender__avatar {
+          .v-img {
+            display: block;
+          }
+        }
+
+        .message-time {
+          display: flex;
+          position: absolute;
+          width: 100%;
+          top: -46px;
+          justify-content: center;
+          margin: 8px 0;
+        }
+
+        .message-sender__name {
+          display: flex;
+          position: absolute;
+          width: 100%;
+          top: -16px;
+          font-size: 12px;
+          justify-content: start;
+          padding-left: 48px;
+          color: var(--lighter-text-color);
+        }
+      }
     }
 
     .highlight-text {
@@ -941,10 +1225,11 @@ export default {
     }
 
     .my-message {
-      display: flex;
-      justify-content: flex-end;
+      .message-wrapper {
+        justify-content: flex-end;
+      }
 
-      .message-content {
+      .message-content__text-wrapper {
         background-color: var(--background-message-color);
       }
 
@@ -960,12 +1245,17 @@ export default {
       display: none;
     }
 
-    .other-message {
-      display: flex;
-      justify-content: start;
-      flex-direction: row-reverse;
+    .message-time {
+      display: none;
+    }
 
-      .message-content {
+    .other-message {
+      .message-wrapper {
+        justify-content: start;
+        flex-direction: row-reverse;
+      }
+
+      .message-content__text-wrapper {
         background-color: #f1f1f1;
       }
 
@@ -985,19 +1275,62 @@ export default {
       margin: 4px 12px;
     }
 
-    .message-wrapper {
+    .message-main {
       display: flex;
       flex-direction: column;
       border-radius: 8px;
       max-width: 70%;
     }
 
-    .message-content {
+    .message-sender__avatar {
+      .v-img {
+        border-radius: 50%;
+      }
+    }
+
+    .message-content__text-wrapper {
       margin: 4px 8px;
       border-radius: 12px;
       font-size: 14px;
       overflow-wrap: break-word;
       color: var(--text-color);
+    }
+
+    .message-content__reply {
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      border-radius: 8px;
+      padding: 4px 8px;
+      margin: 4px;
+      border: 1px solid var(--border-color);
+    }
+
+    .message-content__reply__content {
+      position: relative;
+      display: inline;
+      flex-grow: 0;
+      flex-shrink: 0;
+      overflow: hidden;
+      white-space: pre;
+      text-overflow: ellipsis;
+      color: var(--text-color);
+      align-self: stretch;
+      cursor: inherit;
+    }
+
+    .message-content__reply__details {
+      position: relative;
+      display: inline;
+      flex-grow: 0;
+      flex-shrink: 0;
+      overflow: hidden;
+      white-space: pre;
+      font-size: 12px;
+      text-overflow: ellipsis;
+      color: var(--text-color);
+      align-self: stretch;
+      cursor: inherit;
     }
 
     .message-content__images {

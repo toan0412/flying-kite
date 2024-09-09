@@ -1,6 +1,12 @@
 import axios from 'axios'
 
-const AuthFail = ['invalid signature', 'jwt has expired', 'jwt malformed', 'verify jwt failed']
+const AuthFail = [
+  'invalid signature',
+  'jwt has expired',
+  'jwt malformed',
+  'verify jwt failed',
+  'jwt expired'
+]
 
 // Create an axios instance with default configuration
 const instance = axios.create({

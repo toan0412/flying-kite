@@ -89,7 +89,7 @@ export default {
 .main-wrapper {
   z-index: 1;
   width: calc(100% - 322px);
-  min-height: 100vh;
+  height: 100vh;
   box-shadow: rgba(0, 0, 0, 0.14) 0px 2px 8px 0px;
 }
 </style>
