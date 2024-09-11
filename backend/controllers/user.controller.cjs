@@ -8,6 +8,12 @@ class UserController {
     }).send(res)
   }
 
+  getUserById = async (req, res, next) => {
+    new SuccessResponse({
+      data: await UserService.getUserById(req)
+    }).send(res)
+  }
+
   searchUser = async (req, res, next) => {
     new SuccessResponse({
       data: await UserService.findByFilter(req.body)

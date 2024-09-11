@@ -27,6 +27,7 @@
   --border-avatar-color: var(--ms-light-gray);
   --avatar-color: var(--ms-light-beige);
   --background-message-color: var(--ms-soft-cream);
+  --background-reply-message-color: var(--ms-soft-cream);
   --highlight-text-color: var(--ms-word-pink);
   --login-background-color: linear-gradient(180deg, var(--ms-dark-grey), var(--ms-light-beige));
   --scrollbar-thumb: var(--ms-word-pink);

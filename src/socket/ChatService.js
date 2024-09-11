@@ -82,7 +82,7 @@ const ChatService = {
     })
   },
 
-  removeMemberFromRoom(roomInfo, callback){
+  removeMemberFromRoom(roomInfo, callback) {
     socket.emit('removeMemberFromRoom', roomInfo, (ack) => {
       if (ack.success) {
         if (callback) callback(null, ack)
@@ -93,7 +93,7 @@ const ChatService = {
     })
   },
 
-  leavePublicRoom(roomInfo, callback){
+  leavePublicRoom(roomInfo, callback) {
     socket.emit('leavePublicRoom', roomInfo, (ack) => {
       if (ack.success) {
         if (callback) callback(null, ack)
@@ -104,7 +104,37 @@ const ChatService = {
     })
   },
 
-  onLeavedRoomReceived(callback){
+  inviteCall(data, callback) {
+    socket.emit('incomingCall', data, (ack) => {
+      if (ack.success) {
+        if (callback) callback(null, ack)
+      } else {
+        console.error('Error ringing phone:', ack.message)
+        if (callback) callback(new Error(ack.message), null)
+      }
+    })
+  },
+
+  onIncomingCallReceived(callback) {
+    socket.on('receiveIncomingCall', callback)
+  },
+
+  sendReceiverPeerId(data, callback) {
+    socket.emit('sendReceiverPeerId', data, (ack) => {
+      if (ack.success) {
+        if (callback) callback(null, ack)
+      } else {
+        console.error('Error sending PeerId:', ack.message)
+        if (callback) callback(new Error(ack.message), null)
+      }
+    })
+  },
+
+  onReceiverPeerIdReceived(callback) {
+    socket.on('receiveReceiverPeerId', callback)
+  },
+
+  onLeavedRoomReceived(callback) {
     socket.on('receiveLeavedRoom', callback)
   },
 

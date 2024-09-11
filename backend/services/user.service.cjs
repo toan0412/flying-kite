@@ -1,24 +1,22 @@
 const mongoose = require('mongoose')
 const userModel = require('../models/user.model.cjs')
 const { BadRequestError, NotFoundError } = require('../core/error.response.cjs')
+const { getInfoData } = require('../utils/index.cjs')
 
 class UserService {
   // Tìm người dùng bằng ObjectId hoặc username
-  findByUser = async (identifier) => {
-    const query = {}
+  getUserById = async (req) => {
+    const { id } = req.params
+    const existUser = await userModel.findById(id).lean()
 
-    // Kiểm tra nếu identifier là ObjectId hoặc chuỗi (username)
-    if (mongoose.Types.ObjectId.isValid(identifier)) {
-      query._id = identifier
-    } else {
-      query.username = identifier
-    }
-
-    const existUser = await userModel.findOne(query).lean()
     if (!existUser) {
-      throw new NotFoundError('Không tìm thấy người dùng')
+      throw new NotFoundError('Người dùng không tồn tại')
     }
-    return existUser
+
+    return getInfoData({
+      field: ['_id', 'username', 'fullname', 'email', 'avatarUrl'],
+      object: existUser
+    })
   }
 
   // Lấy thông tin người dùng theo ID từ header
@@ -28,9 +26,10 @@ class UserService {
     if (!user) {
       throw new NotFoundError('Người dùng không tồn tại')
     }
-    return {
-      user: user
-    }
+    return getInfoData({
+      field: ['_id', 'username', 'fullname', 'email', 'avatarUrl'],
+      object: user
+    })
   }
 
   //Cập nhật thông tin người dùng

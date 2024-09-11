@@ -1,12 +1,18 @@
 <template>
   <div v-if="isAuth" class="main">
     <div class="sidebar-wrapper">
-      <Sidebar @is-auth="handleAuthStatus" />
+      <router-view class="view sidebar" name="sidebar" @is-auth="handleAuthStatus" />
     </div>
     <div class="main-wrapper">
-      <IntroductionView v-if="isIntroduction" />
+      <IntroductionView v-if="showIntroduction" />
       <router-view v-else />
     </div>
+    <IncomingCallDialog
+      :callUrl="callUrl"
+      :callerInfo="callerInfo"
+      v-model:visible="showPrivateRoomDialog"
+      @close="showPrivateRoomDialog = false"
+    />
   </div>
   <div v-else>
     <LoginView @is-auth="handleAuthStatus" />
@@ -14,30 +20,33 @@
 </template>
 
 <script>
-import Sidebar from '@/components/layout/sidebar/Sidebar.vue'
 import LoginView from '@/views/Login/LoginView.vue'
-import HomeView from '@/views/Home/HomeView.vue'
 import IntroductionView from '@/views/Introduction/IntroductionView.vue'
 import { useRoomInfoStore } from '@/stores/RoomInfoStore'
 import ChatService from '@/socket/ChatService'
+import { getUserByIdAPI } from './services/UserServices'
+import { defineAsyncComponent } from 'vue'
 
 export default {
   data() {
     return {
       isAuth: false,
-      isIntroduction: true
+      isIntroduction: true,
+      showPrivateRoomDialog: false,
+      callUrl: null,
+      callerInfo: null
     }
   },
 
   components: {
-    HomeView,
-    Sidebar,
     LoginView,
-    IntroductionView
+    IntroductionView,
+    IncomingCallDialog: defineAsyncComponent(() =>
+      import('./components/Dialog/IncomingCallDialog.vue')
+    )
   },
 
   created() {
-    localStorage.setItem('roomId', '')
     const accessToken = localStorage.getItem('accessToken')
     const userId = localStorage.getItem('userId')
     if (accessToken && userId) {
@@ -49,12 +58,29 @@ export default {
     currentRoom() {
       const roomInfoStore = useRoomInfoStore()
       return roomInfoStore.roomInfo
+    },
+
+    showIntroduction() {
+      return this.isIntroduction && this.$route.path !== '/call'
     }
   },
 
   mounted() {
     ChatService.onLeavedRoomReceived(() => {
       this.isIntroduction = true
+    })
+
+    ChatService.onIncomingCallReceived(async (callUrl) => {
+      const url = new URL(callUrl)
+      const callerId = url.searchParams.get('caller_id')
+      try {
+        const res = await getUserByIdAPI(callerId)
+        this.callerInfo = res.data
+      } catch (error) {
+        console.error('Failed to get caller info:', error)
+      }
+      this.callUrl = callUrl
+      this.showPrivateRoomDialog = true
     })
   },
 
@@ -88,6 +114,7 @@ export default {
 
 .main-wrapper {
   z-index: 1;
+  flex-grow: 1;
   width: calc(100% - 322px);
   height: 100vh;
   box-shadow: rgba(0, 0, 0, 0.14) 0px 2px 8px 0px;

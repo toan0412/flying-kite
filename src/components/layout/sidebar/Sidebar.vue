@@ -175,7 +175,7 @@ export default {
         this.userInfo = res.data.user
         this.skeletonLoadingUserInfo = false
         const userInfoStore = useUserInfoStore()
-        userInfoStore.setUserInfo(res.data.user)
+        userInfoStore.setUserInfo(res.data)
       })
     },
 

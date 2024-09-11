@@ -7,6 +7,7 @@
         width="270"
         type="list-item-avatar"
       ></v-skeleton-loader>
+      <!-- Header info -->
       <div v-else class="content__header__info">
         <MSAvatar
           width="40"
@@ -104,7 +105,7 @@
           <v-icon color="white" size="20" icon="mdi-video-outline"></v-icon>
         </div>
         <div class="content__header__actions__item ml-1 header-action-background">
-          <v-icon color="white" size="20" icon="mdi-phone-outline"></v-icon>
+          <v-icon @click="openVideoCall" color="white" size="20" icon="mdi-phone-outline"></v-icon>
         </div>
       </div>
     </div>
@@ -144,17 +145,21 @@
             ]"
             :data-id="message._id"
           >
+            <!-- Message wrapper -->
             <div class="message-wrapper">
+              <!-- Message sender name -->
               <div class="message-sender__name">
                 {{ message.fullname }}
               </div>
 
+              <!-- Message time -->
               <div class="message-time">
                 <div class="texting-time">
                   {{ convertToDayOfWeek(message.createdAt) }}
                 </div>
               </div>
 
+              <!-- Message actions -->
               <div class="message-actions">
                 <div class="message-actions__item">
                   <v-icon color="grey-darken-1" @click="openReplyMessage(message)" size="18"
@@ -176,6 +181,7 @@
                 </div>
               </div>
 
+              <!-- Message main -->
               <div class="message-main">
                 <div v-if="message.media" class="message-content__images">
                   <v-row dense>
@@ -239,6 +245,7 @@
                 }}</v-tooltip>
               </div>
 
+              <!-- Message avtar -->
               <div class="message-sender__avatar">
                 <MSAvatar width="30" height="30" :alt="message.fullname" :src="message.avatarUrl">
                 </MSAvatar>
@@ -259,6 +266,7 @@
       <!-- Input -->
       <div class="content__input__content">
         <Picker v-if="showEmojiPicker" :data="emojiIndex" set="twitter" @select="showEmoji" />
+        <!-- Reply Input -->
         <div v-if="isReplyMessage" class="content__input__reply">
           <div class="d-flex justify-space-between py-2">
             <v-icon color="grey-darken-1" icon="mdi-reply"></v-icon>
@@ -269,6 +277,8 @@
             {{ replyMessage.fullname }}, {{ convertToDayOfWeek(replyMessage.createdAt) }}
           </div>
         </div>
+
+        <!-- Message Input -->
         <v-textarea
           ref="messageInput"
           auto-focus
@@ -338,6 +348,7 @@ import ConfirmDialog from '@/components/Dialog/ConfirmDialog.vue'
 import AddMemberDialog from '@/components/Dialog/AddMemberDialog.vue'
 import RoomInfoDialog from '@/components/Dialog/RoomInfoDialog.vue'
 import ChatService from '@/socket/ChatService'
+import PeerService from '@/peer/PeerService'
 import ConversationSkeletonLoading from '@/components/SkeletonLoading/ConversationSkeletonLoading.vue'
 import { getConservationByRoomIdAPI, searchMessageByRoomAPI } from '@/services/MessageService'
 import { useUserInfoStore } from '@/stores/UserInfoStore'
@@ -437,8 +448,6 @@ export default {
               : null
           }
         })
-
-        console.log(messages)
 
         this.messages = [...this.messages, ...messages]
       } catch (error) {
@@ -699,6 +708,25 @@ export default {
       const senderId = this.userId
       const isTyping = this.isTyping
       ChatService.sendNotifyTyping({ roomId, senderId, senderName, isTyping })
+    },
+
+    async openVideoCall() {
+      const callerId = localStorage.getItem('userId')
+      const callId = Math.floor(Math.random() * 1000000000).toString()
+      const roomId = this.room._id
+      const userIdsToRing = this.room.members
+        .filter((user) => user.userId !== this.userId)
+        .map((user) => user.userId)
+
+      const url = new URL('http://localhost:5173/call')
+
+      url.searchParams.append('room_id', roomId)
+      url.searchParams.append('call_id', callId)
+      userIdsToRing.forEach((userId) => url.searchParams.append('users_to_ring', userId))
+      url.searchParams.append('caller_id', callerId)
+
+      ChatService.inviteCall({ url, userIdsToRing })
+      window.open(url.toString(), '_blank', 'width=1268,height=768')
     },
 
     //Mở Add member dialog từ Room info dialog
@@ -1304,6 +1332,7 @@ export default {
       padding: 4px 8px;
       margin: 4px;
       border: 1px solid var(--border-color);
+      background-color: var(--background-reply-message-color);
     }
 
     .message-content__reply__content {

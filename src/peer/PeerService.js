@@ -1,85 +1,61 @@
-import { Peer } from 'peerjs'
+import Peer from 'peerjs'
 
-const PeerService = {
-  createPeer(peerId) {
-    const peer = new Peer(peerId, {
-      host: '6s56z8-9000.csb.app',
-      secure: true
+class PeerService {
+  constructor() {
+    this.peer = null
+  }
+
+  // Hàm tạo Peer hoặc trả về Peer hiện tại nếu đã tồn tại
+  createPeer(userId) {
+    if (this.peer) {
+      console.log('Peer already exists, returning existing peer:', this.peer.id)
+      return this.peer
+    }
+
+    // Khởi tạo Peer mới nếu chưa tồn tại
+    this.peer = new Peer(userId, {
+      host: 'localhost',
+      port: 9000,
+      secure: false
     })
-    return peer
-  },
 
-  async call(peer, targetPeerId, isVideoCall = true) {
-    try {
-      let mediaConstraints = isVideoCall ? { video: true, audio: true } : { audio: true }
-      let mediaStream
+    this.peer.on('open', (id) => {
+      console.log(`PeerJS connected with ID: ${id}`)
+    })
 
-      try {
-        mediaStream = await navigator.mediaDevices.getUserMedia(mediaConstraints)
-      } catch (err) {
-        console.warn('Video device not found. Falling back to audio only.')
-        mediaConstraints = { audio: true }
-        mediaStream = await navigator.mediaDevices.getUserMedia(mediaConstraints)
-      }
+    this.peer.on('error', (err) => {
+      console.error('PeerJS error:', err)
+    })
 
-      const call = peer.call(targetPeerId, mediaStream, mediaConstraints)
+    return this.peer
+  }
 
-      call.on('stream', (remoteStream) => {
-        const remoteVideoElement = document.getElementById('local-video')
-        if (remoteVideoElement) {
-          remoteVideoElement.srcObject = remoteStream
-        }
-      })
-
-      call.on('close', () => {
-        console.log('Call closed')
-      })
-
-      call.on('error', (err) => {
-        console.error('Call error:', err)
-      })
-
-      return call
-    } catch (err) {
-      console.error('Failed to create media stream:', err)
+  // Hàm connectToPeer để kết nối đến Peer khác
+  connectToPeer(peerId) {
+    if (!this.peer) {
+      console.error('Peer instance has not been created yet!')
+      return
     }
-  },
 
-  async answer(call, isVideoCall = true) {
-    try {
-      let mediaConstraints = isVideoCall ? { video: true, audio: true } : { audio: true }
-      let mediaStream
-      try {
-        mediaStream = await navigator.mediaDevices.getUserMedia(mediaConstraints)
-      } catch (err) {
-        console.warn('Video device not found. Falling back to audio only.')
-        mediaConstraints = { audio: true }
-        mediaStream = await navigator.mediaDevices.getUserMedia(mediaConstraints)
-      }
+    const conn = this.peer.connect(peerId)
 
-      // Answer the call with the media stream
-      call.answer(mediaStream)
+    conn.on('open', () => {
+      console.log(`Connected to peer: ${peerId}`)
+      conn.send('Hello, peer!')
+    })
 
-      call.on('stream', (remoteStream) => {
-        const remoteVideoElement = document.getElementById('remote-video')
-        if (remoteVideoElement) {
-          remoteVideoElement.srcObject = remoteStream
-        }
-      })
+    conn.on('data', (data) => {
+      console.log(`Received data from peer ${peerId}:`, data)
+    })
 
-      call.on('close', () => {
-        console.log('Call closed')
-      })
+    conn.on('error', (err) => {
+      console.error('Connection error:', err)
+    })
 
-      call.on('error', (err) => {
-        console.error('Call error:', err)
-      })
-
-      return call
-    } catch (err) {
-      console.error('Failed to create media stream:', err)
-    }
+    conn.on('close', () => {
+      console.log(`Connection with peer ${peerId} closed.`)
+    })
   }
 }
 
-export default PeerService
+export default new PeerService()

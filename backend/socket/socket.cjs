@@ -20,13 +20,13 @@ function setupSocket(server) {
       console.log(`User ${socket.id} joined room ${roomId}`)
     })
 
-    // Lắng nghe sự kiện 'leaveRoom'
+    // Lắng nghe sự kiện rời phòng
     socket.on('leaveRoom', (roomId) => {
       socket.leave(roomId)
       console.log(`User ${socket.id} left room ${roomId}`)
     })
 
-    // Lắng nghe sự kiện 'sendMessage'
+    // Lắng nghe sự kiện gửi tin nhắn
     socket.on('sendMessage', async (message, ack) => {
       try {
         const { roomId, senderId, content, media, replyTo } = message
@@ -68,6 +68,7 @@ function setupSocket(server) {
       }
     })
 
+    //Lắng nghe sự kiện gửi thông báo đang nhập tin nhắn
     socket.on('sendNotifyTyping', async (notify, ack) => {
       try {
         const { roomId, senderId, senderName, isTyping } = notify
@@ -89,6 +90,7 @@ function setupSocket(server) {
       }
     })
 
+    //Lắng nghe sự kiện xoá tin nhắn
     socket.on('deleteMessage', async (message, ack) => {
       try {
         const { roomId, messageId } = message
@@ -127,6 +129,7 @@ function setupSocket(server) {
       }
     })
 
+    //Lắng nghe sự kiện cập nhật phòng
     socket.on('updateRoom', async (roomInfo, ack) => {
       try {
         const updatedRoom = await RoomService.updateRoom(roomInfo)
@@ -150,6 +153,7 @@ function setupSocket(server) {
       }
     })
 
+    //Lắng nghe sự kiện xoá thành viên khỏi phòng
     socket.on('removeMemberFromRoom', async (roomInfo, ack) => {
       try {
         const { memberId } = roomInfo
@@ -177,6 +181,7 @@ function setupSocket(server) {
       }
     })
 
+    //Lắng nghe sự kiện rời phòng
     socket.on('leavePublicRoom', async (roomInfo, ack) => {
       try {
         const { userId } = roomInfo
@@ -194,6 +199,35 @@ function setupSocket(server) {
         console.error('Error update message:', error)
 
         // Trả về acknowledgement thất bại cho client
+        if (ack) ack({ success: false, message: error.message })
+      }
+    })
+
+    //Lắng nghe sự kiện có cuộc gọi đến
+    socket.on('incomingCall', async ({ url, userIdsToRing }, ack) => {
+      try {
+        userIdsToRing.forEach((userId) => io.to(userId).emit('receiveIncomingCall', url))
+
+        // Trả về acknowledgement thành công cho client
+        if (ack) ack({ success: true, message: 'Phone ringing!' })
+      } catch (error) {
+        console.error('Error ringing phone:', error)
+
+        // Trả về acknowledgement thất bại cho client
+        if (ack) ack({ success: false, message: error.message })
+      }
+    })
+
+    // Lắng nghe sự kiện gửi thông tin của người nghe
+    socket.on('sendReceiverPeerId', async ({ peerId, callerId }, ack) => {
+      try {
+        // Gửi cho người gọi thông tin của người nhận
+        io.to(callerId).emit('receiveReceiverPeerId', peerId)
+
+        // Trả về ack thành công
+        if (ack) ack({ success: true, message: 'PeerId sent successfully!' })
+      } catch (error) {
+        console.error('Error joining call room:', error)
         if (ack) ack({ success: false, message: error.message })
       }
     })

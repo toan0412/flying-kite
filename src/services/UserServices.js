@@ -16,6 +16,10 @@ const getUserAPI = () => {
   return axiosInstance.get('v1/api/users/info')
 }
 
+const getUserByIdAPI = (userId) => {
+  return axiosInstance.get(`v1/api/users/${userId}`)
+}
+
 const searchUserAPI = (searchString) => {
   return axiosInstance.post('v1/api/users/search', { searchString })
 }
@@ -29,4 +33,13 @@ const updateUserAPI = (userInfo) => {
   return axiosInstance.patch('/v1/api/users/update', { fullname, email })
 }
 
-export { loginAPI, signUpAPI, getUserAPI, searchUserAPI, getAllUsersAPI, logoutAPI, updateUserAPI }
+export {
+  loginAPI,
+  signUpAPI,
+  getUserAPI,
+  searchUserAPI,
+  getAllUsersAPI,
+  logoutAPI,
+  updateUserAPI,
+  getUserByIdAPI
+}
