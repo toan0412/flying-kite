@@ -43,7 +43,7 @@ export default {
       localStream: null,
       isCaller: false,
       isAudio: true,
-      isVideo: true,
+      isVideo: null,
       isResponse: false
     }
   },
@@ -55,6 +55,9 @@ export default {
 
     const userId = localStorage.getItem('userId')
     const callerId = route.query.caller_id
+    const hasVideoStr = route.query.has_video
+    this.isVideo = hasVideoStr === 'true' ? true : false
+
     this.remotePeerId = route.query.users_to_ring
 
     if (userId === callerId) {
@@ -94,7 +97,17 @@ export default {
   methods: {
     async setUpCamera() {
       try {
-        this.localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        this.localStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true
+        })
+        if (this.isVideo == false) {
+          this.localStream.getTracks().forEach((track) => {
+            if (track.kind === 'video') {
+              track.enabled = this.isVideo
+            }
+          })
+        }
         this.$refs.localVideo.srcObject = this.localStream
       } catch (err) {
         console.error('Lỗi khi truy cập camera: ', err)
@@ -107,7 +120,7 @@ export default {
       }
 
       try {
-        // Thực hiện cuộc gọi tới người gọi
+        // Thực hiện cuộc gọi
         const call = this.peer.call(this.remotePeerId, this.localStream)
         call.on('stream', (remoteStream) => {
           this.isResponse = true

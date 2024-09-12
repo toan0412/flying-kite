@@ -1,9 +1,15 @@
 <template>
   <v-dialog v-model="show" max-width="500px" class="room-info-dialog">
     <v-card>
-      <v-card-title>
-        <v-btn icon="mdi-close" flat @click.stop="show = false"></v-btn>
-      </v-card-title>
+      <v-card-actions class="justify-sm-center">
+        <div class="text-h6 font-weight-bold">Thông tin phòng</div>
+        <v-btn
+          class="position-absolute right-0"
+          icon="mdi-close"
+          flat
+          @click.stop="show = false"
+        ></v-btn>
+      </v-card-actions>
       <div class="avatar-wrapper">
         <div class="background-avatar">
           <v-avatar size="150">
@@ -88,7 +94,7 @@
         Rời khỏi
       </div>
 
-      <div class="position-absolute right-0 bottom-0 pa-2">
+      <div class="d-flex justify-end pa-2">
         <MSButton
           color="deep-orange-darken-1"
           :disabled="!isRoomInfoEdit"

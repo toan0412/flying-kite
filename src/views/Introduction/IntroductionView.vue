@@ -4,8 +4,9 @@
       <div class="introduction__main__content">
         <div class="introduction__main__content__header">
           <v-avatar size="100">
-            <v-img :alt="userInfo.username" :src="userInfo.avatarUrl"></v-img>
+            <MSAvatar :alt="userInfo.username" :src="userInfo.avatarUrl"> </MSAvatar>
           </v-avatar>
+
           <div class="introduction__main__content__header__gretting">
             Chào mừng bạn!
             <div class="fullname">
@@ -73,6 +74,7 @@
 </template>
 
 <script>
+import MSAvatar from '@/components/CustomAvatar/MSAvatar.vue'
 import { useUserInfoStore } from '@/stores/UserInfoStore'
 
 export default {
@@ -81,6 +83,10 @@ export default {
       userInfo: {},
       isUserInfoLoaded: false
     }
+  },
+
+  components: {
+    MSAvatar
   },
 
   mounted() {

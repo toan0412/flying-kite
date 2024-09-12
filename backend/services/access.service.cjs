@@ -1,11 +1,10 @@
-const userModel = require('../models/user.model.cjs')
+const UserModel = require('../models/user.model.cjs')
 const bcrypt = require('bcrypt')
 const crypto = require('crypto')
 const KeyTokenService = require('./keyToken.service.cjs')
 const { createTokenPair } = require('../auth/authUtils.cjs')
 const { getInfoData } = require('../utils/index.cjs')
 const { BadRequestError, AuthFailureError } = require('../core/error.response.cjs')
-const UserService = require('./user.service.cjs')
 const keytokenModel = require('../models/keytoken.model.cjs')
 
 // Các vai trò người dùng
@@ -66,7 +65,7 @@ class AccessService {
   // Phương thức đăng nhập
   static login = async ({ username, password, refreshToken = null }) => {
     // Tìm người dùng theo user
-    const foundUser = await userModel.findOne({ username }).lean()
+    const foundUser = await UserModel.findOne({ username }).lean()
     if (!foundUser) throw new BadRequestError('Không tìm thấy người dùng')
 
     // So sánh mật khẩu đã mã hóa
@@ -91,13 +90,13 @@ class AccessService {
 
   // Phương thức đăng ký
   static signUp = async ({ fullname, email, password, username, avatarUrl }) => {
-    const checkExistEmail = await userModel.findOne({ email }).lean()
+    const checkExistEmail = await UserModel.findOne({ email }).lean()
     if (checkExistEmail) {
       throw new BadRequestError('Email đã được dùng')
     }
 
     // Kiểm tra xem user đã tồn tại chưa
-    const checkExistUser = await userModel.findOne({ username }).lean()
+    const checkExistUser = await UserModel.findOne({ username }).lean()
     if (checkExistUser) {
       throw new BadRequestError('Người dùng đã tồn tại')
     }
@@ -106,7 +105,7 @@ class AccessService {
     const passwordHash = await bcrypt.hash(password, 10)
 
     // Tạo người dùng mới
-    const newUser = await userModel.create({
+    const newUser = await UserModel.create({
       username,
       fullname,
       email,

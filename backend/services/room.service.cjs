@@ -1,7 +1,7 @@
 const RoomModel = require('../models/room.model.cjs')
 const { BadRequestError, NotFoundError } = require('../core/error.response.cjs')
 const { ObjectId } = require('mongodb')
-const { default: userModel } = require('../models/user.model.cjs')
+const UserModel = require('../models/user.model.cjs')
 
 const RoleRoom = {
   ADMIN: 'admin',
@@ -36,7 +36,7 @@ class RoomService {
 
     // Thêm các thành viên vào danh sách thành viên của phòng
     for (const memberId of members) {
-      const member = await userModel.findById(memberId)
+      const member = await UserModel.findById(memberId)
       if (!member) {
         throw new BadRequestError(`Member not found`)
       }
@@ -80,7 +80,7 @@ class RoomService {
     if (newMembers.length > 0) {
       for (const memberId of newMembers) {
         // Kiểm tra xem thành viên có tồn tại không
-        const existUser = userModel.findById(memberId)
+        const existUser = UserModel.findById(memberId)
         if (!existUser) {
           throw new BadRequestError('Người dùng không tồn tại')
         }

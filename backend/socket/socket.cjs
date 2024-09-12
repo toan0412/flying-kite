@@ -43,7 +43,9 @@ function setupSocket(server) {
         // Phát lại tin nhắn đến tất cả các client trong phòng
         io.to(roomId).emit('receiveMessage', newMessage)
 
-        const updatedRoom = await RoomService.updateRoom({ roomId, lastMessage: content })
+        let lastMessage = content ? content : 'Phương tiện'
+
+        const updatedRoom = await RoomService.updateRoom({ roomId, lastMessage })
 
         console.log('Updated room:', updatedRoom)
 

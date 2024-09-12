@@ -21,7 +21,8 @@
       <div v-if="skeletonLoadingUserInfo" class="sidebar__statusbar__item">
         <v-skeleton-loader width="240" type="list-item-avatar"></v-skeleton-loader>
       </div>
-      <div v-else class="sidebar__statusbar__item">
+
+      <div v-if="!skeletonLoadingUserInfo" class="sidebar__statusbar__item">
         <v-avatar size="54">
           <MSAvatar :alt="userInfo.username" :src="userInfo.avatarUrl"></MSAvatar>
         </v-avatar>
@@ -34,7 +35,7 @@
           </div>
         </div>
       </div>
-      <div class="sidebar__statusbar__item">
+      <div v-if="!skeletonLoadingUserInfo" class="sidebar__statusbar__item">
         <v-menu transition="slide-x-transition" offset-y>
           <template v-slot:activator="{ props }">
             <v-icon v-bind="props" class="mr-2">mdi-cog</v-icon>
@@ -49,7 +50,6 @@
             </v-list-item>
           </v-list>
         </v-menu>
-        <SettingDialog v-model:visible="showSettingDialog" @close="showSettingDialog = false" />
       </div>
     </div>
     <!--Sidebar-content -->
@@ -59,18 +59,11 @@
           <v-icon icon="mdi-account-plus-outline"></v-icon>
           <span class="sidebar__main__header__item--title">Tin nhắn riêng mới</span>
         </div>
-        <CreatePrivateRoomDialog
-          v-model:visible="showPrivateRoomDialog"
-          @close="showPrivateRoomDialog = false"
-        />
+
         <div @click.stop="showPublicRoomDialog = true" class="sidebar__main__header__item">
           <v-icon icon="mdi-account-multiple-plus-outline"></v-icon>
           <span class="sidebar__main__header__item--title">Tin nhắn nhóm mới</span>
         </div>
-        <CreatePublicRoomDialog
-          v-model:visible="showPublicRoomDialog"
-          @close="showPublicRoomDialog = false"
-        />
       </div>
       <div class="sidebar__main__filter">
         Cuộc trò chuyện gần đây
@@ -96,6 +89,7 @@
           >
             <div class="main__content_item__avatar">
               <MSAvatar
+                @click.stop="openUserInfoDialog(conservation)"
                 width="40"
                 height="40"
                 cover
@@ -122,6 +116,25 @@
         </div>
       </ul>
     </div>
+
+    <!-- Dialogs -->
+    <CreatePublicRoomDialog
+      v-model:visible="showPublicRoomDialog"
+      @close="showPublicRoomDialog = false"
+    />
+
+    <CreatePrivateRoomDialog
+      v-model:visible="showPrivateRoomDialog"
+      @close="showPrivateRoomDialog = false"
+    />
+
+    <SettingDialog v-model:visible="showSettingDialog" @close="showSettingDialog = false" />
+
+    <UserInfoDialog
+      :userId="idSelected"
+      :visible="showUserInfoDialog"
+      @close="showUserInfoDialog = false"
+    ></UserInfoDialog>
   </div>
 </template>
 <script>
@@ -137,10 +150,8 @@ import { useAllUsersInfoStore } from '@/stores/AllUsersInfoStore'
 import { useUserInfoStore } from '@/stores/UserInfoStore'
 import { useConversationsStore } from '@/stores/ConversationsStore'
 import ChatService from '@/socket/ChatService.js'
-import CreatePrivateRoomDialog from '@/components/Dialog/CreatePrivateRoomDialog.vue'
-import CreatePublicRoomDialog from '@/components/Dialog/CreatePublicRoomDialog.vue'
-import SettingDialog from '@/components/Dialog/SettingDialog.vue'
 import lodash from 'lodash'
+import { defineAsyncComponent } from 'vue'
 
 export default {
   data() {
@@ -156,17 +167,24 @@ export default {
       showPublicRoomDialog: false,
       showSettingDialog: false,
       searchRoomsList: [],
-      allUsersInfo: null
+      allUsersInfo: null,
+      showUserInfoDialog: false,
+      idSelected: null
     }
   },
   components: {
     MSTextField,
     MSAvatar,
     SidebarSkeletonLoading,
-    CreatePrivateRoomDialog,
-    CreatePublicRoomDialog,
     EmptyCard,
-    SettingDialog
+    CreatePrivateRoomDialog: defineAsyncComponent(() =>
+      import('@/components/Dialog/CreatePrivateRoomDialog.vue')
+    ),
+    CreatePublicRoomDialog: defineAsyncComponent(() =>
+      import('@/components/Dialog/CreatePublicRoomDialog.vue')
+    ),
+    SettingDialog: defineAsyncComponent(() => import('@/components/Dialog/SettingDialog.vue')),
+    UserInfoDialog: defineAsyncComponent(() => import('@/components/Dialog/UserInfoDialog.vue'))
   },
   methods: {
     //Láy thông tin người dùng
@@ -233,7 +251,7 @@ export default {
     },
 
     generateConversationWithUsersInfo(rooms) {
-      const conversations = []
+      let conversations = []
 
       if (!Array.isArray(rooms)) {
         rooms = [rooms]
@@ -280,6 +298,12 @@ export default {
         }
       })
       return conversations
+    },
+
+    openUserInfoDialog(room) {
+      if (room.type !== 'private') return
+      this.idSelected = room.receiverId
+      this.showUserInfoDialog = true
     },
 
     logout() {
@@ -368,7 +392,6 @@ export default {
       if (newVal) {
         const conversationsStore = useConversationsStore()
         conversationsStore.setConversations(newVal)
-        console.log(conversationsStore.conversations)
       }
     }
   }
@@ -395,8 +418,9 @@ export default {
 }
 
 .sidebar__statusbar__item {
+  width: fit-content;
   display: flex;
-  padding: 0 16px;
+  margin: 0 16px;
   align-items: center;
   background-color: var(--background-sidebar-color);
 

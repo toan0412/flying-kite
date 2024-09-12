@@ -10,6 +10,7 @@
       <!-- Header info -->
       <div v-else class="content__header__info">
         <MSAvatar
+          @click="openUserInfoDialog(room)"
           width="40"
           height="40"
           cover
@@ -18,6 +19,7 @@
         ></MSAvatar>
         <p class="content__header__info__name">{{ room.roomName || '' }}</p>
         <v-icon
+          class="pl-2"
           v-if="room.type === 'public'"
           icon="mdi-cog"
           @click="showRoomInfoDialog = true"
@@ -93,6 +95,7 @@
         <div class="content__header__actions__item">
           <v-icon size="20" icon="mdi-magnify" @click="toggleSearchField"></v-icon>
         </div>
+
         <div v-if="room.type == 'public'" class="content__header__actions__item">
           <v-icon size="20" icon="mdi-account-plus-outline" @click="showAddMemberDialog = true">
           </v-icon>
@@ -101,11 +104,23 @@
             @close="showAddMemberDialog = false"
           />
         </div>
+
         <div class="content__header__actions__item ml-1 header-action-background">
-          <v-icon color="white" size="20" icon="mdi-video-outline"></v-icon>
+          <v-icon
+            @click="openVideoCall(false)"
+            color="white"
+            size="20"
+            icon="mdi-phone-outline"
+          ></v-icon>
         </div>
+
         <div class="content__header__actions__item ml-1 header-action-background">
-          <v-icon @click="openVideoCall" color="white" size="20" icon="mdi-phone-outline"></v-icon>
+          <v-icon
+            @click="openVideoCall(true)"
+            color="white"
+            size="20"
+            icon="mdi-video-outline"
+          ></v-icon>
         </div>
       </div>
     </div>
@@ -183,7 +198,19 @@
 
               <!-- Message main -->
               <div class="message-main">
-                <div v-if="message.media" class="message-content__images">
+                <!-- Message main audio -->
+                <div
+                  v-if="message.media[0] && message.media[0].type == 'audio/wav'"
+                  class="message-content__audio"
+                >
+                  <audio preload="none" controls>
+                    <source :src="message.media[0].url" type="audio/wav" />
+                    Trình duyệt của bạn không hỗ trợ tính năng này.
+                  </audio>
+                </div>
+
+                <!-- Message main image -->
+                <div v-else class="message-content__images">
                   <v-row dense>
                     <v-col
                       v-for="(media, index) in message.media"
@@ -216,6 +243,8 @@
                     </v-col>
                   </v-row>
                 </div>
+
+                <!-- Message main text -->
                 <div class="message-content__text-wrapper">
                   <div
                     class="message-content__reply"
@@ -317,7 +346,13 @@
           <v-icon v-else size="20" @click="sendMessage" icon="mdi-send-variant-outline" />
         </div>
         <div v-if="!isTyping" class="content__input__actions__item">
-          <v-icon size="20" icon="mdi-microphone-outline" />
+          <v-icon
+            v-if="!isRecording"
+            @click="startRecording"
+            size="20"
+            icon="mdi-microphone-outline"
+          />
+          <v-icon v-else @click="stopRecording" size="20" icon="mdi-pause"></v-icon>
         </div>
         <div v-if="!isTyping" class="content__input__actions__item">
           <v-icon size="20" icon="mdi-card-account-details-outline " />
@@ -339,16 +374,18 @@
     message="Bạn có chắc chắn muốn xoá tin nhắn này không?"
     @response="handleResponseDeleteMessageDialog"
   />
+
+  <UserInfoDialog
+    :userId="room.receiverId"
+    :visible="showUserInfoDialog"
+    @close="showUserInfoDialog = false"
+  ></UserInfoDialog>
 </template>
 
 <script>
 import MSAvatar from '@/components/CustomAvatar/MSAvatar.vue'
 import MSTextField from '@/components/CustomTextField/MSTextField.vue'
-import ConfirmDialog from '@/components/Dialog/ConfirmDialog.vue'
-import AddMemberDialog from '@/components/Dialog/AddMemberDialog.vue'
-import RoomInfoDialog from '@/components/Dialog/RoomInfoDialog.vue'
 import ChatService from '@/socket/ChatService'
-import PeerService from '@/peer/PeerService'
 import ConversationSkeletonLoading from '@/components/SkeletonLoading/ConversationSkeletonLoading.vue'
 import { getConservationByRoomIdAPI, searchMessageByRoomAPI } from '@/services/MessageService'
 import { useUserInfoStore } from '@/stores/UserInfoStore'
@@ -362,6 +399,7 @@ import data from 'emoji-mart-vue-fast/data/all.json'
 import 'emoji-mart-vue-fast/css/emoji-mart.css'
 import { Picker, EmojiIndex } from 'emoji-mart-vue-fast/src'
 import { differenceInMinutes, parseISO } from 'date-fns'
+import { defineAsyncComponent } from 'vue'
 
 let emojiIndex = new EmojiIndex(data)
 
@@ -370,10 +408,11 @@ export default {
     MSTextField,
     MSAvatar,
     ConversationSkeletonLoading,
-    ConfirmDialog,
     Picker,
-    AddMemberDialog,
-    RoomInfoDialog
+    ConfirmDialog: defineAsyncComponent(() => import('@/components/Dialog/ConfirmDialog.vue')),
+    AddMemberDialog: defineAsyncComponent(() => import('@/components/Dialog/AddMemberDialog.vue')),
+    RoomInfoDialog: defineAsyncComponent(() => import('@/components/Dialog/RoomInfoDialog.vue')),
+    UserInfoDialog: defineAsyncComponent(() => import('@/components/Dialog/UserInfoDialog.vue'))
   },
 
   data() {
@@ -395,6 +434,7 @@ export default {
       isSearchField: false,
       flagStopCallApi: false,
       imageDialog: false,
+      showUserInfoDialog: false,
       skeletonLoadingConversation: true,
       skeletonLoadingRoomInfo: true,
       offset: 0,
@@ -408,7 +448,10 @@ export default {
       showAddMemberDialog: false,
       showRoomInfoDialog: false,
       isReplyMessage: false,
-      replyMessage: null
+      replyMessage: null,
+      localStream: null,
+      mediaRecorder: null,
+      isRecording: false
     }
   },
 
@@ -464,6 +507,7 @@ export default {
 
     //Hàm gửi tin nhắn
     async sendMessage() {
+      console.log('sendMessage call')
       this.isSendingMessage = true
       if (this.messageInput.length === 0 && this.filesToUpload.length === 0) return
 
@@ -600,8 +644,58 @@ export default {
     async getUrlOfMedia() {
       const roomId = localStorage.getItem('roomId')
       const path = `rooms/${roomId}/files`
-      const mediaArray = await uploadFilesAndGetUrls(this.filesToUpload, path)
-      return mediaArray
+      const url = await uploadFilesAndGetUrls(this.filesToUpload, path)
+      return url
+    },
+
+    async startRecording() {
+      try {
+        this.isRecording = true
+        this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        this.mediaRecorder = new MediaRecorder(this.localStream)
+
+        let audioChunks = []
+        this.mediaRecorder.ondataavailable = (event) => {
+          audioChunks.push(event.data)
+        }
+
+        this.mediaRecorder.onstop = async () => {
+          const randomId = this.getRandomIdOfMedia()
+          const audioFile = new File(audioChunks, `voice-message-${randomId}.wav`, {
+            type: 'audio/wav'
+          })
+          this.filesToUpload.push(audioFile)
+          console.log('Recording stopped, file ready for upload.', this.filesToUpload)
+        }
+
+        this.mediaRecorder.start()
+      } catch (error) {
+        console.error('Microphone access error:', error)
+      }
+    },
+
+    async stopRecording() {
+      this.isTyping = true
+      if (this.localStream) {
+        this.localStream.getTracks().forEach((track) => {
+          track.stop()
+        })
+        this.localStream = null
+      }
+      if (this.mediaRecorder) {
+        this.mediaRecorder.stop()
+        this.mediaRecorder = null
+      }
+      console.log('File is ready before send')
+      setTimeout(async () => {
+        await this.sendMessage()
+        this.isTyping = false
+        this.isRecording = false
+      }, 0)
+    },
+
+    getRandomIdOfMedia() {
+      return Math.floor(Math.random() * 10000000000) + 1
     },
 
     // Hàm set class cho thẻ li
@@ -644,6 +738,11 @@ export default {
     openImageDialog(imageUrl) {
       this.imageSelected = imageUrl
       this.imageDialog = true
+    },
+
+    openUserInfoDialog(room) {
+      if (room.type !== 'private') return
+      this.showUserInfoDialog = true
     },
 
     setupDropzone() {
@@ -710,7 +809,7 @@ export default {
       ChatService.sendNotifyTyping({ roomId, senderId, senderName, isTyping })
     },
 
-    async openVideoCall() {
+    async openVideoCall(hasVideo) {
       const callerId = localStorage.getItem('userId')
       const callId = Math.floor(Math.random() * 1000000000).toString()
       const roomId = this.room._id
@@ -724,6 +823,7 @@ export default {
       url.searchParams.append('call_id', callId)
       userIdsToRing.forEach((userId) => url.searchParams.append('users_to_ring', userId))
       url.searchParams.append('caller_id', callerId)
+      url.searchParams.append('has_video', hasVideo)
 
       ChatService.inviteCall({ url, userIdsToRing })
       window.open(url.toString(), '_blank', 'width=1268,height=768')
@@ -1366,6 +1466,10 @@ export default {
       .v-img__img {
         border-radius: 8px;
       }
+    }
+
+    .message-content__audio {
+      color: var(--background-message-color);
     }
   }
 
