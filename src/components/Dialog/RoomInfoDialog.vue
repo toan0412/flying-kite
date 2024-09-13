@@ -12,8 +12,9 @@
       </v-card-actions>
       <div class="avatar-wrapper">
         <div class="background-avatar">
-          <v-avatar size="150">
+          <v-avatar @click="triggerFileInput" size="150">
             <v-img :src="imageUrl" v-if="imageUrl" />
+            <v-icon class="adjust-image" size="30" v-if="imageUrl">mdi-pencil-outline</v-icon>
             <v-icon size="30" v-else>mdi-camera</v-icon>
             <v-icon
               v-if="imageUrl"
@@ -32,11 +33,6 @@
         @change="onFileChange"
         hide-input
       >
-        <template v-slot:prepend>
-          <MSButton @click="triggerFileInput"
-            ><span class="font-weight-bold">Chọn ảnh</span></MSButton
-          >
-        </template>
       </v-file-input>
       <div
         @click.stop="editableRoomName = true"
@@ -71,7 +67,12 @@
           :key="member._id"
         >
           <template v-slot:prepend>
-            <MSAvatar width="40" height="40" :src="member.avatarUrl" />
+            <MSAvatar
+              @click="openUserInfoDialog(member._id)"
+              width="40"
+              height="40"
+              :src="member.avatarUrl"
+            />
           </template>
           <v-list-item-title class="ml-3">{{ member.fullname }}</v-list-item-title>
           <v-list-item-subtitle class="ml-3">@{{ member.username }}</v-list-item-subtitle>
@@ -126,6 +127,12 @@
       @response="handleResponseLeaveRoomDialog"
     />
   </v-dialog>
+
+  <UserInfoDialog
+    :visible="showUserInfoDialog"
+    :userId="userIdSelected"
+    @close="showUserInfoDialog = false"
+  />
 </template>
 
 <script>
@@ -136,6 +143,7 @@ import { useAllUsersInfoStore } from '@/stores/AllUsersInfoStore'
 import { uploadFilesAndGetUrls } from '@/helper/GetUrlOfMedia'
 import ChatService from '@/socket/ChatService'
 import ConfirmDialog from '@/components/Dialog/ConfirmDialog.vue'
+import UserInfoDialog from './UserInfoDialog.vue'
 
 export default {
   props: {
@@ -154,11 +162,13 @@ export default {
       editRoomName: '',
       isRoomInfoEdit: false,
       editableRoomName: false,
-      isCallingAPI: false
+      isCallingAPI: false,
+      showUserInfoDialog: false,
+      userIdSelected: ''
     }
   },
 
-  components: { MSAvatar, MSButton, ConfirmDialog },
+  components: { MSAvatar, MSButton, ConfirmDialog, UserInfoDialog },
 
   computed: {
     show: {
@@ -241,6 +251,11 @@ export default {
       } catch (error) {
         console.error('Error leave room', error)
       }
+    },
+
+    openUserInfoDialog(id) {
+      this.userIdSelected = id
+      this.showUserInfoDialog = true
     },
 
     openRemoveMemberConfirmDialog(memberId) {
@@ -390,9 +405,27 @@ export default {
       background-image: var(--search-background-color);
 
       .v-avatar {
+        cursor: pointer;
         margin-top: 24px;
         background-color: white;
         border: 1px solid var(--border-color);
+      }
+
+      .adjust-image {
+        display: none;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+
+      .v-avatar:hover {
+        background: white;
+        opacity: 0.7;
+
+        .adjust-image {
+          display: flex;
+        }
       }
     }
   }

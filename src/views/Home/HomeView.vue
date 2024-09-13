@@ -10,7 +10,7 @@
       <!-- Header info -->
       <div v-else class="content__header__info">
         <MSAvatar
-          @click="openUserInfoDialog(room)"
+          @click="openUserInfoDialog(room.receiverId, room.type)"
           width="40"
           height="40"
           cover
@@ -25,7 +25,7 @@
           @click="showRoomInfoDialog = true"
         ></v-icon>
         <RoomInfoDialog
-          @open-add-member-dialog="openAddMemberDialog"
+          :visible="showRoomInfoDialog"
           v-model:visible="showRoomInfoDialog"
           @close="showRoomInfoDialog = false"
         />
@@ -135,6 +135,7 @@
         </ol>
         <ol ref="messageList" v-else>
           <li class="messageList--loading" v-if="isLoadingMessage & !flagStopCallApi">
+            <!-- Loading message -->
             <v-progress-circular
               :size="20"
               :width="3"
@@ -154,6 +155,7 @@
             v-for="(message, index) in messages"
             :key="message._id"
             :class="[
+              'message',
               message.senderId === userId ? 'my-message' : 'other-message',
               isLastMessageOfSender(index) ? 'first-message' : '',
               isLastMessageOfTime(index) ? 'time-separator' : ''
@@ -162,11 +164,6 @@
           >
             <!-- Message wrapper -->
             <div class="message-wrapper">
-              <!-- Message sender name -->
-              <div class="message-sender__name">
-                {{ message.fullname }}
-              </div>
-
               <!-- Message time -->
               <div class="message-time">
                 <div class="texting-time">
@@ -174,110 +171,136 @@
                 </div>
               </div>
 
-              <!-- Message actions -->
-              <div class="message-actions">
-                <div class="message-actions__item">
-                  <v-icon color="grey-darken-1" @click="openReplyMessage(message)" size="18"
-                    >mdi-reply-outline</v-icon
-                  >
-                  <v-tooltip activator="parent" location="top">Trả lời</v-tooltip>
-                </div>
-
-                <div class="message-actions__item">
-                  <v-icon color="grey-darken-1" size="18">mdi-share-outline</v-icon>
-                  <v-tooltip activator="parent" location="top">Chuyển tiếp</v-tooltip>
-                </div>
-
-                <div class="message-actions__item">
-                  <v-icon @click="showDeleteMessageDialog(message)" color="grey-darken-1" size="18"
-                    >mdi-trash-can-outline</v-icon
-                  >
-                  <v-tooltip activator="parent" location="top">Xóa</v-tooltip>
-                </div>
+              <!-- Message sender name -->
+              <div class="message-sender__name">
+                {{ message.fullname }}
               </div>
 
-              <!-- Message main -->
-              <div class="message-main">
-                <!-- Message main audio -->
-                <div
-                  v-if="message.media[0] && message.media[0].type == 'audio/wav'"
-                  class="message-content__audio"
-                >
-                  <audio preload="none" controls>
-                    <source :src="message.media[0].url" type="audio/wav" />
-                    Trình duyệt của bạn không hỗ trợ tính năng này.
-                  </audio>
+              <div class="message-row">
+                <!-- Message avatar -->
+                <div class="message-sender__avatar">
+                  <MSAvatar
+                    @click="openUserInfoDialog(message.senderId)"
+                    width="30"
+                    height="30"
+                    :alt="message.fullname"
+                    :src="message.avatarUrl"
+                  >
+                  </MSAvatar>
                 </div>
 
-                <!-- Message main image -->
-                <div v-else class="message-content__images">
-                  <v-row dense>
-                    <v-col
-                      v-for="(media, index) in message.media"
-                      :key="index"
-                      :cols="12 / getColumnCount(message.media.length)"
+                <!-- Message main -->
+                <div class="message-main">
+                  <!-- Message main audio -->
+                  <div
+                    v-if="message.media[0] && message.media[0].type == 'audio/wav'"
+                    class="message-content__audio"
+                  >
+                    <audio controls loop>
+                      <source :src="message.media[0].url" type="audio/wav" />
+                      Trình duyệt của bạn không hỗ trợ tính năng này.
+                    </audio>
+                  </div>
+
+                  <!-- Message main media -->
+                  <div
+                    v-else-if="
+                      message.media[0] &&
+                      (message.media[0].type.includes('image') ||
+                        message.media[0].type.includes('video'))
+                    "
+                    class="message-content__images"
+                  >
+                    <v-row dense>
+                      <v-col
+                        v-for="(media, index) in message.media"
+                        :key="index"
+                        :cols="12 / getColumnCount(message.media.length)"
+                      >
+                        <v-img
+                          v-if="media.type.includes('image')"
+                          aspect-ratio="1"
+                          cover
+                          height="140"
+                          width="140"
+                          :src="media.url"
+                          @click="openZoomInImageDialog(media)"
+                        ></v-img>
+
+                        <video
+                          preload="metadata"
+                          v-if="media.type.includes('video')"
+                          height="140"
+                          width="140"
+                          controls
+                        >
+                          <source :src="media.url" />
+                        </video>
+                      </v-col>
+                    </v-row>
+                  </div>
+
+                  <!-- Message main other file -->
+                  <div v-else class="message-content__file">
+                    <div v-if="message.media[0]" class="message-content__file__text">
+                      <a :href="message.media[0].url" target="_blank" rel="noopener noreferrer">
+                        <v-icon class="pr-2" icon="mdi-file-outline"></v-icon>
+                        {{ message.media[0].name }}
+                      </a>
+                    </div>
+                  </div>
+
+                  <!-- Message main text -->
+                  <div
+                    v-if="message.content || message.isDelete"
+                    class="message-content__text-wrapper"
+                  >
+                    <div
+                      class="message-content__reply"
+                      @click="handleScrollMessage(message.replyMessage)"
+                      v-if="message.replyMessage"
                     >
-                      <v-img
-                        aspect-ratio="1"
-                        cover
-                        height="140"
-                        width="140"
-                        :src="media.url"
-                        @click="openImageDialog(media.url)"
-                        class="cursor-pointer"
-                      ></v-img>
+                      <v-icon icon="mdi-reply" color="grey-darken-1"></v-icon>
+                      <p class="message-content__reply__content">
+                        {{ message.replyMessage.content }}
+                      </p>
+                      <p class="message-content__reply__details">
+                        {{ message.replyMessage.fullname }},{{ message.replyMessage.createdAt }}
+                      </p>
+                    </div>
+                    <div v-if="message.isDelete" class="message-content__text">
+                      Tin nhắn đã bị xóa
+                    </div>
+                    <div v-else class="message-content__text">
+                      {{ message.content }}
+                    </div>
+                  </div>
 
-                      <!-- Dialog để hiển thị ảnh lớn -->
-                      <v-dialog v-model="imageDialog" max-width="600px">
-                        <v-card>
-                          <v-card-title class="d-flex justify-space-between align-center">
-                            <v-btn
-                              icon="mdi-close"
-                              variant="text"
-                              @click="imageDialog = false"
-                            ></v-btn>
-                          </v-card-title>
-                          <v-img :src="imageSelected" contain height="100%"></v-img>
-                        </v-card>
-                      </v-dialog>
-                    </v-col>
-                  </v-row>
+                  <!-- Message main tooltip -->
+                  <v-tooltip activator="parent" location="top">{{
+                    convertToDayOfWeek(message.createdAt)
+                  }}</v-tooltip>
                 </div>
 
-                <!-- Message main text -->
-                <div class="message-content__text-wrapper">
-                  <div
-                    class="message-content__reply"
-                    @click="handleScrollMessage(message.replyMessage)"
-                    v-if="message.replyMessage"
-                  >
-                    <v-icon icon="mdi-reply" color="grey-darken-1"></v-icon>
-                    <p class="message-content__reply__content">
-                      {{ message.replyMessage.content }}
-                    </p>
-                    <p class="message-content__reply__details">
-                      {{ message.replyMessage.fullname }},{{ message.replyMessage.createdAt }}
-                    </p>
+                <!-- Message actions -->
+                <div class="message-actions">
+                  <div class="message-actions__item">
+                    <v-icon color="grey-darken-1" @click="openReplyMessage(message)" size="18"
+                      >mdi-reply-outline</v-icon
+                    >
+                    <v-tooltip activator="parent" location="top">Trả lời</v-tooltip>
                   </div>
-                  <div v-if="message.isDelete" class="message-content__text">
-                    Tin nhắn đã bị xóa
-                  </div>
-                  <div
-                    v-else-if="!message.isDelete && message.content"
-                    class="message-content__text"
-                  >
-                    {{ message.content }}
+
+                  <div class="message-actions__item">
+                    <v-icon
+                      @click="showDeleteMessageDialog(message)"
+                      color="grey-darken-1"
+                      size="18"
+                      >mdi-trash-can-outline</v-icon
+                    >
+                    <v-tooltip activator="parent" location="top">Xóa</v-tooltip>
                   </div>
                 </div>
-                <v-tooltip activator="parent" location="top">{{
-                  convertToDayOfWeek(message.createdAt)
-                }}</v-tooltip>
-              </div>
-
-              <!-- Message avtar -->
-              <div class="message-sender__avatar">
-                <MSAvatar width="30" height="30" :alt="message.fullname" :src="message.avatarUrl">
-                </MSAvatar>
               </div>
             </div>
           </li>
@@ -289,8 +312,60 @@
 
     <!-- Footer Input -->
     <div class="content__input">
-      <!-- Hiển thị thumbnail -->
-      <div class="content__input__preview" ref="previewImages"></div>
+      <!-- Hiển thị preview -->
+      <div v-if="filesToUpload.length" class="content__input__preview">
+        <!-- Hiển thị preview ghi âm -->
+        <div v-if="filesToUpload[0].type.includes('audio')" class="content__input__preview__audio">
+          <audio controls>
+            <source :src="filesToUpload[0].url" type="audio/wav" />
+            Trình duyệt của bạn không hỗ trợ tính năng này
+          </audio>
+          <v-icon
+            class="mr-3"
+            @click="removeItemFromPreview(index)"
+            size="20"
+            icon="mdi-close"
+          ></v-icon>
+        </div>
+
+        <!-- Hiển thị preview ảnh/ video -->
+        <div
+          v-if="
+            filesToUpload.length > 0 &&
+            (filesToUpload.some((file) => file.type.includes('image')) ||
+              filesToUpload.some((file) => file.type.includes('video')))
+          "
+          class="content__input__preview__image"
+        >
+          <div
+            v-for="(media, index) in filesToUpload"
+            :key="index"
+            class="content__input__preview__image__item"
+          >
+            <!-- preview ảnh-->
+            <v-img
+              cover
+              v-if="media.type.includes('image')"
+              :src="media.url"
+              height="100"
+              width="100"
+            ></v-img>
+
+            <!-- preview video-->
+            <video v-if="media.type.includes('video')" height="100" controls>
+              <source :src="media.url" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+
+            <!-- action -->
+            <v-icon
+              @click="removeItemFromPreview(index)"
+              size="18"
+              icon="mdi-close-circle"
+            ></v-icon>
+          </div>
+        </div>
+      </div>
 
       <!-- Input -->
       <div class="content__input__content">
@@ -358,9 +433,15 @@
           <v-icon size="20" icon="mdi-card-account-details-outline " />
         </div>
         <div class="content__input__actions__item">
-          <v-icon size="20" icon="mdi-camera-outline" />
-          <!-- Dropzone -->
-          <form ref="myDropzone" class="dropzone"></form>
+          <input
+            class="content__input__actions__item__input"
+            ref="imageFileInput"
+            type="file"
+            accept="image/*, video/*, application/*, .rar"
+            multiple
+            @change="handleChangePreviewImages"
+          />
+          <v-icon @click="triggerImageFileInput" size="20" icon="mdi-paperclip" />
         </div>
         <div v-if="!isTyping" class="content__input__actions__item">
           <v-icon size="20" icon="mdi-dots-horizontal" />
@@ -368,6 +449,9 @@
       </div>
     </div>
   </div>
+  <!-- Dialog để hiển thị ảnh lớn -->
+  <ZoomInImage :file="fileSelected" :visible="showZoomInImage" @close="showZoomInImage = false" />
+
   <ConfirmDialog
     ref="deleteMessageDialog"
     title="Xóa tin nhắn"
@@ -376,7 +460,7 @@
   />
 
   <UserInfoDialog
-    :userId="room.receiverId"
+    :userId="userIdSelected"
     :visible="showUserInfoDialog"
     @close="showUserInfoDialog = false"
   ></UserInfoDialog>
@@ -394,7 +478,6 @@ import { useAllUsersInfoStore } from '@/stores/AllUsersInfoStore'
 import { convertToDayOfWeek } from '@/helper/ConvertDate'
 import { uploadFilesAndGetUrls } from '@/helper/GetUrlOfMedia'
 
-import Dropzone from 'dropzone'
 import data from 'emoji-mart-vue-fast/data/all.json'
 import 'emoji-mart-vue-fast/css/emoji-mart.css'
 import { Picker, EmojiIndex } from 'emoji-mart-vue-fast/src'
@@ -412,7 +495,8 @@ export default {
     ConfirmDialog: defineAsyncComponent(() => import('@/components/Dialog/ConfirmDialog.vue')),
     AddMemberDialog: defineAsyncComponent(() => import('@/components/Dialog/AddMemberDialog.vue')),
     RoomInfoDialog: defineAsyncComponent(() => import('@/components/Dialog/RoomInfoDialog.vue')),
-    UserInfoDialog: defineAsyncComponent(() => import('@/components/Dialog/UserInfoDialog.vue'))
+    UserInfoDialog: defineAsyncComponent(() => import('@/components/Dialog/UserInfoDialog.vue')),
+    ZoomInImage: defineAsyncComponent(() => import('@/components/Dialog/ZoomInImage.vue'))
   },
 
   data() {
@@ -423,7 +507,8 @@ export default {
       roomId: '',
       messageInput: '',
       searchValue: '',
-      imageSelected: '',
+      fileSelected: {},
+      showZoomInImage: false,
       searchNotification: 'Nhấn "Enter" để tìm tin nhắn',
       notifyTyping: '',
       messages: [],
@@ -433,7 +518,6 @@ export default {
       isLoadingSearch: false,
       isSearchField: false,
       flagStopCallApi: false,
-      imageDialog: false,
       showUserInfoDialog: false,
       skeletonLoadingConversation: true,
       skeletonLoadingRoomInfo: true,
@@ -441,7 +525,6 @@ export default {
       limit: 30,
       messagesSearchList: [],
       filesToUpload: [],
-      myDropzone: null,
       selectedMessage: {},
       emojiIndex: emojiIndex,
       showEmojiPicker: false,
@@ -451,7 +534,8 @@ export default {
       replyMessage: null,
       localStream: null,
       mediaRecorder: null,
-      isRecording: false
+      isRecording: false,
+      userIdSelected: ''
     }
   },
 
@@ -507,44 +591,49 @@ export default {
 
     //Hàm gửi tin nhắn
     async sendMessage() {
-      console.log('sendMessage call')
       this.isSendingMessage = true
       if (this.messageInput.length === 0 && this.filesToUpload.length === 0) return
 
-      const message = {
-        roomId: this.roomId,
-        senderId: this.userId
-      }
+      try {
+        const message = {
+          roomId: this.roomId,
+          senderId: this.userId
+        }
 
-      if (this.replyMessage) {
-        message.replyTo = this.replyMessage._id
-      }
+        if (this.replyMessage) {
+          message.replyTo = this.replyMessage._id
+        }
 
-      if (this.filesToUpload.length > 0) {
-        message.media = await this.getUrlOfMedia()
-      }
+        if (this.filesToUpload.length > 0) {
+          message.media = await this.getUrlOfMedia()
+        }
 
-      if (this.messageInput.length > 0) {
-        message.content = this.messageInput
-      }
+        if (this.messageInput.length > 0) {
+          message.content = this.messageInput
+        }
 
-      //Nếu có cả content và media -> Chia thành gửi 2 tin nhắn
-      if (message.content && message.media) {
-        const { media, ...messageNoContent } = message
-        const { content, ...messageNoMedia } = message
-        ChatService.sendMessage(messageNoContent)
-        ChatService.sendMessage(messageNoMedia)
-      } else {
-        ChatService.sendMessage(message)
+        //Nếu có cả content và media -> Chia thành gửi 2 tin nhắn
+        if (message.content && message.media) {
+          const { media, ...messageNoContent } = message
+          const { content, ...messageNoMedia } = message
+          ChatService.sendMessage(messageNoContent)
+          ChatService.sendMessage(messageNoMedia)
+        } else {
+          ChatService.sendMessage(message)
+        }
+      } catch (error) {
+        console.error(error)
+      } finally {
+        // Reset state
+        this.isSendingMessage = false
+        this.showEmojiPicker = false
+        this.closeReplyMessage()
+        this.messageInput = ''
+        if (this.filesToUpload) {
+          this.revokePreviewObjectURL()
+        }
+        this.isTyping = false
       }
-
-      this.isSendingMessage = false
-      this.showEmojiPicker = false
-      // Xóa nội dung tin nhắn và danh sách file
-      this.closeReplyMessage()
-      this.messageInput = ''
-      this.filesToUpload = []
-      this.myDropzone.removeAllFiles(true)
     },
 
     //Hàm xử lý tìm kiếm tin nhắn
@@ -644,8 +733,45 @@ export default {
     async getUrlOfMedia() {
       const roomId = localStorage.getItem('roomId')
       const path = `rooms/${roomId}/files`
-      const url = await uploadFilesAndGetUrls(this.filesToUpload, path)
+      const files = this.filesToUpload.map((item) => item.file)
+      const url = await uploadFilesAndGetUrls(files, path)
       return url
+    },
+
+    // Bấm vào icon camera => trigger đến file input
+    triggerImageFileInput() {
+      this.$refs.imageFileInput.click()
+    },
+
+    // Hiển thị ảnh trước khi gửi
+    handleChangePreviewImages(event) {
+      const files = event.target.files
+      const maxFileSize = 25 * 1024 * 1024 // 50MB
+
+      for (let i = 0; i < files.length; i++) {
+        if (files[i].size > maxFileSize) {
+          alert(`File bạn chọn quá lớn. Kích thước tối đa là 25MB.`)
+          // Reset input nếu có file vượt quá kích thước
+          this.$refs.imageFileInput.value = ''
+          return
+        }
+        const file = files[i]
+        const imageUrl = URL.createObjectURL(file)
+        this.filesToUpload.push({ url: imageUrl, file: file, type: file.type })
+      }
+      console.log(this.filesToUpload)
+
+      if (this.filesToUpload.length) {
+        this.isTyping = true
+      }
+    },
+
+    //Xoá item khỏi preview
+    removeItemFromPreview(index) {
+      this.filesToUpload.splice(index, 1)
+      if (!this.filesToUpload.length) {
+        this.isTyping = false
+      }
     },
 
     async startRecording() {
@@ -664,8 +790,14 @@ export default {
           const audioFile = new File(audioChunks, `voice-message-${randomId}.wav`, {
             type: 'audio/wav'
           })
-          this.filesToUpload.push(audioFile)
-          console.log('Recording stopped, file ready for upload.', this.filesToUpload)
+          const audioUrl = URL.createObjectURL(audioFile)
+
+          this.filesToUpload.push({ url: audioUrl, file: audioFile, type: audioFile.type })
+          console.log(this.filesToUpload)
+
+          if (this.filesToUpload.length) {
+            this.isTyping = true
+          }
         }
 
         this.mediaRecorder.start()
@@ -675,7 +807,6 @@ export default {
     },
 
     async stopRecording() {
-      this.isTyping = true
       if (this.localStream) {
         this.localStream.getTracks().forEach((track) => {
           track.stop()
@@ -686,12 +817,14 @@ export default {
         this.mediaRecorder.stop()
         this.mediaRecorder = null
       }
-      console.log('File is ready before send')
-      setTimeout(async () => {
-        await this.sendMessage()
-        this.isTyping = false
-        this.isRecording = false
-      }, 0)
+      this.isRecording = false
+    },
+
+    revokePreviewObjectURL() {
+      if (this.filesToUpload.length > 0) {
+        this.filesToUpload = []
+        URL.revokeObjectURL(this.filesToUpload)
+      }
     },
 
     getRandomIdOfMedia() {
@@ -735,59 +868,16 @@ export default {
       return 3
     },
 
-    openImageDialog(imageUrl) {
-      this.imageSelected = imageUrl
-      this.imageDialog = true
+    // Hiển thị ảnh lớn
+    openZoomInImageDialog(file) {
+      this.fileSelected = file
+      this.showZoomInImage = true
     },
 
-    openUserInfoDialog(room) {
-      if (room.type !== 'private') return
+    openUserInfoDialog(id, type) {
+      if (type && type !== 'private') return
+      this.userIdSelected = id
       this.showUserInfoDialog = true
-    },
-
-    setupDropzone() {
-      var that = this
-      // Nếu Dropzone đã được khởi tạo, hủy bỏ nó
-      if (this.myDropzone) {
-        this.myDropzone.destroy()
-      }
-
-      // Khởi tạo Dropzone mới
-      this.myDropzone = new Dropzone(this.$refs.myDropzone, {
-        url: '/noNeed',
-        paramName: 'file',
-        maxFilesize: 2, // Kích thước tối đa của file (MB)
-        autoProcessQueue: false, // Ngăn Dropzone tự động gửi tệp
-        previewsContainer: this.$refs.previewImages,
-        init: function () {
-          this.on(
-            'addedfile',
-            function (file) {
-              that.filesToUpload.push(file)
-              that.isTyping = true
-            }.bind(this)
-          )
-
-          this.on('thumbnail', function (file) {
-            // Logic tùy chỉnh khi ảnh thu nhỏ được tạo
-            let removeButton = Dropzone.createElement(
-              '<i class="mdi mdi-close-circle dz-remove-btn"></i>'
-            )
-            file.previewElement.appendChild(removeButton)
-
-            removeButton.addEventListener(
-              'click',
-              function (e) {
-                e.preventDefault()
-                e.stopPropagation()
-                this.removeFile(file)
-                // Xóa tệp khỏi mảng khi bị xóa
-                that.filesToUpload = that.filesToUpload.filter((f) => f !== file)
-              }.bind(this)
-            )
-          })
-        }
-      })
     },
 
     //Hàm xóa tin nhắnh
@@ -874,9 +964,6 @@ export default {
     const allUsersInfo = allUsersInfoStore.allUsersInfo
 
     this.allUsersInfoMap = new Map(allUsersInfo.map((user) => [user._id, user]))
-
-    //Setup dropzone
-    this.setupDropzone()
 
     // Lắng nghe tin nhắn đã gửi
     ChatService.onMessageReceived((messageReceived) => {
@@ -980,10 +1067,6 @@ export default {
 
     messageInput(newMessage) {
       this.isTyping = newMessage.length > 0
-    },
-
-    filesToUpload(newVal) {
-      this.isTyping = newVal.length > 0
     },
 
     isTyping() {
@@ -1142,6 +1225,10 @@ export default {
     margin: 0 4px;
   }
 
+  .content__input__actions__item__input {
+    display: none;
+  }
+
   .content__input__actions__item:hover {
     opacity: 0.7;
   }
@@ -1154,35 +1241,6 @@ export default {
     overflow-x: auto;
     background-color: var(--background-icon-color);
     border-radius: 16px;
-
-    .dz-image-preview {
-      position: relative;
-      padding: 8px 8px;
-
-      img {
-        border-radius: 8px;
-      }
-    }
-
-    .dz-success-mark {
-      display: none;
-    }
-
-    .dz-error-mark {
-      display: none;
-    }
-
-    .dz-details {
-      display: none;
-    }
-
-    .dz-remove-btn {
-      position: absolute;
-      top: -4px;
-      right: 2px;
-      cursor: pointer;
-      font-size: 20px;
-    }
   }
 
   .content__input__preview::-webkit-scrollbar {
@@ -1197,6 +1255,40 @@ export default {
 
     .emoji-mart-preview {
       display: none;
+    }
+  }
+
+  .content__input__preview__audio {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .content__input__preview__image {
+    display: flex;
+    padding: 4px 8px;
+  }
+
+  .content__input__preview__image__item {
+    position: relative;
+    padding: 4px 8px;
+    height: fit-content;
+    width: fit-content;
+
+    .v-img {
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+
+    video {
+      object-fit: cover;
+      border-radius: 8px;
+    }
+
+    .v-icon {
+      position: absolute;
+      top: -2px;
+      right: 0;
     }
   }
 }
@@ -1232,96 +1324,100 @@ export default {
       height: 100%;
       list-style-type: none;
 
-      .message-wrapper {
-        position: relative;
-        display: flex;
-        align-items: center;
-
-        .message-sender__name {
-          display: none;
+      .message.first-message {
+        .message-time {
+          display: flex;
+          width: 100%;
+          justify-content: center;
         }
       }
 
-      .time-separator {
-        .message-time {
-          display: flex;
-          position: absolute;
-          width: 100%;
-          top: -46px;
-          justify-content: center;
-          margin: 8px 0;
-        }
-
-        .message-sender__avatar {
-          .v-img {
-            display: block;
+      .message:hover {
+        &:hover {
+          .message-actions {
+            display: flex;
+            align-items: center;
           }
         }
       }
 
-      .my-message.time-separator {
-        padding-top: 56px;
+      .message-wrapper {
+        margin: 4px 0;
+        position: relative;
+        display: flex;
+        flex-direction: column;
       }
 
-      .other-message.time-separator {
-        padding-top: 38px;
-
-        .message-sender__name {
-          display: block;
-        }
-
-        .message-sender__name {
-          display: flex;
-          position: absolute;
-          width: 100%;
-          top: -16px;
-          font-size: 12px;
-          justify-content: start;
-          padding-left: 48px;
-          color: var(--text-color);
-        }
+      .message-row {
+        display: flex;
+        width: 100%;
+        align-items: center;
       }
 
       .my-message {
-        .message-sender__avatar {
-          display: none;
+        .message-row {
+          flex-direction: row-reverse;
+        }
+        .message-content__text-wrapper {
+          background-color: var(--background-message-color);
+        }
+
+        .message-wrapper {
+          align-items: end;
         }
       }
 
-      .message-sender__avatar {
-        width: 30px;
-        height: 30px;
-        .v-img {
-          display: none;
+      .other-message {
+        .message-row {
+          justify-content: flex-start;
+        }
+
+        .message-main {
+          padding: 0 14px;
+        }
+
+        .message-content__text-wrapper {
+          background-color: #f1f1f1;
+        }
+
+        &:hover {
+          .message-actions__item:nth-child(2) {
+            display: none;
+          }
+        }
+
+        .message-wrapper {
+          align-items: start;
+        }
+
+        .message-sender__avatar {
+          display: flex;
+          .v-img {
+            border-radius: 50%;
+          }
         }
       }
 
       .other-message.first-message {
-        .message-sender__avatar {
-          .v-img {
-            display: block;
-          }
-        }
-
-        .message-time {
-          display: flex;
-          position: absolute;
-          width: 100%;
-          top: -46px;
-          justify-content: center;
-          margin: 8px 0;
-        }
-
         .message-sender__name {
           display: flex;
-          position: absolute;
-          width: 100%;
-          top: -16px;
+          margin-left: 46px;
           font-size: 12px;
-          justify-content: start;
-          padding-left: 48px;
           color: var(--lighter-text-color);
+          font-weight: bold;
         }
+      }
+
+      .message-time {
+        display: none;
+      }
+
+      .message-sender__name {
+        display: none;
+      }
+
+      .message-sender__avatar {
+        display: none;
       }
     }
 
@@ -1352,51 +1448,8 @@ export default {
       }
     }
 
-    .my-message {
-      .message-wrapper {
-        justify-content: flex-end;
-      }
-
-      .message-content__text-wrapper {
-        background-color: var(--background-message-color);
-      }
-
-      &:hover {
-        .message-actions {
-          display: flex;
-          align-items: center;
-        }
-      }
-    }
-
     .message-actions {
       display: none;
-    }
-
-    .message-time {
-      display: none;
-    }
-
-    .other-message {
-      .message-wrapper {
-        justify-content: start;
-        flex-direction: row-reverse;
-      }
-
-      .message-content__text-wrapper {
-        background-color: #f1f1f1;
-      }
-
-      &:hover {
-        .message-actions {
-          display: flex;
-          align-items: center;
-
-          .message-actions__item:nth-child(3) {
-            display: none;
-          }
-        }
-      }
     }
 
     .message-content__text {
@@ -1410,14 +1463,7 @@ export default {
       max-width: 70%;
     }
 
-    .message-sender__avatar {
-      .v-img {
-        border-radius: 50%;
-      }
-    }
-
     .message-content__text-wrapper {
-      margin: 4px 8px;
       border-radius: 12px;
       font-size: 14px;
       overflow-wrap: break-word;
@@ -1465,11 +1511,45 @@ export default {
     .message-content__images {
       .v-img__img {
         border-radius: 8px;
+        cursor: pointer;
+      }
+      video {
+        object-fit: cover;
+        border-radius: 8px;
       }
     }
 
     .message-content__audio {
-      color: var(--background-message-color);
+      display: flex;
+      align-items: center;
+
+      audio {
+        height: 36px;
+      }
+
+      audio::-webkit-media-controls-panel {
+        background-color: var(--background-message-color);
+      }
+    }
+
+    .message-content__file {
+      background-color: var(--background-message-color);
+      border-radius: 12px;
+      font-size: 14px;
+      overflow-wrap: break-word;
+      color: var(--text-color);
+    }
+
+    .message-content__file__text {
+      margin: 4px 12px;
+      a {
+        display: flex;
+        padding: 4px 12px;
+        align-items: center;
+        font-weight: bold;
+        color: var(--text-color);
+        text-decoration: none;
+      }
     }
   }
 
@@ -1492,15 +1572,5 @@ export default {
 
 .message-content__images {
   padding: 0 4px;
-}
-
-.dropzone {
-  position: absolute;
-  height: 100%;
-  width: 100%;
-
-  .dz-button {
-    display: none;
-  }
 }
 </style>

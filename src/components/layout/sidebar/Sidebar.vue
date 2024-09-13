@@ -528,6 +528,7 @@ export default {
   }
 
   .main__content_item__fullname {
+    height: 22px;
     display: inline;
     flex-grow: 0;
     flex-shrink: 1;
@@ -540,6 +541,7 @@ export default {
   }
 
   .main__content_item__message--recently {
+    height: 22px;
     display: inline;
     flex-grow: 0;
     flex-shrink: 1;

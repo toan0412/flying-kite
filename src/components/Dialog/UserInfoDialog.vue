@@ -6,6 +6,7 @@
       <v-skeleton-loader type="paragraph"></v-skeleton-loader>
       <v-skeleton-loader type="paragraph"></v-skeleton-loader>
       <v-skeleton-loader type="paragraph"></v-skeleton-loader>
+      <v-skeleton-loader type="paragraph"></v-skeleton-loader>
     </v-card>
     <v-card v-else>
       <v-card-actions class="justify-sm-center">
@@ -48,6 +49,58 @@
             <div class="font-weight-bold opacity-60">
               {{ userInfo.status === 'online' ? 'Đang trực tuyến' : 'Đang ngoại tuyến' }}
             </div>
+          </div>
+
+          <div
+            class="user-info-dialog__main__item d-flex justify-sm-space-between ma-2 cursor-pointer"
+          >
+            <v-hover>
+              <template v-slot:default="{ props: hoverProps, isHovering }">
+                <div
+                  @click="sendMessage(userInfo)"
+                  v-bind="hoverProps"
+                  :class="['mx-auto', isHovering ? 'opacity-70' : 'opacity-100']"
+                  class="d-flex w-100 justify-center align-center font-weight-bold"
+                >
+                  <v-icon class="pr-2" icon="mdi-message-text-outline"></v-icon>
+                  Gửi tin nhắn
+                </div>
+              </template>
+            </v-hover>
+          </div>
+
+          <div
+            class="user-info-dialog__main__item d-flex justify-sm-space-between ma-2 cursor-pointer"
+          >
+            <v-hover>
+              <template v-slot:default="{ props: hoverProps, isHovering }">
+                <div
+                  v-bind="hoverProps"
+                  :class="['mx-auto', isHovering ? 'opacity-70' : 'opacity-100']"
+                  class="d-flex w-100 justify-center align-center font-weight-bold"
+                >
+                  <v-icon class="pr-2" icon="mdi-phone-outline"></v-icon>
+                  Gọi thoại
+                </div>
+              </template>
+            </v-hover>
+          </div>
+
+          <div
+            class="user-info-dialog__main__item d-flex justify-sm-space-between ma-2 cursor-pointer"
+          >
+            <v-hover>
+              <template v-slot:default="{ props: hoverProps, isHovering }">
+                <div
+                  v-bind="hoverProps"
+                  :class="['mx-auto', isHovering ? 'opacity-70' : 'opacity-100']"
+                  class="d-flex w-100 justify-center align-center font-weight-bold"
+                >
+                  <v-icon class="pr-2" icon="mdi-video-outline"></v-icon>
+                  Gọi video
+                </div>
+              </template>
+            </v-hover>
           </div>
         </div>
       </div>
@@ -102,6 +155,10 @@ export default {
       } finally {
         this.isCallingAPI = false
       }
+    },
+
+    sendMessage(userInfo) {
+      console.log('send message', userInfo)
     }
   },
 
@@ -173,7 +230,7 @@ export default {
 
 .user-info-dialog__body__main {
   width: 450px;
-  height: 500px;
+  height: 525px;
 }
 
 .user-info-dialog__main__item {

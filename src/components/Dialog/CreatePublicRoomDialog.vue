@@ -15,13 +15,11 @@
           @change="onFileChange"
           hide-input
         >
-          <template v-slot:prepend>
-            <MSButton @click="triggerFileInput">Chọn ảnh</MSButton>
-          </template>
         </v-file-input>
         <div class="background-avatar">
-          <v-avatar size="150">
+          <v-avatar @click="triggerFileInput" size="150">
             <v-img :src="imageUrl" v-if="imageUrl" />
+            <v-icon v-if="imageUrl" class="adjust-image" icon="mdi-pencil-outline" size="30" />
             <v-icon size="30" v-else>mdi-camera</v-icon>
             <v-icon
               v-if="imageUrl"
@@ -190,6 +188,8 @@ export default {
       } catch (err) {
         console.error('Không tạo được phòng:', err)
       } finally {
+        this.publicRoomName = ''
+        this.imageUrl = ''
         this.isCallingAPI = false
         this.show = false
       }
@@ -254,6 +254,7 @@ export default {
   watch: {
     visible(newValue, oldValue) {
       if (newValue) {
+        this.imageUrl = ''
         const allUsersInfoStore = useAllUsersInfoStore()
         this.searchUsersList = allUsersInfoStore.allUsersInfo
         this.allUsersInfo = this.searchUsersList
@@ -304,9 +305,27 @@ export default {
     background-image: var(--search-background-color);
 
     .v-avatar {
+      cursor: pointer;
       margin-top: 24px;
       background-color: white;
       border: 1px solid var(--border-color);
+    }
+
+    .adjust-image {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .v-avatar:hover {
+      background: white;
+      opacity: 0.7;
+
+      .adjust-image {
+        display: flex;
+      }
     }
   }
 
