@@ -1,11 +1,12 @@
 import axios from 'axios'
 
-const AuthFail = [
+const AuthFailMessages = [
   'invalid signature',
   'jwt has expired',
   'jwt malformed',
   'verify jwt failed',
-  'jwt expired'
+  'jwt expired',
+  'keyStore not found'
 ]
 
 // Create an axios instance with default configuration
@@ -55,7 +56,7 @@ instance.interceptors.response.use(
     if (error.response) {
       // Log detailed error response if available
       console.error('Response error:', errorResponse)
-      AuthFail.forEach((errorMessage) => {
+      AuthFailMessages.forEach((errorMessage) => {
         if (errorResponse.message == errorMessage) {
           localStorage.clear()
           window.location.reload()
