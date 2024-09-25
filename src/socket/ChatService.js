@@ -134,12 +134,12 @@ const ChatService = {
     socket.on('receiveReceiverPeerId', callback)
   },
 
-  onLeavedRoomReceived(callback) {
-    socket.on('receiveLeavedRoom', callback)
-  },
-
   onUpdatedRoomReceived(callback) {
     socket.on('receiveUpdatedRoom', callback)
+  },
+
+  onNotificationReceived(callback) {
+    socket.on('receiveNotification', callback)
   }
 }
 

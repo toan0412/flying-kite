@@ -14,8 +14,7 @@ class PeerService {
 
     // Khởi tạo Peer mới nếu chưa tồn tại
     this.peer = new Peer(userId, {
-      host: 'justtona.id.vn',
-      port: 9000,
+      host: import.meta.env.VITE_PEER_SERVER_URL,
       secure: false
     })
 

@@ -1,16 +1,15 @@
 import axiosInstance from './base_axios.js'
 
 const getConservationsAPI = () => {
-  const userId = localStorage.getItem('userId')
-  return axiosInstance.get(`v1/api/rooms/${userId}`)
+  return axiosInstance.get(`v1/api/rooms`)
 }
 
-const createRoomAPI = (members, roomName, type, avatarUrl) => {
-  return axiosInstance.post('v1/api/rooms', { members, roomName, type, avatarUrl })
+const getRoomByIdAPI = (roomId) => {
+  return axiosInstance.get(`v1/api/rooms/${roomId}`)
 }
 
-const updateRoomAPI = (roomInfo) => {
-  return axiosInstance.patch('v1/api/rooms', roomInfo)
+const createRoomAPI = (data) => {
+  return axiosInstance.post('v1/api/rooms', data)
 }
 
-export { getConservationsAPI, createRoomAPI, updateRoomAPI }
+export { getConservationsAPI, createRoomAPI, getRoomByIdAPI }

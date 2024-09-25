@@ -66,7 +66,7 @@
               <v-icon size="14" icon="mdi-pencil-outline"></v-icon>
             </div>
             <div v-if="!editableName" class="font-weight-bold opacity-60">
-              {{ userInfo.fullname }}
+              {{ userInfo.fullName }}
             </div>
             <v-text-field
               max-width="210"
@@ -230,7 +230,7 @@ export default {
       if (!this.isUserInfoEdit) return
       if (this.editName || this.editEmail) {
         try {
-          const res = await updateUserAPI({ fullname: this.editName, email: this.editEmail })
+          const res = await updateUserAPI({ fullName: this.editName, email: this.editEmail })
           const updatedUser = res.data
           const userInfoStore = useUserInfoStore()
           userInfoStore.setUserInfo(updatedUser)
@@ -251,7 +251,7 @@ export default {
     },
 
     editName(newVal) {
-      if (newVal.length !== 0 && newVal !== this.userInfo.fullname) {
+      if (newVal.length !== 0 && newVal !== this.userInfo.fullName) {
         this.isUserInfoEdit = true
       } else {
         this.isUserInfoEdit = false

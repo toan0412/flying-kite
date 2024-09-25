@@ -6,7 +6,8 @@ const router = require('express').Router()
 
 router.use(authentication)
 
-router.get('/rooms/:userId', asyncHandler(roomController.getConversations))
+router.get('/rooms/:roomId', asyncHandler(roomController.getRoomById))
+router.get('/rooms', asyncHandler(roomController.getConversations))
 router.post('/rooms', asyncHandler(roomController.createRoom))
 router.patch('/rooms', asyncHandler(roomController.updateRoom))
 

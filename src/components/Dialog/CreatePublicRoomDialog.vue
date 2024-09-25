@@ -57,14 +57,21 @@
           placeholder="Tìm kiếm"
           variant="underlined"
           class="create-room-search"
+          @keyup.enter="handleSearchUser"
         ></v-text-field>
         <v-list height="450" v-if="searchUsersList.length > 0" lines="one">
+          <v-list-item
+            ><div class="text-subtitle-2 font-weight-bold opacity-70">Mọi người</div>
+          </v-list-item>
+
           <v-list-item v-for="user in searchUsersList" :key="user._id" :value="user" clickable>
             <template v-slot:prepend>
               <MSAvatar width="40" height="40" :src="user.avatarUrl" />
             </template>
-            <v-list-item-title class="ml-3">{{ user.fullname }}</v-list-item-title>
-            <v-list-item-subtitle class="ml-3">@{{ user.username }}</v-list-item-subtitle>
+            <v-list-item-title class="ml-3">{{ user.fullName }}</v-list-item-title>
+            <v-list-item-subtitle class="ml-3">{{
+              user.username ? user.username : ''
+            }}</v-list-item-subtitle>
             <template v-slot:append>
               <v-checkbox-btn
                 color="deep-orange-darken-1"
@@ -108,12 +115,12 @@
 <script>
 import MSAvatar from '@/components/CustomAvatar/MSAvatar.vue'
 import MSButton from '@/components/CustomButton/MSButton.vue'
-import { useAllUsersInfoStore } from '@/stores/AllUsersInfoStore'
 import { useRoomInfoStore } from '@/stores/RoomInfoStore'
 import { createRoomAPI } from '@/services/RoomServices'
+import { useConversationsStore } from '@/stores/ConversationsStore'
+import { searchUserAPI } from '@/services/UserServices'
 import EmptyCard from '@/components/Card/EmptyCard.vue'
 import { uploadFilesAndGetUrls } from '@/helper/GetUrlOfMedia'
-import lodash from 'lodash'
 
 export default {
   props: {
@@ -157,53 +164,52 @@ export default {
   },
   methods: {
     async createPrivateRoom() {
+      const conversationsStore = useConversationsStore()
+      const roomInfoStore = useRoomInfoStore()
       this.isCallingAPI = true
-      const type = 'public'
       let avatarUrl = ''
 
-      if (this.imageUrl) {
-        const roomId = localStorage.getItem('roomId')
-        const path = `rooms/${roomId}/files`
-        const avatarList = await uploadFilesAndGetUrls(this.fileToUpLoad, path)
-        avatarUrl = avatarList[0].url
-      }
-
       try {
-        // Tạo phòng
-        const res = await createRoomAPI(this.selectedUserIds, this.publicRoomName, type, avatarUrl)
-
-        // Tạo thông tin phòng mới
-        const newRoom = {
-          _id: res.data._id,
-          type: res.data.type,
-          roomName: res.data.roomName,
-          createdBy: res.data.createdBy,
-          avatarUrl: res.data.avatarUrl,
-          lastMessageAt: res.data.lastMessageAt
+        // Upload avatar nếu có
+        if (this.imageUrl) {
+          const path = `rooms/temp/files`
+          const avatarList = await uploadFilesAndGetUrls(this.fileToUpLoad, path)
+          if (avatarList && avatarList.length > 0) {
+            avatarUrl = avatarList[0].url
+          }
         }
 
-        // Cập nhật thông tin phòng vào store
-        const roomInfoStore = useRoomInfoStore()
+        // Tạo phòng
+        const roomInfo = {
+          members: this.selectedUserIds,
+          roomName: this.publicRoomName,
+          type: 'public',
+          avatarUrl: avatarUrl
+        }
+        const res = await createRoomAPI(roomInfo)
+
+        const newRoom = res.data
+
         roomInfoStore.setRoomInfo(newRoom)
+        conversationsStore.addRoom(newRoom)
       } catch (err) {
-        console.error('Không tạo được phòng:', err)
+        console.error('Lỗi khi tạo phòng:', err)
       } finally {
-        this.publicRoomName = ''
-        this.imageUrl = ''
+        // Reset lại trạng thái sau khi hoàn tất
         this.isCallingAPI = false
         this.show = false
+        this.publicRoomName = ''
+        this.imageUrl = ''
       }
     },
 
-    debounceSearch: lodash.debounce(function (searchValue) {
-      this.handleSearchUser(searchValue)
-    }, 300),
-
-    handleSearchUser(searchValue) {
-      this.searchUsersList = this.allUsersInfo.filter(
-        (userInfo) =>
-          userInfo.username.includes(searchValue) || userInfo.fullname.includes(searchValue)
-      )
+    handleSearchUser() {
+      searchUserAPI(this.searchValue)
+        .then((res) => {
+          this.searchUsersList = res.data
+          console.log(this.searchUsersList.length)
+        })
+        .catch((err) => console.error('Error while searching users', err))
     },
 
     triggerFileInput() {
@@ -254,17 +260,20 @@ export default {
   watch: {
     visible(newValue, oldValue) {
       if (newValue) {
+        const conversationsStore = useConversationsStore()
         this.imageUrl = ''
-        const allUsersInfoStore = useAllUsersInfoStore()
-        this.searchUsersList = allUsersInfoStore.allUsersInfo
-        this.allUsersInfo = this.searchUsersList
-        this.handleBackStep()
-      }
-    },
+        this.selectedUserIds = []
+        this.conversations = conversationsStore.conversations
 
-    searchValue(newVal) {
-      if (newVal) {
-        this.debounceSearch(newVal)
+        const mappedConversations = this.conversations
+          .filter((room) => room.receiverId)
+          .map((room) => ({
+            userId: room.receiverId,
+            fullName: room.roomName,
+            avatarUrl: room.avatarUrl
+          }))
+        this.searchUsersList = mappedConversations
+        this.handleBackStep()
       }
     }
   }

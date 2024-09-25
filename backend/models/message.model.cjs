@@ -10,18 +10,22 @@ const messageSchema = new Schema(
       ref: 'Room',
       required: [true, 'The room_id field is required']
     },
+
     senderId: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: [true, 'The sender_id field is required']
     },
+
     content: {
       type: String
     },
+
     isRead: {
       type: Boolean,
       default: false
     },
+
     isDelete: {
       type: Boolean,
       default: false
@@ -64,7 +68,12 @@ const messageSchema = new Schema(
           required: [true, 'The media type field is required']
         }
       }
-    ]
+    ],
+
+    isSystemMessage: {
+      type: Boolean,
+      default: false
+    }
   },
   {
     timestamps: true,

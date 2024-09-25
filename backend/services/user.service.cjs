@@ -1,4 +1,3 @@
-const mongoose = require('mongoose')
 const UserModel = require('../models/user.model.cjs')
 const { BadRequestError, NotFoundError } = require('../core/error.response.cjs')
 const { getInfoData } = require('../utils/index.cjs')
@@ -14,7 +13,7 @@ class UserService {
     }
 
     return getInfoData({
-      field: ['_id', 'username', 'fullname', 'email', 'avatarUrl', 'status'],
+      field: ['_id', 'username', 'fullName', 'email', 'avatarUrl', 'status'],
       object: existUser
     })
   }
@@ -27,7 +26,7 @@ class UserService {
       throw new NotFoundError('Người dùng không tồn tại')
     }
     return getInfoData({
-      field: ['_id', 'username', 'fullname', 'email', 'avatarUrl', 'status'],
+      field: ['_id', 'username', 'fullName', 'email', 'avatarUrl', 'status'],
       object: user
     })
   }
@@ -43,7 +42,7 @@ class UserService {
       throw new NotFoundError('Người dùng không tồn tại')
     }
 
-    const { email, fullname } = req.body
+    const { email, fullName } = req.body
 
     // Kiểm tra email có đang được sử dụng bởi người khác không
     if (email) {
@@ -57,8 +56,8 @@ class UserService {
       existUser.email = email
     }
 
-    if (fullname) {
-      existUser.fullname = fullname
+    if (fullName) {
+      existUser.fullName = fullName
     }
 
     // Lưu lại user đã được cập nhật
@@ -69,20 +68,20 @@ class UserService {
 
   // Lấy danh sách tất cả người dùng với các trường được chọn
   getAllUsers = async () => {
-    const select = { _id: 1, username: 1, fullname: 1, avatarUrl: 1 }
+    const select = { _id: 1, username: 1, fullName: 1, avatarUrl: 1 }
     return await UserModel.find().select(select).lean()
   }
 
   // Tìm người dùng bằng từ khóa tìm kiếm
   findByFilter = async (
     { searchString },
-    select = { _id: 1, username: 1, fullname: 1, status: 1, avatarUrl: 1, email: 1, type: 'friend' }
+    select = { _id: 1, username: 1, fullName: 1, status: 1, avatarUrl: 1, email: 1, type: 'friend' }
   ) => {
     const regex = new RegExp(searchString, 'i')
     const filter = {
       $or: [
         { username: { $regex: regex } },
-        { fullname: { $regex: regex } },
+        { fullName: { $regex: regex } },
         { email: { $regex: regex } }
       ]
     }
