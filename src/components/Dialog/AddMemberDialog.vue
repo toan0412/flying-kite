@@ -12,14 +12,17 @@
         placeholder="Tìm kiếm"
         variant="underlined"
         class="create-room-search"
+        @keyup.enter="handleSearchUser"
       ></v-text-field>
       <v-list height="450" v-if="searchUsersList.length > 0" lines="one">
         <v-list-item v-for="user in searchUsersList" :key="user._id" :value="user" clickable>
           <template v-slot:prepend>
             <MSAvatar width="40" height="40" :src="user.avatarUrl" />
           </template>
-          <v-list-item-title class="ml-3">{{ user.fullname }}</v-list-item-title>
-          <v-list-item-subtitle class="ml-3">@{{ user.username }}</v-list-item-subtitle>
+          <v-list-item-title class="ml-3">{{ user.fullName }}</v-list-item-title>
+          <v-list-item-subtitle class="ml-3">{{
+            user.username ? user.username : ''
+          }}</v-list-item-subtitle>
           <template v-slot:append>
             <v-checkbox-btn
               color="deep-orange-darken-1"
@@ -62,10 +65,9 @@
 import MSButton from '@/components/CustomButton/MSButton.vue'
 import MSAvatar from '@/components/CustomAvatar/MSAvatar.vue'
 import ChatService from '@/socket/ChatService'
-import { useAllUsersInfoStore } from '@/stores/AllUsersInfoStore'
-import { useRoomInfoStore } from '@/stores/RoomInfoStore'
+import { useConversationsStore } from '@/stores/ConversationsStore'
+import { searchUserAPI } from '@/services/UserServices'
 import EmptyCard from '@/components/Card/EmptyCard.vue'
-import lodash from 'lodash'
 
 export default {
   props: {
@@ -105,17 +107,6 @@ export default {
     }
   },
   methods: {
-    debounceSearch: lodash.debounce(function (searchValue) {
-      this.handleSearchUser(searchValue)
-    }, 300),
-
-    handleSearchUser(searchValue) {
-      this.searchUsersList = this.allUsersInfo.filter(
-        (userInfo) =>
-          userInfo.username.includes(searchValue) || userInfo.fullname.includes(searchValue)
-      )
-    },
-
     isSelected(userId) {
       return this.selectedUserIds.includes(userId)
     },
@@ -130,11 +121,13 @@ export default {
     },
 
     async handleAddMembersToRoom() {
-      this.isCallingAPI = true
+      const userId = localStorage.getItem('userId')
       const roomId = localStorage.getItem('roomId')
+
+      this.isCallingAPI = true
       const newMembers = this.selectedUserIds
       try {
-        await ChatService.updateRoom({ roomId, newMembers })
+        await ChatService.updateRoom({ roomId, userId, newMembers })
       } catch (error) {
         console.error('Error adding new members to room: ', error)
       } finally {
@@ -142,28 +135,32 @@ export default {
         this.isCallingAPI = false
         this.selectedUserIds = []
       }
+    },
+
+    handleSearchUser() {
+      const userId = localStorage.getItem('userId')
+
+      searchUserAPI(this.searchValue)
+        .then((res) => {
+          this.searchUsersList = res.data.filter((user) => user._id !== userId)
+        })
+        .catch((err) => console.error('Error while searching users', err))
     }
   },
 
   watch: {
-    visible(newValue) {
+    visible(newValue, oldValue) {
       if (newValue) {
-        const allUsersInfo = useAllUsersInfoStore().allUsersInfo
-        const roomInfo = useRoomInfoStore().roomInfo
-        const membersInRoom = roomInfo.members
-
-        const usersNotInRoom = allUsersInfo.filter(
-          (user) => !membersInRoom.some((member) => member.userId === user._id)
-        )
-
-        this.searchUsersList = usersNotInRoom
-        this.allUsersInfo = this.searchUsersList
-      }
-    },
-
-    searchValue(newVal) {
-      if (newVal) {
-        this.debounceSearch(newVal)
+        const conversationsStore = useConversationsStore()
+        this.conversations = conversationsStore.conversations
+        const mappedConversations = this.conversations
+          .filter((room) => room.receiverId)
+          .map((room) => ({
+            userId: room.receiverId,
+            fullName: room.roomName,
+            avatarUrl: room.avatarUrl
+          }))
+        this.searchUsersList = mappedConversations
       }
     }
   }

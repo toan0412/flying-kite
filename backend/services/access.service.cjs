@@ -89,7 +89,7 @@ class AccessService {
   }
 
   // Phương thức đăng ký
-  static signUp = async ({ fullname, email, password, username, avatarUrl }) => {
+  static signUp = async ({ fullName, email, password, username, avatarUrl }) => {
     const checkExistEmail = await UserModel.findOne({ email }).lean()
     if (checkExistEmail) {
       throw new BadRequestError('Email đã được dùng')
@@ -107,7 +107,7 @@ class AccessService {
     // Tạo người dùng mới
     const newUser = await UserModel.create({
       username,
-      fullname,
+      fullName,
       email,
       password: passwordHash,
       avatarUrl,

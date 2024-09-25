@@ -32,6 +32,7 @@
         accept="image/png, image/jpeg, image/bmp"
         @change="onFileChange"
         hide-input
+        style="display: none"
       >
       </v-file-input>
       <div
@@ -54,12 +55,7 @@
 
       <div class="room-info__created d-flex justify-sm-center">Được tạo bởi {{ createdBy }}</div>
       <div class="text-subtitle-2 font-weight-bold opacity-70 pl-3 pt-3">Thành viên</div>
-      <v-list
-        max-height="250"
-        v-if="membersInRoom.length > 0"
-        lines="one"
-        class="room-info__members"
-      >
+      <v-list max-height="250" lines="one" class="room-info__members">
         <v-list-item
           class="room-info__members__item"
           clickable
@@ -74,10 +70,12 @@
               :src="member.avatarUrl"
             />
           </template>
-          <v-list-item-title class="ml-3">{{ member.fullname }}</v-list-item-title>
+          <v-list-item-title class="ml-3">{{ member.fullName }}</v-list-item-title>
           <v-list-item-subtitle class="ml-3">@{{ member.username }}</v-list-item-subtitle>
           <template v-if="isAdminOfRoom" v-slot:append>
-            <div @click="openRemoveMemberConfirmDialog(member._id)" class="remove-member">Xóa</div>
+            <div @click="openRemoveMemberConfirmDialog(member.userId)" class="remove-member">
+              Xóa
+            </div>
           </template>
         </v-list-item>
         <v-list-item clickable @click="openAddMemberDialog" class="add-member">
@@ -139,7 +137,6 @@
 import MSAvatar from '@/components/CustomAvatar/MSAvatar.vue'
 import MSButton from '@/components/CustomButton/MSButton.vue'
 import { useRoomInfoStore } from '@/stores/RoomInfoStore'
-import { useAllUsersInfoStore } from '@/stores/AllUsersInfoStore'
 import { uploadFilesAndGetUrls } from '@/helper/GetUrlOfMedia'
 import ChatService from '@/socket/ChatService'
 import ConfirmDialog from '@/components/Dialog/ConfirmDialog.vue'
@@ -184,9 +181,11 @@ export default {
       }
     }
   },
+
+  emits: ['openAddMemberDialog', 'close'],
+
   methods: {
     triggerFileInput() {
-      // Triggers the file input click event
       this.$refs.fileInput.$el.querySelector('input[type="file"]').click()
     },
 
@@ -207,9 +206,10 @@ export default {
     },
 
     async handleUpdateRoomInfo() {
+      const userId = localStorage.getItem('userId')
+      const roomId = localStorage.getItem('roomId')
       this.isCallingAPI = true
       let avatarUrl = ''
-      const roomId = localStorage.getItem('roomId')
       const roomName = this.editRoomName
 
       if (this.imageUrl && this.imageUrl !== this.roomInfo.avatarUrl) {
@@ -219,9 +219,10 @@ export default {
       }
 
       try {
-        ChatService.updateRoom({ roomId, roomName, avatarUrl })
+        ChatService.updateRoom({ roomId, userId, roomName, avatarUrl })
       } catch (err) {
         console.error('Cập nhật phòng thất bại:', err)
+        alert('CÓ lỗi xảy ra, vui lòng thử lại')
       } finally {
         this.isCallingAPI = false
         this.show = false
@@ -234,9 +235,17 @@ export default {
       const memberId = this.memberId
 
       try {
-        await ChatService.removeMemberFromRoom({ roomId, userId, memberId })
+        const adminFullName = this.roomInfo.members.find(
+          (member) => member.userId === this.roomInfo.createdBy
+        ).fullName
+        const memberRemovedFullName = this.roomInfo.members.find(
+          (member) => member.userId === memberId
+        ).fullName
+        const content = `${adminFullName} đã xóa ${memberRemovedFullName} khỏi phòng`
+        const type = 'Room'
+        await ChatService.removeMemberFromRoom({ roomId, userId, memberId, content, type })
 
-        this.membersInRoom = this.membersInRoom.filter((member) => member._id !== memberId)
+        this.membersInRoom = this.membersInRoom.filter((member) => member.userId !== memberId)
       } catch (error) {
         console.error('Error remove member from room', error)
       }
@@ -288,23 +297,23 @@ export default {
     visible(newValue, oldValue) {
       if (newValue) {
         const userId = localStorage.getItem('userId')
-        const allUsersInfoStore = useAllUsersInfoStore()
-        const allUsersInfo = allUsersInfoStore.allUsersInfo
-
         const roomInfoStore = useRoomInfoStore()
         this.roomInfo = roomInfoStore.roomInfo
+
+        this.editableRoomName = false
+
         this.imageUrl = this.roomInfo.avatarUrl
         if (userId === this.roomInfo.createdBy) {
           this.isAdminOfRoom = true
         }
 
-        const allUsersInfoMap = new Map(allUsersInfo.map((user) => [user._id, user]))
+        const usersInRoom = new Map(this.roomInfo.members.map((user) => [user.userId, user]))
 
-        this.createdBy = allUsersInfoMap.get(this.roomInfo.createdBy).fullname
+        this.createdBy = usersInRoom.get(this.roomInfo.createdBy)?.fullName
 
         this.membersInRoom = this.roomInfo.members
-          .filter((member) => member.userId !== userId)
-          .map((member) => allUsersInfoMap.get(member.userId))
+          .filter((member) => member.userId !== userId && member.role !== 'left')
+          .map((member) => usersInRoom.get(member.userId))
       }
     },
 
@@ -376,7 +385,6 @@ export default {
 
   .v-card {
     position: relative;
-    height: 650px;
 
     .mdi-paperclip {
       display: none;

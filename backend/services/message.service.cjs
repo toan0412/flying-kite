@@ -1,21 +1,20 @@
 const MessageModel = require('../models/message.model.cjs')
-const RoomService = require('../services/room.service.cjs')
 const { BadRequestError, NotFoundError } = require('../core/error.response.cjs')
+const RoomModel = require('../models/room.model.cjs')
 
 class MessageService {
   //Tạo tin nhắn
   createMessage = async (req) => {
     const { roomId } = req.params
-    const { senderId, content, media, replyTo } = req.body
-    // Check xem người gửi có trong phòng chat không
-    RoomService.checkExistMemberInRoom(roomId, senderId)
+    const { senderId, content, media, replyTo, isSystemMessage } = req.body
 
     const newMessage = await MessageModel.create({
       roomId: roomId,
       senderId: senderId,
       content: content,
       media: media,
-      replyTo: replyTo
+      replyTo: replyTo,
+      isSystemMessage: isSystemMessage
     })
 
     return newMessage
@@ -41,7 +40,9 @@ class MessageService {
     const { roomId } = req.params
 
     // Check xem phòng có tồn tại không
-    await RoomService.checkExistRoomById(roomId)
+    const existRoom = await RoomModel.findById(roomId)
+
+    if (!existRoom) throw new NotFoundError('Phòng không tồn tại')
 
     const messages = await MessageModel.find({ roomId: roomId })
       .sort({ createdAt: -1 })
@@ -57,7 +58,9 @@ class MessageService {
     const { roomId, searchString } = req.query
     console.log(roomId, searchString)
     // 0. Kiểm tra phòng có tồn tại không
-    await RoomService.checkExistRoomById(roomId)
+    const existRoom = await RoomModel.findById(roomId)
+
+    if (!existRoom) throw new NotFoundError('Phòng không tồn tại')
 
     // 1. Tìm các tin nhắn khớp với từ khóa
     const matchedMessages = await MessageModel.find({
@@ -74,7 +77,7 @@ class MessageService {
 
   // Kiểm tra xem có phải tin nhắn cuối cùng không
   isRecentlyMessage = async (roomId, messageId) => {
-    const room = await RoomService.checkExistRoomById(roomId)
+    const room = await RoomModel.findById(roomId)
     const lastMessage = room.lastMessageAt
     const message = await MessageModel.findById(messageId)
 

@@ -28,7 +28,7 @@
         </v-avatar>
         <div class="pl-3">
           <div class="statusbar__item__username">
-            {{ userInfo.fullname }}
+            {{ userInfo.fullName }}
           </div>
           <div class="statusbar__item__status">
             {{ userInfo.status }}
@@ -142,12 +142,11 @@ import MSTextField from '@/components/CustomTextField/MSTextField.vue'
 import MSAvatar from '@/components/CustomAvatar/MSAvatar.vue'
 import SidebarSkeletonLoading from '@/components/SkeletonLoading/SidebarConversationsSkeletonLoading.vue'
 import EmptyCard from '@/components/Card/EmptyCard.vue'
-import { getConservationsAPI } from '@/services/RoomServices'
-import { getUserAPI, getAllUsersAPI, logoutAPI } from '@/services/UserServices'
+import { getConservationsAPI, getRoomByIdAPI } from '@/services/RoomServices'
+import { getUserAPI, logoutAPI } from '@/services/UserServices'
 import { convertToDayOfWeek } from '@/helper/ConvertDate'
-import { useRoomInfoStore } from '@/stores/RoomInfoStore'
-import { useAllUsersInfoStore } from '@/stores/AllUsersInfoStore'
 import { useUserInfoStore } from '@/stores/UserInfoStore'
+import { useRoomInfoStore } from '@/stores/RoomInfoStore'
 import { useConversationsStore } from '@/stores/ConversationsStore'
 import ChatService from '@/socket/ChatService.js'
 import lodash from 'lodash'
@@ -167,7 +166,6 @@ export default {
       showPublicRoomDialog: false,
       showSettingDialog: false,
       searchRoomsList: [],
-      allUsersInfo: null,
       showUserInfoDialog: false,
       idSelected: null
     }
@@ -197,26 +195,16 @@ export default {
       })
     },
 
-    async getAllUsers() {
-      await getAllUsersAPI().then((res) => {
-        const allUsersInfoStore = useAllUsersInfoStore()
-        allUsersInfoStore.setAllUsersInfo(res.data)
-        this.allUsersInfo = allUsersInfoStore.allUsersInfo
-      })
-    },
-
     //Lấy các cuộc trò chuyện
     async fetchConservations() {
-      try {
-        this.skeletonLoadingConversations = true
-        const res = await getConservationsAPI()
-
-        this.rooms = this.generateConversationWithUsersInfo(res.data)
-      } catch (err) {
-        console.log('Error fetching rooms: ', err)
-      } finally {
-        this.skeletonLoadingConversations = false
-      }
+      await getConservationsAPI()
+        .then((res) => {
+          this.rooms = res.data
+        })
+        .catch((err) => {
+          console.error('Error fetching conversationss', err)
+        })
+      this.skeletonLoadingConversations = false
     },
 
     convertToDayOfWeek(dateString) {
@@ -243,61 +231,12 @@ export default {
 
     //Xử lý onclick vào thẻ li trong sidebar
     async handleChangeRoom(room) {
-      const roomId = localStorage.getItem('roomId')
-      if (roomId == room._id) return
       const roomInfoStore = useRoomInfoStore()
-      roomInfoStore.setRoomInfo(room)
-      this.selectedRoomId = room._id
-    },
 
-    generateConversationWithUsersInfo(rooms) {
-      let conversations = []
-
-      if (!Array.isArray(rooms)) {
-        rooms = [rooms]
-      }
-
-      // Tạo một Map để tra cứu nhanh userInfo theo userId
-      const allUsersInfoMap = new Map(this.allUsersInfo.map((user) => [user._id, user]))
-
-      rooms.forEach((room) => {
-        if (room.type == 'private') {
-          // Tìm người dùng còn lại trong phòng (khác với người dùng hiện tại)
-          const remainUser = room.members.find((member) => member.userId !== this.userInfo._id)
-          if (!remainUser) return
-
-          // Lấy thông tin người dùng từ Map
-          const userInfo = allUsersInfoMap.get(remainUser.userId)
-          if (userInfo) {
-            // Thêm thông tin vào danh sách cuộc trò chuyện
-            conversations.push({
-              _id: room._id,
-              type: room.type,
-              receiverId: userInfo._id,
-              createdBy: room.createdBy,
-              members: room.members,
-              roomName: userInfo.fullname,
-              avatarUrl: userInfo.avatarUrl,
-              lastMessage: room.lastMessage || '',
-              lastMessageAt: room.lastMessageAt,
-              updatedAt: room.updatedAt
-            })
-          }
-        } else {
-          conversations.push({
-            _id: room._id,
-            type: room.type,
-            roomName: room.roomName,
-            createdBy: room.createdBy,
-            members: room.members,
-            avatarUrl: room.avatarUrl,
-            lastMessage: room.lastMessage || '',
-            lastMessageAt: room.lastMessageAt,
-            updatedAt: room.updatedAt
-          })
-        }
+      getRoomByIdAPI(room._id).then((res) => {
+        const newRoom = res.data
+        roomInfoStore.setRoomInfo(newRoom)
       })
-      return conversations
     },
 
     openUserInfoDialog(room) {
@@ -327,9 +266,6 @@ export default {
   },
 
   async created() {
-    // Đợi lấy tất cả người dùng
-    await this.getAllUsers()
-
     // Chạy fetchUserInfo và fetchConservations đồng thời
     await Promise.all([this.fetchUserInfo(), this.fetchConservations()])
 
@@ -338,32 +274,14 @@ export default {
   },
 
   mounted() {
-    //Client nhận tin nhắn
     ChatService.onUpdatedRoomReceived((updatedRoom) => {
-      // Tìm chỉ mục của phòng trong danh sách phòng hiện tại
       const roomIndex = this.rooms.findIndex((room) => room._id === updatedRoom._id)
 
-      if (roomIndex !== -1) {
-        // Nếu phòng tồn tại, cập nhật tin nhắn cuối cùng và thời gian
-        if (updatedRoom.avatarUrl) {
-          this.rooms[roomIndex].lastMessage = updatedRoom.avatarUrl
-        }
-        this.rooms[roomIndex].lastMessage = updatedRoom.lastMessage
-        this.rooms[roomIndex].lastMessageAt = updatedRoom.lastMessageAt
-
-        // Di chuyển phòng đã cập nhật lên đầu danh sách
-        const updatedRoomData = this.rooms.splice(roomIndex, 1)[0]
-        this.rooms.unshift(updatedRoomData)
-      } else {
-        const newRoom = this.generateConversationWithUsersInfo(updatedRoom)
-        this.rooms.unshift(newRoom[0])
-      }
-    })
-
-    ChatService.onLeavedRoomReceived((updatedRoom) => {
-      const roomIndex = this.rooms.findIndex((room) => room._id === updatedRoom._id)
       if (roomIndex !== -1) {
         this.rooms.splice(roomIndex, 1)
+        this.rooms.unshift(updatedRoom)
+      } else {
+        this.rooms.unshift(updatedRoom)
       }
     })
   },

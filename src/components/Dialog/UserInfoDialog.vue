@@ -32,7 +32,7 @@
           <div class="user-info-dialog__main__item d-flex justify-sm-space-between ma-2">
             <div class="font-weight-bold">Tên người dùng:</div>
             <div class="font-weight-bold opacity-60">
-              {{ userInfo.fullname }}
+              {{ userInfo.fullName }}
             </div>
           </div>
 

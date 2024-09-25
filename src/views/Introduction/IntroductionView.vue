@@ -9,8 +9,8 @@
 
           <div class="introduction__main__content__header__gretting">
             Chào mừng bạn!
-            <div class="fullname">
-              {{ userInfo.fullname }}
+            <div class="fullName">
+              {{ userInfo.fullName }}
             </div>
           </div>
         </div>
@@ -172,7 +172,7 @@ export default {
   font-size: 40px;
   color: var(--text-color);
 
-  .fullname {
+  .fullName {
     font-weight: bold;
   }
 }

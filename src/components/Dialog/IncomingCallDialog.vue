@@ -12,7 +12,7 @@
           </v-avatar>
         </div>
 
-        <div class="d-flex justify-center pa-1 text-h6">{{ callerInfo.fullname }}</div>
+        <div class="d-flex justify-center pa-1 text-h6">{{ callerInfo.fullName }}</div>
         <div class="d-flex justify-center pa-1 text-subtitle-2">Muốn gọi video tới bạn</div>
       </div>
 

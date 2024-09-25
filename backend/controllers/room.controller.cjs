@@ -1,4 +1,4 @@
-const RoomService = require("../services/room.service.cjs");
+const RoomService = require('../services/room.service.cjs')
 const { SuccessResponse, CREATED } = require('../core/success.response.cjs')
 
 class RoomController {
@@ -6,7 +6,7 @@ class RoomController {
     new CREATED({
       message: 'Tạo phòng thành công',
       data: await RoomService.createRoom(req)
-    }).send(res);
+    }).send(res)
   }
 
   updateRoom = async (req, res, next) => {
@@ -19,9 +19,16 @@ class RoomController {
   getConversations = async (req, res, next) => {
     new SuccessResponse({
       message: 'Lấy thông tin các cuộc trò chuyện thành công',
-      data: await RoomService.getConversations(req.params)
+      data: await RoomService.getConversations(req)
+    }).send(res)
+  }
+
+  getRoomById = async (req, res, next) => {
+    new SuccessResponse({
+      message: 'Lấy thông tin phòng thành công',
+      data: await RoomService.getRoomById(req)
     }).send(res)
   }
 }
 
-module.exports = new RoomController();
+module.exports = new RoomController()

@@ -10,21 +10,22 @@
       <!-- Header info -->
       <div v-else class="content__header__info">
         <MSAvatar
-          @click="openUserInfoDialog(room.receiverId, room.type)"
+          @click="openUserInfoDialog(roomInfo.receiverId, roomInfo.type)"
           width="40"
           height="40"
           cover
-          :alt="room.fullname"
-          :src="room.avatarUrl"
+          :alt="roomInfo.roomName"
+          :src="roomInfo.avatarUrl"
         ></MSAvatar>
-        <p class="content__header__info__name">{{ room.roomName || '' }}</p>
+        <p class="content__header__info__name">{{ roomInfo.roomName || '' }}</p>
         <v-icon
           class="pl-2"
-          v-if="room.type === 'public'"
+          v-if="roomInfo.type === 'public'"
           icon="mdi-cog"
           @click="showRoomInfoDialog = true"
         ></v-icon>
         <RoomInfoDialog
+          @openAddMemberDialog="openAddMemberDialog"
           :visible="showRoomInfoDialog"
           v-model:visible="showRoomInfoDialog"
           @close="showRoomInfoDialog = false"
@@ -96,7 +97,7 @@
           <v-icon size="20" icon="mdi-magnify" @click="toggleSearchField"></v-icon>
         </div>
 
-        <div v-if="room.type == 'public'" class="content__header__actions__item">
+        <div v-if="roomInfo.type == 'public'" class="content__header__actions__item">
           <v-icon size="20" icon="mdi-account-plus-outline" @click="showAddMemberDialog = true">
           </v-icon>
           <AddMemberDialog
@@ -173,7 +174,7 @@
 
               <!-- Message sender name -->
               <div class="message-sender__name">
-                {{ message.fullname }}
+                {{ message.fullName }}
               </div>
 
               <div class="message-row">
@@ -183,7 +184,7 @@
                     @click="openUserInfoDialog(message.senderId)"
                     width="30"
                     height="30"
-                    :alt="message.fullname"
+                    :alt="message.fullName"
                     :src="message.avatarUrl"
                   >
                   </MSAvatar>
@@ -265,7 +266,7 @@
                         {{ message.replyMessage.content }}
                       </p>
                       <p class="message-content__reply__details">
-                        {{ message.replyMessage.fullname }},{{ message.replyMessage.createdAt }}
+                        {{ message.replyMessage.fullName }},{{ message.replyMessage.createdAt }}
                       </p>
                     </div>
                     <div v-if="message.isDelete" class="message-content__text">
@@ -378,7 +379,7 @@
           </div>
           <div class="content_input__reply__message">{{ replyMessage.content }}</div>
           <div class="content_input__reply__sender--detail">
-            {{ replyMessage.fullname }}, {{ convertToDayOfWeek(replyMessage.createdAt) }}
+            {{ replyMessage.fullName }}, {{ convertToDayOfWeek(replyMessage.createdAt) }}
           </div>
         </div>
 
@@ -474,7 +475,6 @@ import ConversationSkeletonLoading from '@/components/SkeletonLoading/Conversati
 import { getConservationByRoomIdAPI, searchMessageByRoomAPI } from '@/services/MessageService'
 import { useUserInfoStore } from '@/stores/UserInfoStore'
 import { useRoomInfoStore } from '@/stores/RoomInfoStore'
-import { useAllUsersInfoStore } from '@/stores/AllUsersInfoStore'
 import { convertToDayOfWeek } from '@/helper/ConvertDate'
 import { uploadFilesAndGetUrls } from '@/helper/GetUrlOfMedia'
 
@@ -501,10 +501,9 @@ export default {
 
   data() {
     return {
-      room: {},
+      roomInfo: {},
       userId: '',
       userName: '',
-      roomId: '',
       messageInput: '',
       searchValue: '',
       fileSelected: {},
@@ -540,6 +539,36 @@ export default {
   },
 
   methods: {
+    async setUpNewRoom(newRoom, oldRoom) {
+      if (newRoom?._id === oldRoom?._id) {
+        this.roomInfo = newRoom
+        this.usersInRoom = new Map(newRoom.members.map((user) => [user.userId, user]))
+        return
+      }
+
+      localStorage.setItem('roomId', newRoom?._id)
+      this.roomId = newRoom._id
+      this.roomInfo = newRoom
+      this.messages = []
+      this.offset = 0
+      this.skeletonLoadingConversation = true
+      this.skeletonLoadingRoomInfo = true
+      this.flagStopCallApi = false
+      this.isSearchField = false
+      this.notifyTyping = ''
+      this.messageInput = ''
+      this.usersInRoom = new Map(newRoom.members.map((user) => [user.userId, user]))
+
+      ChatService.joinRoom(newRoom._id)
+
+      if (oldRoom?._id) {
+        ChatService.leaveRoom(oldRoom._id)
+      }
+
+      await this.getConservationByRoomId()
+      this.setupScrollTopListMessageListener()
+    },
+
     //Lấy cuộc hội thoại theo id phòng
     async getConservationByRoomId() {
       if (!this.roomId || this.flagStopCallApi || this.isLoadingMessages) return
@@ -554,8 +583,7 @@ export default {
         }
 
         const messages = res.data.map((message) => {
-          const userInfo = this.allUsersInfoMap.get(message.senderId)
-
+          const userInfo = this.usersInRoom.get(message.senderId)
           let replyMessage = null
           if (message.replyTo) {
             replyMessage = res.data.find((msg) => msg._id === message.replyTo)
@@ -564,11 +592,11 @@ export default {
           return {
             ...message,
             avatarUrl: userInfo.avatarUrl,
-            fullname: userInfo.fullname,
+            fullName: userInfo.fullName,
             replyMessage: replyMessage
               ? {
                   _id: replyMessage._id,
-                  fullname: this.allUsersInfoMap.get(replyMessage.senderId)?.fullname || 'Unknown',
+                  fullName: this.usersInRoom.get(replyMessage.senderId)?.fullName || 'Unknown',
                   content: replyMessage.content,
                   createdAt: this.convertToDayOfWeek(replyMessage.createdAt)
                 }
@@ -652,9 +680,9 @@ export default {
           }
 
           this.messagesSearchList = messagesSearchList.map((message) => {
-            const user = this.allUsersInfoMap.get(message.senderId)
+            const user = this.usersInRoom.get(message.senderId)
             if (user) {
-              message.senderName = user.fullname
+              message.senderName = user.fullName
               message.avatarUrl = user.avatarUrl
             }
             message.content = message.content.replace(
@@ -759,8 +787,6 @@ export default {
         const imageUrl = URL.createObjectURL(file)
         this.filesToUpload.push({ url: imageUrl, file: file, type: file.type })
       }
-      console.log(this.filesToUpload)
-
       if (this.filesToUpload.length) {
         this.isTyping = true
       }
@@ -793,7 +819,6 @@ export default {
           const audioUrl = URL.createObjectURL(audioFile)
 
           this.filesToUpload.push({ url: audioUrl, file: audioFile, type: audioFile.type })
-          console.log(this.filesToUpload)
 
           if (this.filesToUpload.length) {
             this.isTyping = true
@@ -880,10 +905,11 @@ export default {
       this.showUserInfoDialog = true
     },
 
-    //Hàm xóa tin nhắnh
+    //Hàm xóa tin nhắn
     handleDeleteMessage() {
       const message = {
         roomId: this.roomId,
+        userId: this.userId,
         messageId: this.selectedMessage._id
       }
       ChatService.deleteMessage(message)
@@ -893,7 +919,7 @@ export default {
     sendNotifyTyping() {
       const userInfoStore = useUserInfoStore()
       const roomId = this.roomId
-      const senderName = userInfoStore.userInfo.fullname
+      const senderName = userInfoStore.userInfo.fullName
       const senderId = this.userId
       const isTyping = this.isTyping
       ChatService.sendNotifyTyping({ roomId, senderId, senderName, isTyping })
@@ -902,12 +928,14 @@ export default {
     async openVideoCall(hasVideo) {
       const callerId = localStorage.getItem('userId')
       const callId = Math.floor(Math.random() * 1000000000).toString()
-      const roomId = this.room._id
-      const userIdsToRing = this.room.members
+      const roomId = this.roomInfo._id
+      const userIdsToRing = this.roomInfo.members
         .filter((user) => user.userId !== this.userId)
         .map((user) => user.userId)
 
-      const url = new URL('http://localhost:5173/call')
+      const frontendUrl = import.meta.env.VITE_FRONTEND_URL
+
+      const url = new URL(`${frontendUrl}call`)
 
       url.searchParams.append('room_id', roomId)
       url.searchParams.append('call_id', callId)
@@ -919,7 +947,7 @@ export default {
       window.open(url.toString(), '_blank', 'width=1268,height=768')
     },
 
-    //Mở Add member dialog từ Room info dialog
+    //Mở Add member dialog từ roomInfo info dialog
     openAddMemberDialog() {
       this.showRoomInfoDialog = false
       this.showAddMemberDialog = true
@@ -950,8 +978,9 @@ export default {
     },
 
     openReplyMessage(message) {
+      const fullName = this.usersInRoom.get(message.senderId).fullName
       this.isReplyMessage = true
-      this.replyMessage = message
+      this.replyMessage = { ...message, fullName }
     }
   },
 
@@ -960,23 +989,17 @@ export default {
 
     this.$refs.messageInput.$el.querySelector('textarea').focus()
 
-    const allUsersInfoStore = useAllUsersInfoStore()
-    const allUsersInfo = allUsersInfoStore.allUsersInfo
-
-    this.allUsersInfoMap = new Map(allUsersInfo.map((user) => [user._id, user]))
-
     // Lắng nghe tin nhắn đã gửi
     ChatService.onMessageReceived((messageReceived) => {
-      let replyMessage = null
+      const senderInfo = this.usersInRoom.get(messageReceived.senderId)
+      const replyMessage = messageReceived.replyTo
+        ? this.messages.find((msg) => msg._id === messageReceived.replyTo)
+        : null
 
-      if (messageReceived.replyTo) {
-        replyMessage = this.messages.find((msg) => msg._id === messageReceived.replyTo)
-      }
-
-      replyMessage = messageReceived.replyTo
+      const formattedReplyMessage = replyMessage
         ? {
             _id: replyMessage._id,
-            fullname: this.allUsersInfoMap.get(replyMessage.senderId)?.fullname || 'Unknown',
+            fullName: this.usersInRoom.get(replyMessage.senderId)?.fullName || 'Unknown',
             content: replyMessage.content,
             createdAt: this.convertToDayOfWeek(replyMessage.createdAt)
           }
@@ -984,7 +1007,9 @@ export default {
 
       const message = {
         ...messageReceived,
-        replyMessage
+        fullName: senderInfo.fullName,
+        avatarUrl: senderInfo.avatarUrl,
+        replyMessage: formattedReplyMessage
       }
 
       this.messages.unshift(message)
@@ -1010,10 +1035,9 @@ export default {
     })
 
     ChatService.onUpdatedRoomReceived((updatedRoom) => {
-      if (updatedRoom.type == 'private') return
+      console.log(updatedRoom)
       const roomInfoStore = useRoomInfoStore()
       roomInfoStore.setRoomInfo(updatedRoom)
-      this.room = updatedRoom
     })
   },
 
@@ -1027,33 +1051,7 @@ export default {
   watch: {
     currentRoom: {
       async handler(newVal, oldVal) {
-        if (oldVal && oldVal._id && newVal._id == oldVal._id) return
-        // Reset khi thay đổi phòng
-        localStorage.setItem('roomId', newVal._id)
-        this.room = newVal
-        this.roomId = newVal._id
-        this.messages = []
-        this.offset = 0
-        this.skeletonLoadingConversation = true
-        this.skeletonLoadingRoomInfo = true
-        this.flagStopCallApi = false
-        this.isSearchField = false
-        this.notifyTyping = ''
-        this.messageInput = ''
-
-        // Xóa người dùng khỏi phòng cũ nếu oldVal tồn tại
-        if (oldVal && oldVal._id) {
-          ChatService.leaveRoom(oldVal._id)
-        }
-
-        // Thêm người dùng vào phòng mới
-        ChatService.joinRoom(this.roomId)
-
-        // Lấy cuộc hội thoại theo phòng mới
-        await this.getConservationByRoomId()
-
-        // Thiết lập sự kiện cuộn
-        this.setupScrollTopListMessageListener()
+        this.setUpNewRoom(newVal, oldVal)
       },
       immediate: true
     },
@@ -1324,11 +1322,21 @@ export default {
       height: 100%;
       list-style-type: none;
 
-      .message.first-message {
+      .message.time-separator {
         .message-time {
+          margin: 8px 0;
           display: flex;
           width: 100%;
           justify-content: center;
+        }
+      }
+
+      .other-message.first-message {
+        .message-sender__avatar {
+          .v-img {
+            display: flex;
+            border-radius: 50%;
+          }
         }
       }
 
@@ -1346,6 +1354,18 @@ export default {
         position: relative;
         display: flex;
         flex-direction: column;
+      }
+
+      .message-notification {
+        margin: 8px 0;
+        display: flex;
+        width: 100%;
+        justify-content: center;
+      }
+
+      .message-notification__content {
+        font-size: 12px;
+        color: var(--lighter-text-color);
       }
 
       .message-row {
@@ -1391,9 +1411,12 @@ export default {
         }
 
         .message-sender__avatar {
+          width: 30px;
+          height: 30px;
+
           display: flex;
           .v-img {
-            border-radius: 50%;
+            display: none;
           }
         }
       }

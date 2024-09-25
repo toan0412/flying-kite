@@ -66,10 +66,6 @@ export default {
   },
 
   mounted() {
-    ChatService.onLeavedRoomReceived(() => {
-      this.isIntroduction = true
-    })
-
     ChatService.onIncomingCallReceived(async (callUrl) => {
       const url = new URL(callUrl)
       const callerId = url.searchParams.get('caller_id')
