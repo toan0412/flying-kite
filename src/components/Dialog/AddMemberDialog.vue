@@ -156,7 +156,7 @@ export default {
         const mappedConversations = this.conversations
           .filter((room) => room.receiverId)
           .map((room) => ({
-            userId: room.receiverId,
+            _id: room.receiverId,
             fullName: room.roomName,
             avatarUrl: room.avatarUrl
           }))

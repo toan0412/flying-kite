@@ -163,8 +163,13 @@
             ]"
             :data-id="message._id"
           >
+            <div v-if="message.isSystemMessage" class="message-system">
+              <div class="message-system__text">
+                {{ message.fullName + ' ' + message.content }}
+              </div>
+            </div>
             <!-- Message wrapper -->
-            <div class="message-wrapper">
+            <div v-else class="message-wrapper">
               <!-- Message time -->
               <div class="message-time">
                 <div class="texting-time">
@@ -1354,6 +1359,16 @@ export default {
             display: flex;
             align-items: center;
           }
+        }
+      }
+
+      .message-system {
+        display: flex;
+        justify-content: center;
+
+        .message-system__text {
+          font-size: 12px;
+          color: var(--lighter-text-color);
         }
       }
 

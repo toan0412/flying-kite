@@ -36,8 +36,8 @@
       </v-list>
       <EmptyCard
         v-else
-        title="Không tìm thấy người dùng"
-        subtitle="Người dùng không tìm thấy hoặc không tồn tại, vui lòng thử lại"
+        title="Bạn chưa có cuộc trò chuyện nào"
+        subtitle="Nhập dữ liệu người dùng và nhấn 'Enter' để tìm kiếm"
       />
     </v-card>
   </v-dialog>
@@ -88,7 +88,7 @@ export default {
       console.log(user)
       const roomInfoStore = useRoomInfoStore()
       const conversationsStore = useConversationsStore()
-      const receiverId = user.userId || user._id
+      const receiverId = user._id
       this.show = false
 
       // Tìm phòng riêng tư tồn tại
@@ -134,15 +134,15 @@ export default {
       if (newValue) {
         const conversationsStore = useConversationsStore()
         this.conversations = conversationsStore.conversations
-        console.log(this.conversations)
         const mappedConversations = this.conversations
-          .filter((room) => room.receiverId)
+          .filter((room) => room.type === 'private')
           .map((room) => ({
-            userId: room.receiverId,
+            _id: room.receiverId,
             fullName: room.roomName,
             avatarUrl: room.avatarUrl
           }))
         this.searchUsersList = mappedConversations
+        console.log(this.searchUsersList)
       }
     }
   }

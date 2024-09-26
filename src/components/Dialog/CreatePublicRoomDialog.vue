@@ -85,8 +85,8 @@
         </v-list>
         <EmptyCard
           v-else
-          title="Không tìm thấy người dùng"
-          subtitle="Người dùng không tìm thấy hoặc không tồn tại, vui lòng thử lại"
+          title="Bạn chưa có cuộc trò chuyện nào"
+          subtitle="Nhập dữ liệu người dùng và nhấn 'Enter' để tìm kiếm"
         />
         <div class="position-absolute right-0 bottom-0 pa-2 w-100 d-flex justify-content">
           <MSButton class="mr-auto" @click="handleBackStep">Trước</MSButton>
@@ -266,12 +266,13 @@ export default {
         this.conversations = conversationsStore.conversations
 
         const mappedConversations = this.conversations
-          .filter((room) => room.receiverId)
+          .filter((room) => room.type === 'private')
           .map((room) => ({
-            userId: room.receiverId,
+            _id: room.receiverId,
             fullName: room.roomName,
             avatarUrl: room.avatarUrl
           }))
+
         this.searchUsersList = mappedConversations
         this.handleBackStep()
       }

@@ -78,11 +78,25 @@ export default {
       this.callUrl = callUrl
       this.showPrivateRoomDialog = true
     })
+
+    ChatService.onUpdatedRoomReceived((updatedRoom) => {
+      const userId = localStorage.getItem('userId')
+      const currentRoomId = localStorage.getItem('roomId')
+
+      // Kiểm tra xem người dùng hiện tại có còn là thành viên của phòng không
+      const isUpdatedRoomHasUserId = updatedRoom.members.some(
+        (member) => member.userId === userId && member.role !== 'left'
+      )
+
+      if (!isUpdatedRoomHasUserId && updatedRoom._id === currentRoomId) {
+        this.isIntroduction = true
+      }
+    })
   },
 
   watch: {
     currentRoom(newRoom) {
-      if (!newRoom) return
+      if (!newRoom._id) return
       if (this.isIntroduction) {
         this.isIntroduction = false
       }

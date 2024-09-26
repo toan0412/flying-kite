@@ -277,11 +277,19 @@ export default {
     ChatService.onRoomUpdated((updatedRoom) => {
       const roomIndex = this.rooms.findIndex((room) => room._id === updatedRoom._id)
 
-      if (roomIndex !== -1) {
-        this.rooms.splice(roomIndex, 1)
-        this.rooms.unshift(updatedRoom)
+      if (isUpdatedRoomHasUserId) {
+        // Nếu người dùng vẫn là thành viên, cập nhật hoặc thêm phòng
+        if (roomIndex !== -1) {
+          this.rooms.splice(roomIndex, 1)
+          this.rooms.unshift(updatedRoom)
+        } else {
+          this.rooms.unshift(updatedRoom)
+        }
       } else {
-        this.rooms.unshift(updatedRoom)
+        // Nếu người dùng không còn là thành viên, xóa phòng khỏi danh sách
+        if (roomIndex !== -1) {
+          this.rooms.splice(roomIndex, 1)
+        }
       }
     })
   },

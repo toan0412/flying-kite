@@ -4,14 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
-    "build": "vite build",
-    "preview": "vite preview",
-    "test:unit": "vitest",
-    "test:e2e": "playwright test",
-    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore",
-    "format": "prettier --write src/"
-  },
+  "dev": "vite --mode development --host 0.0.0.0",
+  "start": "vite --mode production --host 0.0.0.0",
+  "build": "vite build --mode production",
+  "preview": "vite preview",
+  "test:unit": "vitest",
+  "test:e2e": "playwright test",
+  "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore",
+  "format": "prettier --write src/"
+},
   "dependencies": {
     "@dicebear/collection": "^9.2.1",
     "@dicebear/core": "^9.2.1",

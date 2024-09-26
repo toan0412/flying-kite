@@ -14,7 +14,8 @@ class PeerService {
 
     // Khởi tạo Peer mới nếu chưa tồn tại
     this.peer = new Peer(userId, {
-      host: import.meta.env.VITE_PEER_SERVER_URL,
+      host: import.meta.env.VITE_URL,
+      port: 9000,
       secure: false
     })
 
