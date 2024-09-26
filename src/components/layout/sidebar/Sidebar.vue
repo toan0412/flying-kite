@@ -274,7 +274,7 @@ export default {
   },
 
   mounted() {
-    ChatService.onUpdatedRoomReceived((updatedRoom) => {
+    ChatService.onRoomUpdated((updatedRoom) => {
       const roomIndex = this.rooms.findIndex((room) => room._id === updatedRoom._id)
 
       if (roomIndex !== -1) {
