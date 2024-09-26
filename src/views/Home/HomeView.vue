@@ -395,7 +395,7 @@
           class="custom-textfield"
           v-model="messageInput"
           height="50"
-          @keydown.enter.prevent="handleEnterFromTextArea"
+          @keydown.enter.prevent="handleEnterFromMessageInput"
           rows="1"
           auto-grow
           max-rows="3"
@@ -921,13 +921,13 @@ export default {
     },
 
     //Hàm gửi sự kiện người dùng đang nhập tin nhắn
-    sendNotifyTyping() {
+    sendTypingNotification() {
       const userInfoStore = useUserInfoStore()
       const roomId = this.roomId
       const senderName = userInfoStore.userInfo.fullName
       const senderId = this.userId
       const isTyping = this.isTyping
-      ChatService.sendNotifyTyping({ roomId, senderId, senderName, isTyping })
+      ChatService.sendTypingNotification({ roomId, senderId, senderName, isTyping })
     },
 
     async openVideoCall(hasVideo) {
@@ -948,7 +948,7 @@ export default {
       url.searchParams.append('caller_id', callerId)
       url.searchParams.append('has_video', hasVideo)
 
-      ChatService.inviteCall({ url, userIdsToRing })
+      ChatService.initiateCall({ url, userIdsToRing })
       window.open(url.toString(), '_blank', 'width=1268,height=768')
     },
 
@@ -988,7 +988,7 @@ export default {
       this.replyMessage = { ...message, fullName }
     },
 
-    handleEnterFromTextArea(event) {
+    handleEnterFromMessageInput(event) {
       if (!event.shiftKey) {
         this.sendMessage()
       } else {
@@ -1037,7 +1037,7 @@ export default {
       })
     })
 
-    ChatService.onNotifyTypingReceived((notify) => {
+    ChatService.onTypingNotificationReceived((notify) => {
       if (notify) {
         if (notify.senderId !== this.userId && notify.isTyping == true) {
           this.notifyTyping = `${notify.senderName} đang nhập tin nhắn ...`
@@ -1047,7 +1047,7 @@ export default {
       }
     })
 
-    ChatService.onUpdatedRoomReceived((updatedRoom) => {
+    ChatService.onRoomUpdated((updatedRoom) => {
       console.log(updatedRoom)
       const roomInfoStore = useRoomInfoStore()
       roomInfoStore.setRoomInfo(updatedRoom)
@@ -1081,7 +1081,7 @@ export default {
     },
 
     isTyping() {
-      this.sendNotifyTyping()
+      this.sendTypingNotification()
     }
   }
 }

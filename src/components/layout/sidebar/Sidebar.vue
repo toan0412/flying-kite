@@ -274,14 +274,7 @@ export default {
   },
 
   mounted() {
-    ChatService.onUpdatedRoomReceived((updatedRoom) => {
-      const userId = localStorage.getItem('userId')
-
-      // Kiểm tra xem người dùng hiện tại có còn là thành viên của phòng không
-      const isUpdatedRoomHasUserId = updatedRoom.members.some(
-        (member) => member.userId === userId && member.role !== 'left'
-      )
-
+    ChatService.onRoomUpdated((updatedRoom) => {
       const roomIndex = this.rooms.findIndex((room) => room._id === updatedRoom._id)
 
       if (isUpdatedRoomHasUserId) {
