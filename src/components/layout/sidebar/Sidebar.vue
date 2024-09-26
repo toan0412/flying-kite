@@ -275,13 +275,28 @@ export default {
 
   mounted() {
     ChatService.onUpdatedRoomReceived((updatedRoom) => {
+      const userId = localStorage.getItem('userId')
+
+      // Kiểm tra xem người dùng hiện tại có còn là thành viên của phòng không
+      const isUpdatedRoomHasUserId = updatedRoom.members.some(
+        (member) => member.userId === userId && member.role !== 'left'
+      )
+
       const roomIndex = this.rooms.findIndex((room) => room._id === updatedRoom._id)
 
-      if (roomIndex !== -1) {
-        this.rooms.splice(roomIndex, 1)
-        this.rooms.unshift(updatedRoom)
+      if (isUpdatedRoomHasUserId) {
+        // Nếu người dùng vẫn là thành viên, cập nhật hoặc thêm phòng
+        if (roomIndex !== -1) {
+          this.rooms.splice(roomIndex, 1)
+          this.rooms.unshift(updatedRoom)
+        } else {
+          this.rooms.unshift(updatedRoom)
+        }
       } else {
-        this.rooms.unshift(updatedRoom)
+        // Nếu người dùng không còn là thành viên, xóa phòng khỏi danh sách
+        if (roomIndex !== -1) {
+          this.rooms.splice(roomIndex, 1)
+        }
       }
     })
   },

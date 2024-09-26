@@ -163,8 +163,13 @@
             ]"
             :data-id="message._id"
           >
+            <div v-if="message.isSystemMessage" class="message-system">
+              <div class="message-system__text">
+                {{ message.fullName + ' ' + message.content }}
+              </div>
+            </div>
             <!-- Message wrapper -->
-            <div class="message-wrapper">
+            <div v-else class="message-wrapper">
               <!-- Message time -->
               <div class="message-time">
                 <div class="texting-time">
@@ -390,7 +395,7 @@
           class="custom-textfield"
           v-model="messageInput"
           height="50"
-          @keydown.enter="sendMessage"
+          @keydown.enter.prevent="handleEnterFromTextArea"
           rows="1"
           auto-grow
           max-rows="3"
@@ -981,6 +986,14 @@ export default {
       const fullName = this.usersInRoom.get(message.senderId).fullName
       this.isReplyMessage = true
       this.replyMessage = { ...message, fullName }
+    },
+
+    handleEnterFromTextArea(event) {
+      if (!event.shiftKey) {
+        this.sendMessage()
+      } else {
+        this.messageInput += '\n'
+      }
     }
   },
 
@@ -1346,6 +1359,16 @@ export default {
             display: flex;
             align-items: center;
           }
+        }
+      }
+
+      .message-system {
+        display: flex;
+        justify-content: center;
+
+        .message-system__text {
+          font-size: 12px;
+          color: var(--lighter-text-color);
         }
       }
 

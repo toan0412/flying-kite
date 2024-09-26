@@ -182,7 +182,7 @@ export default {
     }
   },
 
-  emits: ['openAddMemberDialog', 'close'],
+  emits: ['openAddMemberDialog', 'close', 'update:visible'],
 
   methods: {
     triggerFileInput() {
@@ -257,6 +257,7 @@ export default {
 
       try {
         await ChatService.leavePublicRoom({ roomId, userId })
+        this.$emit('update:visible', false)
       } catch (error) {
         console.error('Error leave room', error)
       }

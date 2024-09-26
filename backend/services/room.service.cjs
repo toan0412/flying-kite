@@ -2,6 +2,7 @@ const RoomModel = require('../models/room.model.cjs')
 const { BadRequestError, NotFoundError } = require('../core/error.response.cjs')
 const UserModel = require('../models/user.model.cjs')
 const mongoose = require('mongoose')
+const MessageService = require('../services/message.service.cjs')
 
 const RoleRoom = {
   ADMIN: 'admin',
@@ -30,7 +31,7 @@ class RoomService {
       }
 
       const membersRoom = [{ userId, role: RoleRoom.ADMIN }]
-      const validMembers = await this.validateMembers(members)
+      const validMembers = await UserModel.find({ _id: { $in: members } }).lean()
       membersRoom.push(
         ...validMembers.map((member) => ({ userId: member._id, role: RoleRoom.MEMBER }))
       )
@@ -46,7 +47,12 @@ class RoomService {
       const userIds = membersRoom.map((member) => member.userId)
       const users = await UserModel.find({ _id: { $in: userIds } }).lean()
 
-      const membersInfo = this.mapUsersToMembersInfo(users)
+      const membersInfo = users.map((user) => ({
+        userId: user._id,
+        username: user.username,
+        fullName: user.fullName,
+        avatarUrl: user.avatarUrl
+      }))
 
       let receiverId = null
       if (type === 'private') {
@@ -55,6 +61,20 @@ class RoomService {
           newRoom.roomName = receiver.fullName
           newRoom.avatarUrl = receiver.avatarUrl
           receiverId = receiver._id
+        }
+      }
+
+      if (type === 'public') {
+        const createSystemMessage = async (content) => {
+          await MessageService.createMessage({
+            params: { roomId: newRoom._id },
+            body: { senderId: userId, content, isSystemMessage: true }
+          })
+        }
+        await createSystemMessage('đã tạo phòng')
+        await createSystemMessage(`đã đặt tên phòng là "${roomName}"`)
+        for (const member of validMembers) {
+          await createSystemMessage(`đã thêm ${member.fullName} vào phòng`)
         }
       }
 
@@ -80,14 +100,55 @@ class RoomService {
 
       const room = await RoomModel.findById(roomId)
 
-      if (roomName) room.roomName = roomName
+      if (!room) {
+        throw new NotFoundError('Không tìm thấy phòng')
+      }
+
+      const createSystemMessage = async (content) => {
+        await MessageService.createMessage({
+          params: { roomId },
+          body: { senderId: userId, content, isSystemMessage: true }
+        })
+      }
+
       if (lastMessage) {
         room.lastMessage = lastMessage
         room.lastMessageAt = Date.now()
       }
-      if (avatarUrl) room.avatarUrl = avatarUrl
 
-      await this.updateRoomMembers(room, newMembers)
+      if (roomName) {
+        room.roomName = roomName
+        await createSystemMessage(`đã dổi tên thành phòng thành "${roomName}"`)
+      }
+
+      if (avatarUrl) {
+        room.avatarUrl = avatarUrl
+        await createSystemMessage(`đã cập nhật ảnh đại diện phòng`)
+      }
+
+      if (newMembers.length > 0) {
+        const newMembersInfo = await UserModel.find({ _id: { $in: newMembers } })
+          .select('_id fullName username avatarUrl')
+          .lean()
+
+        const existingMembersMap = new Map(room.members.map((m) => [m.userId.toString(), m]))
+        const membersAdded = []
+        const membersRejoined = []
+
+        for (const newMember of newMembersInfo) {
+          const existingMember = existingMembersMap.get(newMember._id.toString())
+          if (!existingMember) {
+            room.members.push({ userId: newMember._id, role: RoleRoom.MEMBER })
+            membersAdded.push(newMember.fullName)
+            await createSystemMessage(`đã thêm ${newMember.fullName} vào phòng`)
+          } else if (existingMember.role === RoleRoom.LEFT) {
+            existingMember.role = RoleRoom.MEMBER
+            membersRejoined.push(newMember.fullName)
+            await createSystemMessage(`đã mời ${newMember.fullName} trở lại phòng`)
+          }
+        }
+      }
+
       await room.save()
 
       const members = await this.getMembersInfo(room)
@@ -109,27 +170,39 @@ class RoomService {
     }
   }
 
-  async removeMemberFromRoom({ roomId, userId, memberId }) {
-    /**
-     * Xóa thành viên khỏi phòng
-     *
-     * Các bước thực hiện:
-     * 1. Lấy thông tin phòng từ DB
-     * 2. Kiểm tra quyền admin của người dùng
-     * 3. Tìm và cập nhật trạng thái thành viên cần xóa
-     * 4. Lưu thông tin phòng đã cập nhật
-     * 5. Lấy thông tin chi tiết của tất cả thành viên
-     */
+  async removeMemberFromRoom(req) {
     try {
+      const { roomId, userId, memberId } = req
       const room = await RoomModel.findById(roomId)
 
-      this.checkAdminPermission(room, userId)
+      if (!room) {
+        throw new NotFoundError('Không tìm thấy phòng')
+      }
+
+      if (!room.createdBy.equals(userId)) {
+        throw new BadRequestError('Người dùng không có quyền admin')
+      }
 
       const memberToRemove = room.members.find((m) => m.userId.equals(memberId))
       if (!memberToRemove) {
         throw new BadRequestError('Không tìm thấy thành viên cần xóa')
       }
+
+      const removedUserInfo = await UserModel.findById(memberId).select('fullName').lean()
+      if (!removedUserInfo) {
+        throw new BadRequestError('Không tìm thấy thông tin người dùng cần xóa')
+      }
+
       memberToRemove.role = RoleRoom.LEFT
+
+      const createSystemMessage = async (content) => {
+        await MessageService.createMessage({
+          params: { roomId },
+          body: { senderId: userId, content, isSystemMessage: true }
+        })
+      }
+
+      await createSystemMessage(`đã xóa ${removedUserInfo.fullName} khỏi phòng`)
 
       await room.save()
 
@@ -140,7 +213,7 @@ class RoomService {
     }
   }
 
-  async leaveRoom({ roomId, userId }) {
+  async leaveRoom(req) {
     /**
      * Rời khỏi phòng
      *
@@ -153,17 +226,42 @@ class RoomService {
      * 6. Lấy thông tin chi tiết của tất cả thành viên
      */
     try {
+      const { roomId, userId } = req
       const room = await RoomModel.findById(roomId)
+
+      if (!room) {
+        throw new NotFoundError('Không tìm thấy phòng')
+      }
 
       const memberIndex = room.members.findIndex((m) => m.userId.toString() === userId)
       if (memberIndex === -1) {
         throw new BadRequestError('Người dùng không tồn tại trong phòng')
       }
 
+      const leavingUser = await UserModel.findById(userId).select('fullName').lean()
+      if (!leavingUser) {
+        throw new BadRequestError('Không tìm thấy thông tin người dùng')
+      }
+
+      const createSystemMessage = async (content) => {
+        await MessageService.createMessage({
+          params: { roomId },
+          body: { senderId: userId, content, isSystemMessage: true }
+        })
+      }
+
       room.members[memberIndex].role = RoleRoom.LEFT
+      await createSystemMessage(`đã rời khỏi phòng`)
 
       if (room.createdBy.toString() === userId) {
-        await this.reassignAdmin(room, userId)
+        const newAdmin = room.members.find(
+          (m) => m.userId.toString() !== userId && m.role !== RoleRoom.LEFT
+        )
+        if (newAdmin) {
+          newAdmin.role = RoleRoom.ADMIN
+        } else {
+          await createSystemMessage('Phòng không còn quản trị viên')
+        }
       }
 
       await room.save()
@@ -346,33 +444,6 @@ class RoomService {
     return room[0]
   }
 
-  async validateMembers(members) {
-    const validMembers = await UserModel.find({ _id: { $in: members } }).lean()
-    if (validMembers.length !== members.length) {
-      throw new BadRequestError('Không tìm thấy người dùng')
-    }
-    return validMembers
-  }
-
-  async updateRoomMembers(room, newMembers) {
-    if (newMembers.length > 0) {
-      const newMembersInfo = await UserModel.find({ _id: { $in: newMembers } })
-        .select('_id fullName username avatarUrl')
-        .lean()
-
-      newMembersInfo.forEach((newMember) => {
-        const existingMember = room.members.find(
-          (m) => m.userId.toString() === newMember._id.toString()
-        )
-        if (!existingMember) {
-          room.members.push({ userId: newMember._id, role: RoleRoom.MEMBER })
-        } else if (existingMember.role === RoleRoom.LEFT) {
-          existingMember.role = RoleRoom.MEMBER
-        }
-      })
-    }
-  }
-
   async getMembersInfo(room) {
     const allMembersInfo = await UserModel.find({
       _id: { $in: room.members.map((m) => m.userId) }
@@ -390,33 +461,6 @@ class RoomService {
         avatarUrl: userInfo?.avatarUrl
       }
     })
-  }
-
-  mapUsersToMembersInfo(users) {
-    return users.map((user) => ({
-      userId: user._id,
-      userName: user.username,
-      fullName: user.fullName,
-      avatarUrl: user.avatarUrl
-    }))
-  }
-
-  checkAdminPermission(room, userId) {
-    if (!room.createdBy.equals(userId)) {
-      throw new BadRequestError('Người dùng không có quyền admin')
-    }
-  }
-
-  async reassignAdmin(room, userId) {
-    const newAdmin = room.members.find(
-      (m) => m.userId.toString() !== userId && m.role !== RoleRoom.LEFT
-    )
-    if (newAdmin) {
-      newAdmin.role = RoleRoom.ADMIN
-      room.createdBy = newAdmin.userId
-    } else {
-      room.type = 'inactive'
-    }
   }
 }
 module.exports = new RoomService()
