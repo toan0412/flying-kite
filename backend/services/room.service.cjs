@@ -104,13 +104,6 @@ class RoomService {
         throw new NotFoundError('Không tìm thấy phòng')
       }
 
-      const createSystemMessage = async (content) => {
-        await MessageService.createMessage({
-          params: { roomId },
-          body: { senderId: userId, content, isSystemMessage: true }
-        })
-      }
-
       if (lastMessage) {
         room.lastMessage = lastMessage
         room.lastMessageAt = Date.now()
@@ -118,12 +111,10 @@ class RoomService {
 
       if (roomName) {
         room.roomName = roomName
-        await createSystemMessage(`đã dổi tên thành phòng thành "${roomName}"`)
       }
 
       if (avatarUrl) {
         room.avatarUrl = avatarUrl
-        await createSystemMessage(`đã cập nhật ảnh đại diện phòng`)
       }
 
       if (newMembers.length > 0) {
@@ -132,19 +123,13 @@ class RoomService {
           .lean()
 
         const existingMembersMap = new Map(room.members.map((m) => [m.userId.toString(), m]))
-        const membersAdded = []
-        const membersRejoined = []
 
         for (const newMember of newMembersInfo) {
           const existingMember = existingMembersMap.get(newMember._id.toString())
           if (!existingMember) {
             room.members.push({ userId: newMember._id, role: RoleRoom.MEMBER })
-            membersAdded.push(newMember.fullName)
-            await createSystemMessage(`đã thêm ${newMember.fullName} vào phòng`)
           } else if (existingMember.role === RoleRoom.LEFT) {
             existingMember.role = RoleRoom.MEMBER
-            membersRejoined.push(newMember.fullName)
-            await createSystemMessage(`đã mời ${newMember.fullName} trở lại phòng`)
           }
         }
       }
@@ -188,21 +173,7 @@ class RoomService {
         throw new BadRequestError('Không tìm thấy thành viên cần xóa')
       }
 
-      const removedUserInfo = await UserModel.findById(memberId).select('fullName').lean()
-      if (!removedUserInfo) {
-        throw new BadRequestError('Không tìm thấy thông tin người dùng cần xóa')
-      }
-
       memberToRemove.role = RoleRoom.LEFT
-
-      const createSystemMessage = async (content) => {
-        await MessageService.createMessage({
-          params: { roomId },
-          body: { senderId: userId, content, isSystemMessage: true }
-        })
-      }
-
-      await createSystemMessage(`đã xóa ${removedUserInfo.fullName} khỏi phòng`)
 
       await room.save()
 

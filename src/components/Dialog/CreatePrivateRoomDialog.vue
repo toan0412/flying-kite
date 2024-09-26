@@ -132,6 +132,7 @@ export default {
   watch: {
     visible(newValue, oldValue) {
       if (newValue) {
+        this.searchValue = ''
         const conversationsStore = useConversationsStore()
         this.conversations = conversationsStore.conversations
         const mappedConversations = this.conversations
@@ -142,7 +143,6 @@ export default {
             avatarUrl: room.avatarUrl
           }))
         this.searchUsersList = mappedConversations
-        console.log(this.searchUsersList)
       }
     }
   }

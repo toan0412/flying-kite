@@ -262,6 +262,7 @@ export default {
       if (newValue) {
         const conversationsStore = useConversationsStore()
         this.imageUrl = ''
+        this.searchValue = ''
         this.selectedUserIds = []
         this.conversations = conversationsStore.conversations
 

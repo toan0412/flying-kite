@@ -23,7 +23,11 @@ function initializeRoomHandlers(io, socket) {
   socket.on('room:removeMember', async (roomInfo, ack) => {
     try {
       const updatedRoom = await RoomService.removeMemberFromRoom(roomInfo)
-      emitUpdatedRoom(io, updatedRoom)
+
+      updatedRoom.members.forEach((member) => {
+        io.to(member.userId.toString()).emit('room:updated', updatedRoom)
+      })
+
       if (ack) ack({ success: true, message: 'Member removed successfully!' })
     } catch (error) {
       handleSocketError(error, ack, 'Error removing member:')
@@ -32,10 +36,12 @@ function initializeRoomHandlers(io, socket) {
 
   socket.on('room:leavePublic', async (roomInfo, ack) => {
     try {
-      const { userId } = roomInfo
       const updatedRoom = await RoomService.leaveRoom(roomInfo)
-      emitUpdatedRoom(io, updatedRoom)
-      io.to(userId).emit('room:updated', updatedRoom)
+
+      updatedRoom.members.forEach((member) => {
+        io.to(member.userId.toString()).emit('room:updated', updatedRoom)
+      })
+
       if (ack) ack({ success: true, message: 'Left room successfully!' })
     } catch (error) {
       handleSocketError(error, ack, 'Error leaving room:')
