@@ -460,7 +460,7 @@ export default {
   padding-top: 20px;
   padding-bottom: 15px;
   border-radius: 5px;
-  background-color: var(--primary-text-color);
+  background-color: #44546f;
   box-shadow: 1px 10px 20px 0 rgba(0, 0, 0, 0.14);
   transition: background-color 200ms ease, box-shadow 200ms ease, transform 200ms ease,
     -webkit-transform 200ms ease;
@@ -475,7 +475,7 @@ export default {
 }
 
 a {
-  color: var(--primary-text-color);
+  color: #44546f;
   text-decoration: none;
 }
 

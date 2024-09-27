@@ -3,13 +3,13 @@
     <v-card>
       <v-card-actions class="justify-sm-center">
         <div class="text-h6 font-weight-bold">Thông tin phòng</div>
-        <v-btn
-          class="position-absolute right-0"
+        <v-icon
+          class="position-absolute right-0 ma-3"
           icon="mdi-close"
-          flat
           @click.stop="show = false"
-        ></v-btn>
+        ></v-icon>
       </v-card-actions>
+
       <div class="avatar-wrapper">
         <div class="background-avatar">
           <v-avatar @click="triggerFileInput" size="150">
@@ -92,11 +92,7 @@
       </div>
 
       <div class="d-flex justify-end pa-2">
-        <MSButton
-          color="deep-orange-darken-1"
-          :disabled="!isRoomInfoEdit"
-          @click="handleUpdateRoomInfo"
-        >
+        <MSButton :disabled="!isRoomInfoEdit" @click="handleUpdateRoomInfo">
           <v-progress-circular
             v-if="isCallingAPI"
             :size="20"
@@ -421,7 +417,12 @@ export default {
       width: 100%;
       height: 120px;
       padding-top: 4px;
-      background-image: var(--search-background-color);
+      background-image: linear-gradient(
+        to right,
+        rgb(var(--v-theme-secondary-lighten-1)),
+        rgb(var(--v-theme-primary-darken-1)),
+        rgb(var(--v-theme-primary))
+      );
 
       .v-avatar {
         cursor: pointer;
@@ -513,6 +514,11 @@ export default {
 
   .leave-room {
     cursor: pointer;
+  }
+
+  .v-btn {
+    background: rgb(var(--v-theme-secondary)) !important;
+    color: white;
   }
 }
 </style>

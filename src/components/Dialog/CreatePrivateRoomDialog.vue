@@ -1,10 +1,15 @@
 <template>
   <v-dialog v-model="show" max-width="500px" class="private-room-dialog">
     <v-card>
-      <v-card-title>
-        Tạo cuộc trò chuyện riêng mới
-        <v-btn icon="mdi-close" flat @click.stop="show = false"></v-btn>
-      </v-card-title>
+      <v-card-actions class="justify-sm-center">
+        <div class="text-h6 font-weight-bold">Cuộc trò chuyện riêng mới</div>
+        <v-icon
+          class="position-absolute right-0 ma-3"
+          icon="mdi-close"
+          @click.stop="show = false"
+        ></v-icon>
+      </v-card-actions>
+
       <v-text-field
         v-model="searchValue"
         clearable
@@ -160,7 +165,12 @@ export default {
 
   .create-room-search {
     .v-input__control {
-      background-image: var(--search-background-color);
+      background-image: linear-gradient(
+        to right,
+        rgb(var(--v-theme-secondary-lighten-1)),
+        rgb(var(--v-theme-primary-darken-1)),
+        rgb(var(--v-theme-primary))
+      );
     }
 
     .v-field__input {

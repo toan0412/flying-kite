@@ -1,10 +1,14 @@
 <template>
   <v-dialog v-model="show" max-width="500px" class="public-room-dialog">
     <v-card>
-      <v-card-title>
-        Tạo cuộc trò chuyện nhóm mới
-        <v-btn icon="mdi-close" flat @click.stop="show = false"></v-btn>
-      </v-card-title>
+      <v-card-actions class="justify-sm-center">
+        <div class="text-h6 font-weight-bold">Cuộc trò chuyện nhóm mới</div>
+        <v-icon
+          class="position-absolute right-0 ma-3"
+          icon="mdi-close"
+          @click.stop="show = false"
+        ></v-icon>
+      </v-card-actions>
 
       <!-- Bước 1 -->
       <div class="card-body" v-if="step1">
@@ -39,11 +43,8 @@
           ></v-text-field>
         </div>
         <div class="position-absolute right-0 bottom-0 pa-2">
-          <MSButton
-            :disabled="!publicRoomName"
-            class="ml-auto bg-deep-orange-darken-1"
-            @click="handleNextStep"
-            >Tiếp theo</MSButton
+          <MSButton :disabled="!publicRoomName" class="ml-auto" @click="handleNextStep"
+            ><span>Tiếp theo</span></MSButton
           >
         </div>
       </div>
@@ -74,7 +75,6 @@
             }}</v-list-item-subtitle>
             <template v-slot:append>
               <v-checkbox-btn
-                color="deep-orange-darken-1"
                 :input-value="isSelected(user._id)"
                 @change="toggleSelection(user._id)"
                 width="40"
@@ -92,7 +92,7 @@
           <MSButton class="mr-auto" @click="handleBackStep">Trước</MSButton>
 
           <MSButton
-            class="ml-auto bg-deep-orange-darken-1"
+            class="ml-auto"
             :disabled="selectedUserIds.length == 0"
             @click="createPrivateRoom"
           >
@@ -313,7 +313,12 @@ export default {
     width: 100%;
     height: 120px;
     padding-top: 4px;
-    background-image: var(--search-background-color);
+    background-image: linear-gradient(
+      to right,
+      rgb(var(--v-theme-primary-darken-1)),
+      rgb(var(--v-theme-primary)),
+      rgb(var(--v-theme-primary-lighten-1))
+    );
 
     .v-avatar {
       cursor: pointer;
@@ -349,7 +354,12 @@ export default {
 
   .create-room-search {
     .v-input__control {
-      background-image: var(--search-background-color);
+      background-image: linear-gradient(
+        to right,
+        rgb(var(--v-theme-secondary-lighten-1)),
+        rgb(var(--v-theme-primary-darken-1)),
+        rgb(var(--v-theme-primary))
+      );
     }
 
     .v-field__input {
@@ -368,6 +378,11 @@ export default {
   .v-list-item-subtitle {
     padding-bottom: 4px;
     border-bottom: 1px solid #d5d9de;
+  }
+
+  .v-btn {
+    background: rgb(var(--v-theme-secondary)) !important;
+    color: white;
   }
 }
 </style>

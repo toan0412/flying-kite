@@ -4,7 +4,7 @@
       <div class="introduction__main__content">
         <div class="introduction__main__content__header">
           <v-avatar size="100">
-            <MSAvatar :alt="userInfo.username" :src="userInfo.avatarUrl"> </MSAvatar>
+            <v-img :alt="userInfo.username" :src="userInfo.avatarUrl"> </v-img>
           </v-avatar>
 
           <div class="introduction__main__content__header__gretting">
@@ -158,6 +158,11 @@ export default {
   margin-right: 10px;
   margin-left: 10px;
   align-items: center;
+
+  .v-avatar {
+    border: 1px solid var(--border-color);
+    background: rgb(var(--v-theme-primary));
+  }
 }
 
 .introduction__main__content__header__gretting {

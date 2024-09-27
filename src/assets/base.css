@@ -1,10 +1,5 @@
 /* color palette from <https://github.com/vuejs/theme> */
 :root {
-  --ms-soft-cream: #eae7dc;
-  --ms-light-beige: #d8c3a5;
-  --ms-coral-pink: #e88d8a;
-  --ms-word-pink: #e98074;
-  --ms-brick-red: #e85a4f;
   --ms-border-color: rgba(0, 0, 0, 0.1);
   --ms-dark-grey: #6e6e6e;
   --ms-charcoal-black: #212121;
@@ -16,29 +11,12 @@
 /* semantic color variables for this project */
 :root {
   --ms-border-avatar-color: var(--ms-light-gray);
-  --background-sidebar-color: var(--ms-soft-cream);
-  --background-button-color: var(--ms-brick-red);
-  --primary-text-color: var(--ms-brick-red);
   --text-color: var(--ms-charcoal-black);
   --border-color: var(--ms-border-color);
-  --background-icon-primary-color: var(--ms-brick-red);
   --lighter-text-color: var(--ms-dark-grey);
   --background-icon-color: var(--ms-grayish-white);
   --border-avatar-color: var(--ms-light-gray);
-  --avatar-color: var(--ms-light-beige);
-  --background-message-color: var(--ms-soft-cream);
-  --background-reply-message-color: var(--ms-soft-cream);
-  --highlight-text-color: var(--ms-word-pink);
-  --login-background-color: linear-gradient(180deg, var(--ms-dark-grey), var(--ms-light-beige));
-  --scrollbar-thumb: var(--ms-word-pink);
-  --scrollbar-track: var(--ms-soft-cream);
-  --scrollbar-thumb-hover: var(--ms-brick-red);
-  --search-background-color: linear-gradient(
-    to right,
-    var(--ms-coral-pink),
-    var(--ms-word-pink),
-    var(--ms-brick-red)
-  );
+  --login-background-color: linear-gradient(180deg, #f1f2f4, #44546f);
 }
 
 *,
@@ -76,19 +54,19 @@ html {
 
 /* Phần nền của thanh cuộn */
 ::-webkit-scrollbar-track {
-  background: var(--scrollbar-track);
+  background: rgb(var(--v-theme-primary-lighten-1));
   /* Màu nền của thanh cuộn */
 }
 
 /* Phần thanh cuộn */
 ::-webkit-scrollbar-thumb {
-  background-color: var(--scrollbar-thumb);
+  background-color: rgb(var(--v-theme-secondary));
   box-shadow: inset 2px 2px 5px rgba(255, 255, 255, 0.5);
   border-radius: 100px;
 }
 
 /* Phần thanh cuộn khi hover */
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-thumb-hover);
+  background: rgb(var(--v-theme-secondary-darken-1));
   /* Màu khi hover lên thanh cuộn */
 }

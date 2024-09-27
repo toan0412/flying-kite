@@ -1,10 +1,15 @@
 <template>
   <v-dialog v-model="show" max-width="500px" class="private-room-dialog">
     <v-card>
-      <v-card-title>
-        Thêm thành viên vào nhóm
-        <v-btn icon="mdi-close" flat @click.stop="show = false"></v-btn>
-      </v-card-title>
+      <v-card-actions class="justify-sm-center">
+        <div class="text-h6 font-weight-bold">Thêm thành viên mới</div>
+        <v-icon
+          class="position-absolute right-0 ma-3"
+          icon="mdi-close"
+          @click.stop="show = false"
+        ></v-icon>
+      </v-card-actions>
+
       <v-text-field
         v-model="searchValue"
         clearable
@@ -30,14 +35,7 @@
             user.username ? user.username : ''
           }}</v-list-item-subtitle>
           <template v-slot:append>
-            <v-checkbox-btn
-              color="deep-orange-darken-1"
-              width="40"
-              height="40"
-              :model-value="true"
-              disabled
-              readonly
-            />
+            <v-checkbox-btn width="40" height="40" :model-value="true" disabled readonly />
           </template>
         </v-list-item>
 
@@ -61,7 +59,6 @@
           }}</v-list-item-subtitle>
           <template v-slot:append>
             <v-checkbox-btn
-              color="deep-orange-darken-1"
               :input-value="isSelected(user)"
               @change="toggleSelection(user)"
               width="40"
@@ -72,11 +69,7 @@
       </v-list>
 
       <div v-if="searchUsersList.length > 0" class="d-flex justify-center pa-2">
-        <MSButton
-          :disabled="this.selectedUser.length == 0"
-          @click="handleAddMembersToRoom"
-          color="deep-orange-darken-1"
-        >
+        <MSButton :disabled="this.selectedUser.length == 0" @click="handleAddMembersToRoom">
           <v-progress-circular
             v-if="isCallingAPI"
             :size="20"
@@ -236,7 +229,12 @@ export default {
 
   .create-room-search {
     .v-input__control {
-      background-image: var(--search-background-color);
+      background-image: linear-gradient(
+        to right,
+        rgb(var(--v-theme-secondary-lighten-1)),
+        rgb(var(--v-theme-primary-darken-1)),
+        rgb(var(--v-theme-primary))
+      );
     }
 
     .v-field__input {
@@ -261,6 +259,17 @@ export default {
     .v-list-item__overlay {
       opacity: 0;
     }
+  }
+
+  .v-selection-control__input {
+    i {
+      color: rgb(var(--v-theme-secondary));
+    }
+  }
+
+  .v-btn {
+    background: rgb(var(--v-theme-secondary)) !important;
+    color: white;
   }
 }
 </style>
