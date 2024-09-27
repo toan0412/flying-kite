@@ -9,6 +9,7 @@ import '@mdi/font/css/materialdesignicons.css'
 import '@/assets/base.css'
 import { vuetifyThemes } from '@/assets/colorsSet'
 import router from './router'
+import vue3GoogleLogin from 'vue3-google-login'
 
 function getThemeConfig() {
   return localStorage.getItem('app_theme') || 'default'
@@ -34,6 +35,11 @@ const vuetify = createVuetify({
 const pinia = createPinia()
 
 const app = createApp(App)
+app.use(vue3GoogleLogin, {
+  clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+  scope: 'email profile'
+  // prompt: 'select_account'
+})
 app.use(vuetify)
 app.use(router)
 app.use(pinia)

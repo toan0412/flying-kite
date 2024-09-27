@@ -4,6 +4,10 @@ const loginAPI = (userInfo) => {
   return axiosInstance.post('/v1/api/users/login', userInfo)
 }
 
+const loginWithGoogleAPI = (accessToken) => {
+  return axiosInstance.post('v1/api/auth/google', { accessToken })
+}
+
 const signUpAPI = (userInfo) => {
   return axiosInstance.post('v1/api/users/sign-up', userInfo)
 }
@@ -41,5 +45,6 @@ export {
   getAllUsersAPI,
   logoutAPI,
   updateUserAPI,
-  getUserByIdAPI
+  getUserByIdAPI,
+  loginWithGoogleAPI
 }

@@ -6,6 +6,8 @@ const { createTokenPair } = require('../auth/authUtils.cjs')
 const { getInfoData } = require('../utils/index.cjs')
 const { BadRequestError, AuthFailureError } = require('../core/error.response.cjs')
 const keytokenModel = require('../models/keytoken.model.cjs')
+const { OAuth2Client } = require('google-auth-library')
+const axios = require('axios')
 
 // Các vai trò người dùng
 const RoleUser = {
@@ -26,6 +28,21 @@ const createKeyToken = async ({ userid, publicKey, refreshToken }) => {
 const createAccessToken = async (payload, privateKey) => {
   const { accessToken } = await createTokenPair(payload, privateKey)
   return accessToken
+}
+
+//Xác thực token google
+async function getUserInfo(accessToken) {
+  try {
+    const response = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    })
+    return response.data
+  } catch (error) {
+    console.error('Error fetching user info:', error)
+    return null
+  }
 }
 
 // Hàm tạo token cho người dùng mới
@@ -85,6 +102,54 @@ class AccessService {
     return {
       user: getInfoData({ field: ['_id', 'name', 'user'], object: foundUser }),
       tokens
+    }
+  }
+
+  static loginWithGoogle = async (req) => {
+    try {
+      const { accessToken } = req
+      const userInfo = await getUserInfo(accessToken)
+      if (!userInfo) {
+        throw new AuthFailureError('Không thể lấy thông tin người dùng từ Google')
+      }
+
+      const { email, name, picture, email_verified } = userInfo
+
+      // Kiểm tra xem người dùng đã tồn tại trong database chưa
+      let user = await UserModel.findOne({ email }).lean()
+
+      if (!user) {
+        // Nếu chưa tồn tại, tạo người dùng mới
+        const newUser = new UserModel({
+          email,
+          fullName: name,
+          avatarUrl: picture,
+          username: email,
+          roles: [RoleUser.USER],
+          authProvider: 'Google',
+          isEmailVerified: email_verified,
+          password: crypto.randomBytes(16).toString('hex')
+        })
+        user = await newUser.save()
+      }
+
+      // Tạo token cho người dùng
+      const tokens = await genToken(user)
+
+      // Lưu key token vào cơ sở dữ liệu
+      await KeyTokenService.createKeyToken({
+        userid: user._id,
+        publicKey: tokens.publicKey,
+        refreshToken: tokens.refreshToken
+      })
+
+      return {
+        user: getInfoData({ field: ['_id', 'fullName', 'email', 'avatarUrl'], object: user }),
+        tokens
+      }
+    } catch (error) {
+      console.error('Error in Google login:', error)
+      throw new AuthFailureError('Đăng nhập Google thất bại')
     }
   }
 

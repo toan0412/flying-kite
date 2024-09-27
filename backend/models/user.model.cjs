@@ -31,6 +31,14 @@ const userSchema = new Schema(
       enum: ['online', 'offline', 'busy'],
       default: 'offline'
     },
+    authProvider: {
+      type: String,
+      default: 'Flying Kite'
+    },
+    isEmailVerified: {
+      type: Boolean,
+      default: false
+    },
     friends: [
       {
         friend_id: {

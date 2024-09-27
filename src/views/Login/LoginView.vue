@@ -165,6 +165,14 @@
                 ></v-progress-circular>
               </button>
             </form>
+
+            <div class="social_login_box">
+              <button @click="loginWithGoogle" class="google-login-button">
+                <v-icon icon="mdi-google-plus" alt="Google Icon" />
+                Đăng nhập bằng Google
+              </button>
+            </div>
+
             <div class="div-block-95">
               <div class="small-link">
                 Quên mật khẩu?
@@ -181,8 +189,9 @@
 </template>
 
 <script>
-import { loginAPI, signUpAPI } from '@/services/UserServices.js'
+import { loginAPI, signUpAPI, loginWithGoogleAPI } from '@/services/UserServices.js'
 import { generateAvatarBlob } from '@/helper/GenerateAvatarBlob'
+import { googleTokenLogin } from 'vue3-google-login'
 import { uploadFilesAndGetUrls } from '@/helper/GetUrlOfMedia'
 
 export default {
@@ -266,6 +275,22 @@ export default {
       const path = `avatars/users/${username}/`
       const avatarUrl = await uploadFilesAndGetUrls([avatarBlob], path)
       return avatarUrl[0].url
+    },
+
+    async loginWithGoogle() {
+      try {
+        const { access_token } = await googleTokenLogin()
+        console.log(access_token)
+        const response = await loginWithGoogleAPI(access_token)
+        if (response.status === 200) {
+          localStorage.setItem('accessToken', response.data.tokens.accessToken)
+          localStorage.setItem('userId', response.data.user._id)
+          this.$router.push('/')
+          this.$emit('is-auth', true)
+        }
+      } catch (error) {
+        this.errorMessage = 'Đăng nhập bằng Google thất bại. Vui lòng thử lại.'
+      }
     }
   }
 }
@@ -491,6 +516,34 @@ a {
   line-height: 1.5em;
   font-weight: 300;
   margin-top: 8px;
+}
+
+.google-login-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 12px;
+  width: 100%;
+  height: 45px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: #fff;
+  color: #757575;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s;
+
+  &:hover {
+    background-color: #f5f5f5;
+  }
+
+  img {
+    width: 18px;
+    height: 18px;
+    margin-right: 10px;
+  }
 }
 
 .error-message {
