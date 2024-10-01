@@ -19,6 +19,10 @@ export const useConversationsStore = defineStore('conversations', {
       } else {
         this.conversations.unshift(newRoom)
       }
+    },
+
+    clear() {
+      this.conversations = []
     }
   }
 })

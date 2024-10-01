@@ -26,13 +26,13 @@
           ><div class="text-subtitle-2 font-weight-bold opacity-70">Thành viên trong phòng</div>
         </v-list-item>
 
-        <v-list-item v-for="user in membersInRoom" :key="user.userId" :value="user.username">
+        <v-list-item v-for="user in membersInRoom" :key="user.userId" :value="user.email">
           <template v-slot:prepend>
             <MSAvatar width="40" height="40" :src="user.avatarUrl" />
           </template>
           <v-list-item-title class="ml-3">{{ user.fullName }}</v-list-item-title>
           <v-list-item-subtitle class="ml-3">{{
-            user.username ? user.username : ''
+            user.email ? user.email : ''
           }}</v-list-item-subtitle>
           <template v-slot:append>
             <v-checkbox-btn width="40" height="40" :model-value="true" disabled readonly />
@@ -47,7 +47,7 @@
         <v-list-item
           v-for="user in searchUsersList"
           :key="user.userId"
-          :value="user.username"
+          :value="user.email"
           clickable
         >
           <template v-slot:prepend>
@@ -55,7 +55,7 @@
           </template>
           <v-list-item-title class="ml-3">{{ user.fullName }}</v-list-item-title>
           <v-list-item-subtitle class="ml-3">{{
-            user.username ? user.username : ''
+            user.email ? user.email : ''
           }}</v-list-item-subtitle>
           <template v-slot:append>
             <v-checkbox-btn

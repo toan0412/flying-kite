@@ -40,14 +40,26 @@
         <!-- Setting 1-->
         <div v-if="indexSetting == 1" class="setting-dialog__body__main">
           <div class="setting-dialog__body__content">
-            <div class="text-subtitle-1 font-weight-bold opacity-70 pl-2">Hồ sơ của bạn</div>
+            <div
+              v-if="!userInfo.isEmailVerified"
+              class="d-flex justify-center align-center text-red-lighten-1"
+            >
+              <v-icon size="20" icon="mdi-alert-circle-outline pr-2"></v-icon>
+              <p>Email của bạn chưa được xác thực,</p>
+              &nbsp;
+              <p @click="sendVerificationEmail" class="text-decoration-underline cursor-pointer">
+                xác thực ngay
+              </p>
+            </div>
+
+            <div class="text-subtitle-1 font-weight-bold opacity-70 pl-2 pt-2">Hồ sơ của bạn</div>
 
             <div class="d-flex justify-sm-center mb-5">
               <MSAvatar
                 max-width="140"
                 height="140"
                 cover
-                :alt="userInfo.username"
+                :alt="userInfo.email"
                 :src="userInfo.avatarUrl"
               ></MSAvatar>
             </div>
@@ -95,7 +107,29 @@
               </div>
               <div v-if="!editableEmail" class="font-weight-bold opacity-60">
                 {{ userInfo.email }}
-                <v-icon size="14" icon="mdi-check-circle-outline" color="green-accent-4"></v-icon>
+                <v-tooltip location="end" text="Email của người dùng đã được xác thực">
+                  <template v-slot:activator="{ props }">
+                    <v-icon
+                      v-if="userInfo.isEmailVerified"
+                      v-bind="props"
+                      size="16"
+                      icon="mdi-check-circle"
+                      color="green-accent-4"
+                    ></v-icon>
+                  </template>
+                </v-tooltip>
+
+                <v-tooltip location="end" text="Email của người dùng chưa được xác thực">
+                  <template v-slot:activator="{ props }">
+                    <v-icon
+                      v-if="!userInfo.isEmailVerified"
+                      v-bind="props"
+                      size="16"
+                      icon="mdi-alert-octagon-outline"
+                      color="red-lighten-1"
+                    ></v-icon>
+                  </template>
+                </v-tooltip>
               </div>
 
               <v-text-field
@@ -113,6 +147,10 @@
                     @click.stop="toggleEditEmailField"
                   ></v-icon> </template
               ></v-text-field>
+            </div>
+
+            <div class="d-flex justify-end align-center text-red-lighten-1 pr-3">
+              {{ errorMessage }}
             </div>
 
             <div class="position-absolute right-0 bottom-0 pa-2">
@@ -188,6 +226,12 @@
           </div>
         </div>
       </div>
+
+      <ValidateEmailDialog
+        @verification-success="handleVerificationSuccess"
+        :visible="showValidateEmailDialog"
+        @close="showValidateEmailDialog = false"
+      />
     </v-card>
   </v-dialog>
 </template>
@@ -196,7 +240,8 @@
 import MSAvatar from '@/components/CustomAvatar/MSAvatar.vue'
 import MSButton from '@/components/CustomButton/MSButton.vue'
 import { useUserInfoStore } from '@/stores/UserInfoStore'
-import { updateUserAPI } from '@/services/UserServices'
+import { updateUserAPI, sendVerificationEmailAPI } from '@/services/UserServices'
+import ValidateEmailDialog from './ValidateEmailDialog.vue'
 
 export default {
   data() {
@@ -208,8 +253,10 @@ export default {
       editEmail: '',
       isEdit: false,
       isThemeEdit: false,
+      showValidateEmailDialog: false,
       currentTheme: '',
       indexSetting: 1,
+      errorMessage: '',
       themes: [
         {
           id: 0,
@@ -263,7 +310,8 @@ export default {
 
   components: {
     MSAvatar,
-    MSButton
+    MSButton,
+    ValidateEmailDialog
   },
 
   computed: {
@@ -299,15 +347,22 @@ export default {
       if (this.editName || this.editEmail) {
         try {
           const res = await updateUserAPI({ fullName: this.editName, email: this.editEmail })
-          const updatedUser = res.data
-          const userInfoStore = useUserInfoStore()
-          userInfoStore.setUserInfo(updatedUser)
+          if (res.status == 200) {
+            const updatedUser = res.data
+            const userInfoStore = useUserInfoStore()
+            userInfoStore.setUserInfo(updatedUser)
+            this.show = false
+          }
         } catch (error) {
-          console.error(error)
-        } finally {
-          this.show = false
+          this.errorMessage = error.message
         }
       }
+    },
+
+    handleVerificationSuccess(userInfo) {
+      this.userInfo = userInfo
+      const userInfoStore = useUserInfoStore()
+      userInfoStore.setUserInfo(userInfo)
     },
 
     selectTheme(themeName) {
@@ -326,6 +381,27 @@ export default {
     changeIndexSetting(index) {
       this.indexSetting = index
       this.isEdit = false
+    },
+
+    async sendVerificationEmail() {
+      try {
+        this.showValidateEmailDialog = true
+        await sendVerificationEmailAPI({ userId: this.userInfo._id, email: this.userInfo.email })
+      } catch (error) {
+        console.error(error)
+      }
+    },
+
+    resetSetting() {
+      this.isEdit = false
+      this.isThemeEdit = false
+      this.currentTheme = this.$vuetify.theme.global.name || ''
+      this.editableName = false
+      this.editableEmail = false
+      this.editName = ''
+      this.editEmail = ''
+      this.errorMessage = ''
+      this.indexSetting = 1
     }
   },
 
@@ -333,8 +409,7 @@ export default {
     visible(newValue) {
       if (newValue) {
         this.getUserInfo()
-        this.isEdit = false
-        this.currentTheme = this.$vuetify.theme.global.name || ''
+        this.resetSetting()
       }
     },
 

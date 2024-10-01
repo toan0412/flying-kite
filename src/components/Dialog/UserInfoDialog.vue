@@ -25,27 +25,50 @@
 
           <div class="d-flex justify-sm-center mb-5">
             <v-avatar size="140">
-              <MSAvatar cover :alt="userInfo.username" :src="userInfo.avatarUrl"></MSAvatar>
+              <MSAvatar cover :alt="userInfo.email" :src="userInfo.avatarUrl"></MSAvatar>
             </v-avatar>
           </div>
 
           <div class="user-info-dialog__main__item d-flex justify-sm-space-between ma-2">
-            <div class="font-weight-bold">Tên người dùng:</div>
+            <div class="font-weight-bold">Tên người dùng</div>
             <div class="font-weight-bold opacity-60">
               {{ userInfo.fullName }}
             </div>
           </div>
 
           <div class="user-info-dialog__main__item d-flex justify-sm-space-between ma-2">
-            <div class="font-weight-bold">Email:</div>
+            <div class="font-weight-bold">Email</div>
+
             <div class="font-weight-bold opacity-60">
               {{ userInfo.email }}
-              <v-icon size="14" icon="mdi-check-circle-outline" color="green-accent-4"></v-icon>
+              <v-tooltip location="end" text="Email của người dùng đã được xác thực">
+                <template v-slot:activator="{ props }">
+                  <v-icon
+                    v-if="userInfo.isEmailVerified"
+                    v-bind="props"
+                    size="16"
+                    icon="mdi-check-circle"
+                    color="green-accent-4"
+                  ></v-icon>
+                </template>
+              </v-tooltip>
+
+              <v-tooltip location="end" text="Email của người dùng chưa được xác thực">
+                <template v-slot:activator="{ props }">
+                  <v-icon
+                    v-if="!userInfo.isEmailVerified"
+                    v-bind="props"
+                    size="16"
+                    icon="mdi-alert-octagon-outline"
+                    color="red-lighten-1"
+                  ></v-icon>
+                </template>
+              </v-tooltip>
             </div>
           </div>
 
           <div class="user-info-dialog__main__item d-flex justify-sm-space-between ma-2">
-            <div class="font-weight-bold">Trạng thái:</div>
+            <div class="font-weight-bold">Trạng thái</div>
             <div class="font-weight-bold opacity-60">
               {{ userInfo.status === 'online' ? 'Đang trực tuyến' : 'Đang ngoại tuyến' }}
             </div>
@@ -57,7 +80,7 @@
             <v-hover>
               <template v-slot:default="{ props: hoverProps, isHovering }">
                 <div
-                  @click="sendMessage(userInfo)"
+                  @click="openPrivateRoom(userInfo)"
                   v-bind="hoverProps"
                   :class="['mx-auto', isHovering ? 'opacity-70' : 'opacity-100']"
                   class="d-flex w-100 justify-center align-center font-weight-bold"
@@ -110,7 +133,10 @@
   
   <script>
 import MSAvatar from '@/components/CustomAvatar/MSAvatar.vue'
+import { createRoomAPI, getRoomByIdAPI } from '@/services/RoomServices'
+import { useConversationsStore } from '@/stores/ConversationsStore'
 import { getUserByIdAPI } from '@/services/UserServices'
+import { useRoomInfoStore } from '@/stores/RoomInfoStore'
 
 export default {
   data() {
@@ -157,8 +183,40 @@ export default {
       }
     },
 
-    sendMessage(userInfo) {
-      console.log('send message', userInfo)
+    async openPrivateRoom(userInfo) {
+      const conversationsStore = useConversationsStore()
+      const roomInfoStore = useRoomInfoStore()
+      const conversations = conversationsStore.conversations
+
+      // Tìm cuộc trò chuyện hiện có
+      const existingRoom = conversations.find((room) => room.receiverId == userInfo._id)
+
+      // Nếu có cuộc trò chuyện, chọn phòng đó
+      if (existingRoom) {
+        await getRoomByIdAPI(existingRoom._id)
+          .then((res) => {
+            const roomInfo = res.data
+            roomInfoStore.setRoomInfo(roomInfo)
+          })
+          .catch((error) => console.error(error))
+      } else {
+        // Nếu không, tạo phòng mới
+        try {
+          const roomInfo = {
+            members: [userInfo._id],
+            type: 'private'
+          }
+          const res = await createRoomAPI(roomInfo)
+          const newRoom = res.data
+
+          roomInfoStore.setRoomInfo(newRoom)
+          conversationsStore.addRoom(newRoom)
+        } catch (error) {
+          console.error('Lỗi khi tạo phòng mới:', error)
+        }
+      }
+
+      this.show = false
     }
   },
 
@@ -222,6 +280,14 @@ export default {
       height: 36px;
     }
   }
+
+  .v-avatar {
+    border: 1px solid var(--border-color) !important;
+
+    .ms-avatar {
+      border: unset !important;
+    }
+  }
 }
 
 .user-info-dialog__body {
@@ -230,7 +296,7 @@ export default {
 
 .user-info-dialog__body__main {
   width: 450px;
-  height: 525px;
+  height: 550px;
 }
 
 .user-info-dialog__main__item {

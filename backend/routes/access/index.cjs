@@ -9,6 +9,8 @@ const router = require('express').Router()
 router.post('/users/sign-up', asyncHandler(accessController.signUp))
 router.post('/users/login', asyncHandler(accessController.login))
 router.post('/auth/google', asyncHandler(accessController.loginWithGoogle))
+router.post('/auth/send-email', asyncHandler(accessController.sendVerificationEmail))
+router.post('/auth/verify-otp', asyncHandler(accessController.verifyOTP))
 
 router.use(authentication)
 router.get('/users', asyncHandler(userController.getAllUsers))

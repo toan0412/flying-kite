@@ -1,13 +1,14 @@
 const UserModel = require('../models/user.model.cjs')
+const VerificationModel = require('../models/verification.model.cjs')
 const bcrypt = require('bcrypt')
 const crypto = require('crypto')
 const KeyTokenService = require('./keyToken.service.cjs')
 const { createTokenPair } = require('../auth/authUtils.cjs')
 const { getInfoData } = require('../utils/index.cjs')
-const { BadRequestError, AuthFailureError } = require('../core/error.response.cjs')
+const { BadRequestError, AuthFailureError, NotFoundError } = require('../core/error.response.cjs')
 const keytokenModel = require('../models/keytoken.model.cjs')
-const { OAuth2Client } = require('google-auth-library')
 const axios = require('axios')
+const createTransporter = require('../nodemailer/init.nodemailer.cjs')
 
 // Các vai trò người dùng
 const RoleUser = {
@@ -70,6 +71,24 @@ const genToken = async (userInfo) => {
   return { accessToken, publicKey }
 }
 
+const generateAndSaveOTP = async (userId, email) => {
+  const otp = crypto.randomInt(100000, 1000000).toString()
+
+  const fiveMinutesToSeconds = new Date(Date.now() + 5 * 60 * 1000)
+
+  const expirationTime = fiveMinutesToSeconds
+
+  await VerificationModel.create({
+    userId,
+    email,
+    otp,
+    type: 'email',
+    expiresAt: expirationTime
+  })
+
+  return otp
+}
+
 class AccessService {
   // Phương thức đăng xuất
   static logout = async (keyStore) => {
@@ -80,9 +99,9 @@ class AccessService {
   }
 
   // Phương thức đăng nhập
-  static login = async ({ username, password, refreshToken = null }) => {
+  static login = async ({ email, password, refreshToken = null }) => {
     // Tìm người dùng theo user
-    const foundUser = await UserModel.findOne({ username }).lean()
+    const foundUser = await UserModel.findOne({ email }).lean()
     if (!foundUser) throw new BadRequestError('Không tìm thấy người dùng')
 
     // So sánh mật khẩu đã mã hóa
@@ -124,7 +143,6 @@ class AccessService {
           email,
           fullName: name,
           avatarUrl: picture,
-          username: email,
           roles: [RoleUser.USER],
           authProvider: 'Google',
           isEmailVerified: email_verified,
@@ -153,17 +171,90 @@ class AccessService {
     }
   }
 
+  static sendVerificationEmail = async (req) => {
+    try {
+      const { userId, email } = req
+
+      const existOTP = await VerificationModel.findOne({ email: email }, { email: email })
+
+      if (existOTP) {
+        await VerificationModel.deleteOne({ email: existOTP.email })
+      }
+
+      const transporter = await createTransporter()
+
+      const otp = await generateAndSaveOTP(userId, email)
+
+      if (!otp) {
+        throw new BadRequestError('Không tạo được mã OTP mới')
+      }
+
+      const mailOptions = {
+        from: `"Flying Kite" <${process.env.GMAIL_USER}>`,
+        to: email,
+        subject: 'Xác nhận địa chỉ email của bạn',
+        html: `
+          <h1>Xác nhận email từ Flying Kite</h1>
+          <p>Cảm ơn đã sử dụng dịch vụ của chúng tôi, vui lòng sử dụng mã sau để xác nhận địa chỉ email của bạn:</p>
+          <h2>${otp}</h2>
+          <p>Lưu ý: Mã này sẽ hết hạn sau 5 phút.</p>
+        `
+      }
+
+      const info = await transporter.sendMail(mailOptions)
+      console.log('Email sent successfully:', info.response)
+      return true
+    } catch (error) {
+      console.error('Error sending email:', error)
+      return false
+    }
+  }
+
+  static verifyOTP = async (req) => {
+    try {
+      const { userId, email, inputOTP } = req
+      const verification = await VerificationModel.findOne({
+        userId,
+        email,
+        otp: inputOTP,
+        expiresAt: { $gt: new Date() }
+      })
+
+      if (!verification) {
+        throw new NotFoundError('Không tìm thấy OTP Model')
+      }
+
+      await VerificationModel.deleteOne({ _id: verification._id })
+
+      await UserModel.updateOne(
+        { _id: userId },
+        { $set: { isEmailVerified: true, authProvider: 'Google' } }
+      )
+
+      const updatedUser = await UserModel.findOne({ _id: userId })
+        .select('_id fullName email avatarUrl status isEmailVerified')
+        .lean()
+
+      return updatedUser
+    } catch (error) {
+      console.error('Error when verify email:', error)
+      throw new BadRequestError('Xảy ra lỗi khi xác thực OTP')
+    }
+  }
+
   // Phương thức đăng ký
-  static signUp = async ({ fullName, email, password, username, avatarUrl }) => {
-    const checkExistEmail = await UserModel.findOne({ email }).lean()
-    if (checkExistEmail) {
-      throw new BadRequestError('Email đã được dùng')
+  static signUp = async ({ fullName, email, password, avatarUrl }) => {
+    const gmailRegex = /^[a-z0-9](\.?[a-z0-9]){5,}@g(oogle)?mail\.com$/
+
+    const validGmail = gmailRegex.test(email.toLowerCase())
+
+    if (!validGmail) {
+      throw new BadRequestError('Địa chỉ email không hợp lệ. Vui lòng sử dụng địa chỉ Gmail.')
     }
 
-    // Kiểm tra xem user đã tồn tại chưa
-    const checkExistUser = await UserModel.findOne({ username }).lean()
-    if (checkExistUser) {
-      throw new BadRequestError('Người dùng đã tồn tại')
+    const checkExistEmail = await UserModel.findOne({ email }).lean()
+    if (checkExistEmail) {
+      throw new BadRequestError('Địa chỉ Gmail này đã được dùng')
     }
 
     // Mã hóa mật khẩu trước khi lưu
@@ -171,7 +262,6 @@ class AccessService {
 
     // Tạo người dùng mới
     const newUser = await UserModel.create({
-      username,
       fullName,
       email,
       password: passwordHash,
@@ -182,7 +272,7 @@ class AccessService {
     if (newUser) {
       const tokens = await genToken(newUser)
       return {
-        user: getInfoData({ field: ['_id', 'username', 'email'], object: newUser }),
+        user: getInfoData({ field: ['_id', 'email', 'email'], object: newUser }),
         tokens
       }
     }

@@ -24,10 +24,10 @@
 
       <div v-if="!skeletonLoadingUserInfo" class="sidebar__statusbar__item">
         <v-avatar size="54">
-          <v-img :alt="userInfo.username" :src="userInfo.avatarUrl"></v-img>
+          <v-img :alt="userInfo.email" :src="userInfo.avatarUrl"></v-img>
         </v-avatar>
         <div class="pl-3">
-          <div class="statusbar__item__username">
+          <div class="status__bar__full-name">
             {{ userInfo.fullName }}
           </div>
           <div class="statusbar__item__status">
@@ -151,6 +151,7 @@ import { useConversationsStore } from '@/stores/ConversationsStore'
 import ChatService from '@/socket/ChatService.js'
 import lodash from 'lodash'
 import { defineAsyncComponent } from 'vue'
+import { getActivePinia } from 'pinia'
 
 export default {
   data() {
@@ -252,6 +253,8 @@ export default {
             this.$router.push('/login')
             this.$emit('is-auth', false)
             localStorage.clear()
+
+            getActivePinia()._s.forEach((store) => store.$reset())
           }
         })
         .catch((error) => {
@@ -358,7 +361,7 @@ export default {
     background-color: inherit;
   }
 
-  .statusbar__item__username {
+  .status__bar__full-name {
     font-size: 16px;
     font-weight: bold;
   }

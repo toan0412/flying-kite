@@ -3,7 +3,7 @@ const { BadRequestError, NotFoundError } = require('../core/error.response.cjs')
 const { getInfoData } = require('../utils/index.cjs')
 
 class UserService {
-  // Tìm người dùng bằng ObjectId hoặc username
+  // Tìm người dùng bằng id
   getUserById = async (req) => {
     const { id } = req.params
     const existUser = await UserModel.findById(id).lean()
@@ -13,7 +13,7 @@ class UserService {
     }
 
     return getInfoData({
-      field: ['_id', 'username', 'fullName', 'email', 'avatarUrl', 'status'],
+      field: ['_id', 'fullName', 'email', 'avatarUrl', 'status', 'isEmailVerified'],
       object: existUser
     })
   }
@@ -26,7 +26,7 @@ class UserService {
       throw new NotFoundError('Người dùng không tồn tại')
     }
     return getInfoData({
-      field: ['_id', 'username', 'fullName', 'email', 'avatarUrl', 'status'],
+      field: ['_id', 'fullName', 'email', 'avatarUrl', 'status', 'isEmailVerified'],
       object: user
     })
   }
@@ -46,14 +46,22 @@ class UserService {
 
     // Kiểm tra email có đang được sử dụng bởi người khác không
     if (email) {
+      const gmailRegex = /^[a-z0-9](\.?[a-z0-9]){5,}@g(oogle)?mail\.com$/
       const checkExistEmail = await UserModel.findOne({ email })
 
-      // Nếu email đã tồn tại và không phải của user hiện tại
+      const validGmail = gmailRegex.test(email)
+
+      if (!validGmail) {
+        throw new BadRequestError('Địa chỉ email không hợp lệ. Vui lòng sử dụng địa chỉ Gmail.')
+      }
+
       if (checkExistEmail && checkExistEmail._id.toString() !== userId) {
-        throw new BadRequestError('Email đã được dùng')
+        throw new BadRequestError('Địa chỉ Gmail này đã được dùng')
       }
 
       existUser.email = email
+      existUser.isEmailVerified = false
+      existUser.authProvider = 'Flying Kite'
     }
 
     if (fullName) {
@@ -68,22 +76,18 @@ class UserService {
 
   // Lấy danh sách tất cả người dùng với các trường được chọn
   getAllUsers = async () => {
-    const select = { _id: 1, username: 1, fullName: 1, avatarUrl: 1 }
+    const select = { _id: 1, email: 1, fullName: 1, avatarUrl: 1 }
     return await UserModel.find().select(select).lean()
   }
 
   // Tìm người dùng bằng từ khóa tìm kiếm
   findByFilter = async (
     { searchString },
-    select = { _id: 1, username: 1, fullName: 1, status: 1, avatarUrl: 1, email: 1, type: 'friend' }
+    select = { _id: 1, fullName: 1, status: 1, avatarUrl: 1, email: 1, type: 'friend' }
   ) => {
     const regex = new RegExp(searchString, 'i')
     const filter = {
-      $or: [
-        { username: { $regex: regex } },
-        { fullName: { $regex: regex } },
-        { email: { $regex: regex } }
-      ]
+      $or: [{ fullName: { $regex: regex } }, { email: { $regex: regex } }]
     }
 
     return await UserModel.find(filter).select(select).lean()

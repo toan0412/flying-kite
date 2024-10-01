@@ -14,6 +14,18 @@ class AccessController {
     }).send(res)
   }
 
+  sendVerificationEmail = async (req, res, next) => {
+    new SuccessResponse({
+      data: await AccessService.sendVerificationEmail(req.body)
+    }).send(res)
+  }
+
+  verifyOTP = async (req, res, next) => {
+    new SuccessResponse({
+      data: await AccessService.verifyOTP(req.body)
+    }).send(res)
+  }
+
   logout = async (req, res, next) => {
     new SuccessResponse({
       data: await AccessService.logout(req.keyStore)

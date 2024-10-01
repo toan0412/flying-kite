@@ -1,5 +1,5 @@
 const RoomModel = require('../models/room.model.cjs')
-const { BadRequestError, NotFoundError } = require('../core/error.response.cjs')
+const { BadRequestError, NotFoundError, AuthFailureError } = require('../core/error.response.cjs')
 const UserModel = require('../models/user.model.cjs')
 const mongoose = require('mongoose')
 const MessageService = require('../services/message.service.cjs')
@@ -49,7 +49,7 @@ class RoomService {
 
       const membersInfo = users.map((user) => ({
         userId: user._id,
-        username: user.username,
+        email: user.email,
         fullName: user.fullName,
         avatarUrl: user.avatarUrl
       }))
@@ -67,8 +67,10 @@ class RoomService {
       if (type === 'public') {
         const createSystemMessage = async (content) => {
           await MessageService.createMessage({
-            params: { roomId: newRoom._id },
-            body: { senderId: userId, content, isSystemMessage: true }
+            roomId: newRoom._id,
+            senderId: userId,
+            content,
+            isSystemMessage: true
           })
         }
         await createSystemMessage('đã tạo phòng')
@@ -119,7 +121,7 @@ class RoomService {
 
       if (newMembers.length > 0) {
         const newMembersInfo = await UserModel.find({ _id: { $in: newMembers } })
-          .select('_id fullName username avatarUrl')
+          .select('_id fullName email avatarUrl')
           .lean()
 
         const existingMembersMap = new Map(room.members.map((m) => [m.userId.toString(), m]))
@@ -145,7 +147,7 @@ class RoomService {
         if (receiverInfo) {
           room.roomName = room.roomName || receiverInfo.fullName
           room.avatarUrl = room.avatarUrl || receiverInfo.avatarUrl
-          receiverId = receiverInfo._id
+          receiverId = receiverInfo.userId
         }
       }
 
@@ -164,8 +166,11 @@ class RoomService {
         throw new NotFoundError('Không tìm thấy phòng')
       }
 
-      if (!room.createdBy.equals(userId)) {
-        throw new BadRequestError('Người dùng không có quyền admin')
+      const isAdmin = room.members.some(
+        (member) => member.role == RoleRoom.ADMIN && member.userId == userId
+      )
+      if (!isAdmin) {
+        throw new AuthFailureError('Người dùng không phải là quản trị viên của phòng')
       }
 
       const memberToRemove = room.members.find((m) => m.userId.equals(memberId))
@@ -173,12 +178,17 @@ class RoomService {
         throw new BadRequestError('Không tìm thấy thành viên cần xóa')
       }
 
+      let receiverId = null
+
+      if (room.type === 'private') {
+        receiverId = room.members.find((member) => member.userId !== userId)?.userId
+      }
       memberToRemove.role = RoleRoom.LEFT
 
       await room.save()
 
       const members = await this.getMembersInfo(room)
-      return { ...room.toObject(), members }
+      return { ...room.toObject(), members, receiverId }
     } catch (error) {
       throw new BadRequestError(`Lỗi khi xóa thành viên: ${error.message}`)
     }
@@ -209,36 +219,36 @@ class RoomService {
         throw new BadRequestError('Người dùng không tồn tại trong phòng')
       }
 
-      const leavingUser = await UserModel.findById(userId).select('fullName').lean()
-      if (!leavingUser) {
-        throw new BadRequestError('Không tìm thấy thông tin người dùng')
-      }
-
-      const createSystemMessage = async (content) => {
-        await MessageService.createMessage({
-          params: { roomId },
-          body: { senderId: userId, content, isSystemMessage: true }
-        })
+      const createSystemMessage = async (content, senderId) => {
+        await MessageService.createMessage({ roomId, senderId, content, isSystemMessage: true })
       }
 
       room.members[memberIndex].role = RoleRoom.LEFT
-      await createSystemMessage(`đã rời khỏi phòng`)
+      await createSystemMessage(`đã rời khỏi phòng`, userId)
 
-      if (room.createdBy.toString() === userId) {
-        const newAdmin = room.members.find(
-          (m) => m.userId.toString() !== userId && m.role !== RoleRoom.LEFT
-        )
+      const existAdminInRoom = room.members.some((member) => member.role == RoleRoom.ADMIN)
+
+      if (!existAdminInRoom) {
+        const newAdmin = room.members.find((member) => member.role == RoleRoom.MEMBER)
+
         if (newAdmin) {
           newAdmin.role = RoleRoom.ADMIN
+          await createSystemMessage(`đã trở thành quản trị viên của phòng`, newAdmin.userId)
         } else {
-          await createSystemMessage('Phòng không còn quản trị viên')
+          room.type = 'inactive'
         }
       }
 
       await room.save()
 
       const members = await this.getMembersInfo(room)
-      return { ...room.toObject(), members }
+      let receiverId = null
+
+      if (room.type === 'private') {
+        receiverId = room.members.find((member) => member.userId !== userId)?.userId
+      }
+
+      return { ...room.toObject(), members, receiverId }
     } catch (error) {
       throw new BadRequestError(`Lỗi khi rời phòng: ${error.message}`)
     }
@@ -359,6 +369,13 @@ class RoomService {
               '$roomName'
             ]
           },
+          receiverId: {
+            $cond: [
+              { $eq: ['$type', 'private'] },
+              { $arrayElemAt: ['$otherMember._id', 0] },
+              '$receiverId'
+            ]
+          },
           avatarUrl: {
             $cond: [
               { $eq: ['$type', 'private'] },
@@ -399,7 +416,6 @@ class RoomService {
       {
         $project: {
           'members._id': 0,
-          'members.email': 0,
           'members.password': 0,
           'members.roles': 0,
           'members.status': 0,
@@ -419,7 +435,7 @@ class RoomService {
     const allMembersInfo = await UserModel.find({
       _id: { $in: room.members.map((m) => m.userId) }
     })
-      .select('_id fullName username avatarUrl')
+      .select('_id fullName email avatarUrl')
       .lean()
 
     return room.members.map((member) => {
@@ -427,7 +443,7 @@ class RoomService {
       return {
         userId: member.userId,
         role: member.role,
-        username: userInfo?.username,
+        email: userInfo?.email,
         fullName: userInfo?.fullName,
         avatarUrl: userInfo?.avatarUrl
       }

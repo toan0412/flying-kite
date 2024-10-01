@@ -71,7 +71,7 @@
             </template>
             <v-list-item-title class="ml-3">{{ user.fullName }}</v-list-item-title>
             <v-list-item-subtitle class="ml-3">{{
-              user.username ? user.username : ''
+              user.email ? user.email : ''
             }}</v-list-item-subtitle>
             <template v-slot:append>
               <v-checkbox-btn
@@ -121,6 +121,7 @@ import { useConversationsStore } from '@/stores/ConversationsStore'
 import { searchUserAPI } from '@/services/UserServices'
 import EmptyCard from '@/components/Card/EmptyCard.vue'
 import { uploadFilesAndGetUrls } from '@/helper/GetUrlOfMedia'
+import { generateAvatarBlob } from '@/helper/GenerateAvatarBlob'
 
 export default {
   props: {
@@ -171,12 +172,16 @@ export default {
 
       try {
         // Upload avatar nếu có
+        let avatarList = []
+        const path = `avatars/rooms/${this.publicRoomName}/`
         if (this.imageUrl) {
-          const path = `rooms/temp/files`
-          const avatarList = await uploadFilesAndGetUrls(this.fileToUpLoad, path)
-          if (avatarList && avatarList.length > 0) {
-            avatarUrl = avatarList[0].url
-          }
+          avatarList = await uploadFilesAndGetUrls(this.fileToUpLoad, path)
+        } else {
+          const avatarBlob = generateAvatarBlob(this.publicRoomName, 'room')
+          avatarList = await uploadFilesAndGetUrls([avatarBlob], path)
+        }
+        if (avatarList && avatarList.length > 0) {
+          avatarUrl = avatarList[0].url
         }
 
         // Tạo phòng
@@ -207,7 +212,6 @@ export default {
       searchUserAPI(this.searchValue)
         .then((res) => {
           this.searchUsersList = res.data
-          console.log(this.searchUsersList.length)
         })
         .catch((err) => console.error('Error while searching users', err))
     },
@@ -383,6 +387,12 @@ export default {
   .v-btn {
     background: rgb(var(--v-theme-secondary)) !important;
     color: white;
+  }
+
+  .v-selection-control__input {
+    i {
+      color: rgb(var(--v-theme-secondary));
+    }
   }
 }
 </style>

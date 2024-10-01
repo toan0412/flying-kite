@@ -35,7 +35,7 @@
           </template>
           <v-list-item-title class="ml-3">{{ user.fullName }}</v-list-item-title>
           <v-list-item-subtitle class="ml-3">{{
-            user.username ? user.username : ''
+            user.email ? user.email : ''
           }}</v-list-item-subtitle>
         </v-list-item>
       </v-list>
@@ -90,7 +90,6 @@ export default {
   },
   methods: {
     async createPrivateRoom(user) {
-      console.log(user)
       const roomInfoStore = useRoomInfoStore()
       const conversationsStore = useConversationsStore()
       const receiverId = user._id

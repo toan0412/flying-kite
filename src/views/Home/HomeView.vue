@@ -508,7 +508,6 @@ export default {
     return {
       roomInfo: {},
       userId: '',
-      userName: '',
       messageInput: '',
       searchValue: '',
       fileSelected: {},
@@ -931,6 +930,7 @@ export default {
     },
 
     openUserInfoDialog(id, type) {
+      console.log(id, type)
       if (type && type !== 'private') return
       this.userIdSelected = id
       this.showUserInfoDialog = true
@@ -1074,7 +1074,6 @@ export default {
     })
 
     ChatService.onRoomUpdated((updatedRoom) => {
-      console.log(updatedRoom)
       const roomInfoStore = useRoomInfoStore()
       roomInfoStore.setRoomInfo(updatedRoom)
     })

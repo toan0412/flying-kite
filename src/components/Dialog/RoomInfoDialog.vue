@@ -64,14 +64,19 @@
         >
           <template v-slot:prepend>
             <MSAvatar
-              @click="openUserInfoDialog(member._id)"
+              @click="openUserInfoDialog(member.userId)"
               width="40"
               height="40"
               :src="member.avatarUrl"
             />
           </template>
-          <v-list-item-title class="ml-3">{{ member.fullName }}</v-list-item-title>
-          <v-list-item-subtitle class="ml-3">@{{ member.username }}</v-list-item-subtitle>
+          <v-list-item-title class="ml-3">
+            <div>
+              {{ member.fullName }}
+              {{ member.role == 'admin' ? '(Quản trị viên)' : '' }}
+            </div>
+          </v-list-item-title>
+          <v-list-item-subtitle class="ml-3">{{ member.email }}</v-list-item-subtitle>
           <template v-if="isAdminOfRoom" v-slot:append>
             <div @click="openRemoveMemberConfirmDialog(member)" class="remove-member">Xóa</div>
           </template>
@@ -310,9 +315,10 @@ export default {
         this.editableRoomName = false
 
         this.imageUrl = this.roomInfo.avatarUrl
-        if (userId === this.roomInfo.createdBy) {
-          this.isAdminOfRoom = true
-        }
+
+        this.isAdminOfRoom = this.roomInfo.members.some(
+          (member) => member.role === 'admin' && member.userId === userId
+        )
 
         const usersInRoom = new Map(this.roomInfo.members.map((user) => [user.userId, user]))
 

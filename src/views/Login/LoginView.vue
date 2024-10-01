@@ -43,18 +43,6 @@
                   />
                 </div>
                 <div class="text-field-box">
-                  <label for="username" class="field-label-2">Username</label>
-                  <input
-                    v-model="username"
-                    class="input_register w-input"
-                    maxlength="256"
-                    name="username"
-                    placeholder="Nhập tên đăng nhập"
-                    id="username"
-                    required=""
-                  />
-                </div>
-                <div class="text-field-box">
                   <label for="password" class="field-label-2">Password</label>
                   <input
                     v-model="password"
@@ -104,6 +92,12 @@
                 ></v-progress-circular>
               </button>
             </form>
+            <div class="social_login_box">
+              <button @click="loginWithGoogle" class="google-login-button">
+                <v-icon icon="mdi-google-plus" alt="Google Icon" class="pr-3" />
+                Đăng nhập bằng Google
+              </button>
+            </div>
           </div>
         </div>
         <!-- Component login -->
@@ -127,14 +121,14 @@
             <form @submit.prevent="handleLogin">
               <div class="form-field-wrapper">
                 <div class="text-field-box">
-                  <label for="username" class="field-label-2">Username</label>
+                  <label for="email" class="field-label-2">Email</label>
                   <input
-                    v-model="username"
+                    v-model="email"
                     class="input_register w-input"
                     maxlength="256"
-                    name="username"
+                    name="email"
                     placeholder="Nhập tên đăng nhập"
-                    id="username"
+                    id="email"
                     required=""
                   />
                 </div>
@@ -168,7 +162,7 @@
 
             <div class="social_login_box">
               <button @click="loginWithGoogle" class="google-login-button">
-                <v-icon icon="mdi-google-plus" alt="Google Icon" />
+                <v-icon icon="mdi-google-plus" alt="Google Icon" class="pr-3" />
                 Đăng nhập bằng Google
               </button>
             </div>
@@ -197,7 +191,6 @@ import { uploadFilesAndGetUrls } from '@/helper/GetUrlOfMedia'
 export default {
   data() {
     return {
-      username: '',
       password: '',
       confirmPassword: '',
       email: '',
@@ -211,7 +204,7 @@ export default {
     handleLogin() {
       this.errorMessage = ''
       this.isLoading = true
-      const userInfo = { username: this.username, password: this.password }
+      const userInfo = { email: this.email, password: this.password }
       loginAPI(userInfo)
         .then((res) => {
           if (res.status === 200) {
@@ -234,9 +227,8 @@ export default {
       this.error = ''
       this.isLoading = true
       if (this.confirmPassword !== this.password) return
-      const avatarUrl = await this.generateAvatarUrl(this.username)
+      const avatarUrl = await this.generateAvatarUrl(this.fullName, this.email)
       const signUpInfo = {
-        username: this.username,
         password: this.password,
         email: this.email,
         fullName: this.fullName,
@@ -260,7 +252,6 @@ export default {
     },
 
     resetForm() {
-      this.username = ''
       this.password = ''
       this.confirmPassword = ''
       this.email = ''
@@ -269,10 +260,9 @@ export default {
     },
 
     //Tạo avataUrl theo seed và background
-    async generateAvatarUrl(username) {
-      const avatarBlob = generateAvatarBlob(username)
-      console.log(avatarBlob)
-      const path = `avatars/users/${username}/`
+    async generateAvatarUrl(fullName, email) {
+      const avatarBlob = generateAvatarBlob(fullName, 'user')
+      const path = `avatars/users/${email}/`
       const avatarUrl = await uploadFilesAndGetUrls([avatarBlob], path)
       return avatarUrl[0].url
     },
