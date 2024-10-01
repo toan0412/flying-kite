@@ -13,7 +13,6 @@ export default {
 <style lang="scss">
 .ms-button {
   box-shadow: unset;
-
   .v-btn__content {
     font-size: 13px;
   }

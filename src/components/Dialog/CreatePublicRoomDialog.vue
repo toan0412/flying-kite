@@ -1,10 +1,14 @@
 <template>
   <v-dialog v-model="show" max-width="500px" class="public-room-dialog">
     <v-card>
-      <v-card-title>
-        Tạo cuộc trò chuyện nhóm mới
-        <v-btn icon="mdi-close" flat @click.stop="show = false"></v-btn>
-      </v-card-title>
+      <v-card-actions class="justify-sm-center">
+        <div class="text-h6 font-weight-bold">Cuộc trò chuyện nhóm mới</div>
+        <v-icon
+          class="position-absolute right-0 ma-3"
+          icon="mdi-close"
+          @click.stop="show = false"
+        ></v-icon>
+      </v-card-actions>
 
       <!-- Bước 1 -->
       <div class="card-body" v-if="step1">
@@ -39,11 +43,8 @@
           ></v-text-field>
         </div>
         <div class="position-absolute right-0 bottom-0 pa-2">
-          <MSButton
-            :disabled="!publicRoomName"
-            class="ml-auto bg-deep-orange-darken-1"
-            @click="handleNextStep"
-            >Tiếp theo</MSButton
+          <MSButton :disabled="!publicRoomName" class="ml-auto" @click="handleNextStep"
+            ><span>Tiếp theo</span></MSButton
           >
         </div>
       </div>
@@ -70,11 +71,10 @@
             </template>
             <v-list-item-title class="ml-3">{{ user.fullName }}</v-list-item-title>
             <v-list-item-subtitle class="ml-3">{{
-              user.username ? user.username : ''
+              user.email ? user.email : ''
             }}</v-list-item-subtitle>
             <template v-slot:append>
               <v-checkbox-btn
-                color="deep-orange-darken-1"
                 :input-value="isSelected(user._id)"
                 @change="toggleSelection(user._id)"
                 width="40"
@@ -92,7 +92,7 @@
           <MSButton class="mr-auto" @click="handleBackStep">Trước</MSButton>
 
           <MSButton
-            class="ml-auto bg-deep-orange-darken-1"
+            class="ml-auto"
             :disabled="selectedUserIds.length == 0"
             @click="createPrivateRoom"
           >
@@ -121,6 +121,7 @@ import { useConversationsStore } from '@/stores/ConversationsStore'
 import { searchUserAPI } from '@/services/UserServices'
 import EmptyCard from '@/components/Card/EmptyCard.vue'
 import { uploadFilesAndGetUrls } from '@/helper/GetUrlOfMedia'
+import { generateAvatarBlob } from '@/helper/GenerateAvatarBlob'
 
 export default {
   props: {
@@ -171,12 +172,16 @@ export default {
 
       try {
         // Upload avatar nếu có
+        let avatarList = []
+        const path = `avatars/rooms/${this.publicRoomName}/`
         if (this.imageUrl) {
-          const path = `rooms/temp/files`
-          const avatarList = await uploadFilesAndGetUrls(this.fileToUpLoad, path)
-          if (avatarList && avatarList.length > 0) {
-            avatarUrl = avatarList[0].url
-          }
+          avatarList = await uploadFilesAndGetUrls(this.fileToUpLoad, path)
+        } else {
+          const avatarBlob = generateAvatarBlob(this.publicRoomName, 'room')
+          avatarList = await uploadFilesAndGetUrls([avatarBlob], path)
+        }
+        if (avatarList && avatarList.length > 0) {
+          avatarUrl = avatarList[0].url
         }
 
         // Tạo phòng
@@ -207,7 +212,6 @@ export default {
       searchUserAPI(this.searchValue)
         .then((res) => {
           this.searchUsersList = res.data
-          console.log(this.searchUsersList.length)
         })
         .catch((err) => console.error('Error while searching users', err))
     },
@@ -262,6 +266,7 @@ export default {
       if (newValue) {
         const conversationsStore = useConversationsStore()
         this.imageUrl = ''
+        this.searchValue = ''
         this.selectedUserIds = []
         this.conversations = conversationsStore.conversations
 
@@ -312,7 +317,12 @@ export default {
     width: 100%;
     height: 120px;
     padding-top: 4px;
-    background-image: var(--search-background-color);
+    background-image: linear-gradient(
+      to right,
+      rgb(var(--v-theme-primary-darken-1)),
+      rgb(var(--v-theme-primary)),
+      rgb(var(--v-theme-primary-lighten-1))
+    );
 
     .v-avatar {
       cursor: pointer;
@@ -348,7 +358,12 @@ export default {
 
   .create-room-search {
     .v-input__control {
-      background-image: var(--search-background-color);
+      background-image: linear-gradient(
+        to right,
+        rgb(var(--v-theme-secondary-lighten-1)),
+        rgb(var(--v-theme-primary-darken-1)),
+        rgb(var(--v-theme-primary))
+      );
     }
 
     .v-field__input {
@@ -367,6 +382,17 @@ export default {
   .v-list-item-subtitle {
     padding-bottom: 4px;
     border-bottom: 1px solid #d5d9de;
+  }
+
+  .v-btn {
+    background: rgb(var(--v-theme-secondary)) !important;
+    color: white;
+  }
+
+  .v-selection-control__input {
+    i {
+      color: rgb(var(--v-theme-secondary));
+    }
   }
 }
 </style>

@@ -155,12 +155,7 @@
           <li
             v-for="(message, index) in messages"
             :key="message._id"
-            :class="[
-              'message',
-              message.senderId === userId ? 'my-message' : 'other-message',
-              isLastMessageOfSender(index) ? 'first-message' : '',
-              isLastMessageOfTime(index) ? 'time-separator' : ''
-            ]"
+            :class="getMessageClasses(message, index)"
             :data-id="message._id"
           >
             <div v-if="message.isSystemMessage" class="message-system">
@@ -289,7 +284,7 @@
                 </div>
 
                 <!-- Message actions -->
-                <div class="message-actions">
+                <div v-if="!message.isDelete" class="message-actions">
                   <div class="message-actions__item">
                     <v-icon color="grey-darken-1" @click="openReplyMessage(message)" size="18"
                       >mdi-reply-outline</v-icon
@@ -416,15 +411,17 @@
       </div>
       <!-- Actions -->
       <div class="content__input__actions">
-        <div v-if="isTyping" class="content__input__actions__item">
+        <div v-if="isTyping" class="content__input__actions__item btn-send-message">
           <v-progress-circular
             v-if="isSendingMessage"
             :size="20"
             :width="3"
             color="black"
             indeterminate
-          ></v-progress-circular>
-          <v-icon v-else size="20" @click="sendMessage" icon="mdi-send-variant-outline" />
+          >
+          </v-progress-circular>
+
+          <v-icon v-else size="20" @click="sendMessage" icon="mdi-send-variant-outline"> </v-icon>
         </div>
         <div v-if="!isTyping" class="content__input__actions__item">
           <v-icon
@@ -435,9 +432,11 @@
           />
           <v-icon v-else @click="stopRecording" size="20" icon="mdi-pause"></v-icon>
         </div>
-        <div v-if="!isTyping" class="content__input__actions__item">
+
+        <!-- <div v-if="!isTyping" class="content__input__actions__item">
           <v-icon size="20" icon="mdi-card-account-details-outline " />
-        </div>
+        </div> -->
+
         <div class="content__input__actions__item">
           <input
             class="content__input__actions__item__input"
@@ -449,9 +448,10 @@
           />
           <v-icon @click="triggerImageFileInput" size="20" icon="mdi-paperclip" />
         </div>
-        <div v-if="!isTyping" class="content__input__actions__item">
+
+        <!-- <div v-if="!isTyping" class="content__input__actions__item">
           <v-icon size="20" icon="mdi-dots-horizontal" />
-        </div>
+        </div> -->
       </div>
     </div>
   </div>
@@ -508,7 +508,6 @@ export default {
     return {
       roomInfo: {},
       userId: '',
-      userName: '',
       messageInput: '',
       searchValue: '',
       fileSelected: {},
@@ -861,7 +860,33 @@ export default {
       return Math.floor(Math.random() * 10000000000) + 1
     },
 
-    // Hàm set class cho thẻ li
+    getMessageClasses(message, index) {
+      const classes = ['message']
+
+      if (message.isSystemMessage) {
+        classes.push('system-message')
+        return classes
+      }
+
+      if (message.senderId === this.userId) {
+        classes.push('my-message')
+      } else {
+        classes.push('other-message')
+      }
+
+      // Kiểm tra xem có phải tin nhắn cuối cùng của sender không
+      if (this.isLastMessageOfSender(index)) {
+        classes.push('first-message')
+      }
+
+      // Kiểm tra xem có cần phân cách thời gian không
+      if (this.isLastMessageOfTime(index)) {
+        classes.push('time-separator')
+      }
+
+      return classes
+    },
+
     isLastMessageOfTime(index) {
       // Nếu tin nhắn hiện tại là tin nhắn cuối cùng trong danh sách, không cần kiểm tra
       if (index === this.messages.length - 1) {
@@ -905,6 +930,7 @@ export default {
     },
 
     openUserInfoDialog(id, type) {
+      console.log(id, type)
       if (type && type !== 'private') return
       this.userIdSelected = id
       this.showUserInfoDialog = true
@@ -1048,7 +1074,6 @@ export default {
     })
 
     ChatService.onRoomUpdated((updatedRoom) => {
-      console.log(updatedRoom)
       const roomInfoStore = useRoomInfoStore()
       roomInfoStore.setRoomInfo(updatedRoom)
     })
@@ -1154,7 +1179,7 @@ export default {
 }
 
 .header-action-background {
-  background-color: var(--background-icon-primary-color);
+  background-color: rgb(var(--v-theme-secondary));
 }
 
 .content__input {
@@ -1221,6 +1246,11 @@ export default {
     display: flex;
     height: 46px;
     padding-left: 16px;
+
+    .btn-send-message {
+      background-color: rgb(var(--v-theme-secondary));
+      color: white;
+    }
   }
 
   .content__input__actions__item {
@@ -1402,7 +1432,7 @@ export default {
           flex-direction: row-reverse;
         }
         .message-content__text-wrapper {
-          background-color: var(--background-message-color);
+          background-color: rgb(var(--v-theme-primary));
         }
 
         .message-wrapper {
@@ -1469,7 +1499,7 @@ export default {
 
     .highlight-text {
       .message-content__text {
-        background: var(--highlight-text-color);
+        background: rgb(var(--v-theme-secondary));
       }
     }
 
@@ -1524,7 +1554,7 @@ export default {
       padding: 4px 8px;
       margin: 4px;
       border: 1px solid var(--border-color);
-      background-color: var(--background-reply-message-color);
+      background-color: rgb(var(--background-reply-message-color));
     }
 
     .message-content__reply__content {
@@ -1574,12 +1604,12 @@ export default {
       }
 
       audio::-webkit-media-controls-panel {
-        background-color: var(--background-message-color);
+        background-color: rgb(var(--v-theme-primary));
       }
     }
 
     .message-content__file {
-      background-color: var(--background-message-color);
+      background-color: rgb(var(--v-theme-primary));
       border-radius: 12px;
       font-size: 14px;
       overflow-wrap: break-word;

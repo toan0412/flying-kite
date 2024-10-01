@@ -5,11 +5,15 @@ const { emitUpdatedRoom, handleSocketError } = require('../utils/socketHelpers.c
 function initializeMessageHandlers(io, socket) {
   socket.on('message:send', async (message, ack) => {
     try {
-      const { roomId, senderId, content, media, replyTo } = message
+      const { roomId, senderId, content, media, replyTo, isSystemMessage } = message
 
       const newMessage = await MessageService.createMessage({
-        params: { roomId },
-        body: { senderId, content, media, replyTo }
+        roomId,
+        senderId,
+        content,
+        media,
+        replyTo,
+        isSystemMessage
       })
 
       io.to(roomId).emit('message:receive', newMessage)

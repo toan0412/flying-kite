@@ -1,10 +1,15 @@
 <template>
   <v-dialog v-model="show" max-width="500px" class="private-room-dialog">
     <v-card>
-      <v-card-title>
-        Tạo cuộc trò chuyện riêng mới
-        <v-btn icon="mdi-close" flat @click.stop="show = false"></v-btn>
-      </v-card-title>
+      <v-card-actions class="justify-sm-center">
+        <div class="text-h6 font-weight-bold">Cuộc trò chuyện riêng mới</div>
+        <v-icon
+          class="position-absolute right-0 ma-3"
+          icon="mdi-close"
+          @click.stop="show = false"
+        ></v-icon>
+      </v-card-actions>
+
       <v-text-field
         v-model="searchValue"
         clearable
@@ -30,7 +35,7 @@
           </template>
           <v-list-item-title class="ml-3">{{ user.fullName }}</v-list-item-title>
           <v-list-item-subtitle class="ml-3">{{
-            user.username ? user.username : ''
+            user.email ? user.email : ''
           }}</v-list-item-subtitle>
         </v-list-item>
       </v-list>
@@ -85,7 +90,6 @@ export default {
   },
   methods: {
     async createPrivateRoom(user) {
-      console.log(user)
       const roomInfoStore = useRoomInfoStore()
       const conversationsStore = useConversationsStore()
       const receiverId = user._id
@@ -132,6 +136,7 @@ export default {
   watch: {
     visible(newValue, oldValue) {
       if (newValue) {
+        this.searchValue = ''
         const conversationsStore = useConversationsStore()
         this.conversations = conversationsStore.conversations
         const mappedConversations = this.conversations
@@ -142,7 +147,6 @@ export default {
             avatarUrl: room.avatarUrl
           }))
         this.searchUsersList = mappedConversations
-        console.log(this.searchUsersList)
       }
     }
   }
@@ -160,7 +164,12 @@ export default {
 
   .create-room-search {
     .v-input__control {
-      background-image: var(--search-background-color);
+      background-image: linear-gradient(
+        to right,
+        rgb(var(--v-theme-secondary-lighten-1)),
+        rgb(var(--v-theme-primary-darken-1)),
+        rgb(var(--v-theme-primary))
+      );
     }
 
     .v-field__input {

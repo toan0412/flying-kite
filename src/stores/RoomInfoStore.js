@@ -7,6 +7,9 @@ export const useRoomInfoStore = defineStore('roomInfo', {
   actions: {
     setRoomInfo(roomInfo) {
       this.roomInfo = roomInfo
+    },
+    clear() {
+      this.roomInfo = {}
     }
   }
 })

@@ -3,13 +3,13 @@
     <v-card>
       <v-card-actions class="justify-sm-center">
         <div class="text-h6 font-weight-bold">Thông tin phòng</div>
-        <v-btn
-          class="position-absolute right-0"
+        <v-icon
+          class="position-absolute right-0 ma-3"
           icon="mdi-close"
-          flat
           @click.stop="show = false"
-        ></v-btn>
+        ></v-icon>
       </v-card-actions>
+
       <div class="avatar-wrapper">
         <div class="background-avatar">
           <v-avatar @click="triggerFileInput" size="150">
@@ -64,18 +64,21 @@
         >
           <template v-slot:prepend>
             <MSAvatar
-              @click="openUserInfoDialog(member._id)"
+              @click="openUserInfoDialog(member.userId)"
               width="40"
               height="40"
               :src="member.avatarUrl"
             />
           </template>
-          <v-list-item-title class="ml-3">{{ member.fullName }}</v-list-item-title>
-          <v-list-item-subtitle class="ml-3">@{{ member.username }}</v-list-item-subtitle>
-          <template v-if="isAdminOfRoom" v-slot:append>
-            <div @click="openRemoveMemberConfirmDialog(member.userId)" class="remove-member">
-              Xóa
+          <v-list-item-title class="ml-3">
+            <div>
+              {{ member.fullName }}
+              {{ member.role == 'admin' ? '(Quản trị viên)' : '' }}
             </div>
+          </v-list-item-title>
+          <v-list-item-subtitle class="ml-3">{{ member.email }}</v-list-item-subtitle>
+          <template v-if="isAdminOfRoom" v-slot:append>
+            <div @click="openRemoveMemberConfirmDialog(member)" class="remove-member">Xóa</div>
           </template>
         </v-list-item>
         <v-list-item clickable @click="openAddMemberDialog" class="add-member">
@@ -94,11 +97,7 @@
       </div>
 
       <div class="d-flex justify-end pa-2">
-        <MSButton
-          color="deep-orange-darken-1"
-          :disabled="!isRoomInfoEdit"
-          @click="handleUpdateRoomInfo"
-        >
+        <MSButton :disabled="!isRoomInfoEdit" @click="handleUpdateRoomInfo">
           <v-progress-circular
             v-if="isCallingAPI"
             :size="20"
@@ -152,7 +151,7 @@ export default {
       roomInfo: {},
       membersInRoom: [],
       isAdminOfRoom: false,
-      memberId: '',
+      selectedUserToDelete: {},
       imageUrl: '',
       fileToUpLoad: [],
       createdBy: '',
@@ -208,6 +207,7 @@ export default {
     async handleUpdateRoomInfo() {
       const userId = localStorage.getItem('userId')
       const roomId = localStorage.getItem('roomId')
+      let content = ''
       this.isCallingAPI = true
       let avatarUrl = ''
       const roomName = this.editRoomName
@@ -219,10 +219,19 @@ export default {
       }
 
       try {
-        ChatService.updateRoom({ roomId, userId, roomName, avatarUrl })
+        ChatService.updateRoom({ roomId, userId, roomName, avatarUrl, isSystemMessage: true })
+
+        if (roomName) {
+          content = `đã thay đổi tên phòng thành "${roomName}"`
+          ChatService.sendMessage({ roomId, senderId: userId, content, isSystemMessage: true })
+        }
+
+        if (avatarUrl) {
+          content = 'đã thay đổi ảnh đại diện phòng'
+          ChatService.sendMessage({ roomId, senderId: userId, content, isSystemMessage: true })
+        }
       } catch (err) {
         console.error('Cập nhật phòng thất bại:', err)
-        alert('CÓ lỗi xảy ra, vui lòng thử lại')
       } finally {
         this.isCallingAPI = false
         this.show = false
@@ -232,20 +241,22 @@ export default {
     async handleRemoveMemberFromRoom() {
       const roomId = localStorage.getItem('roomId')
       const userId = localStorage.getItem('userId')
-      const memberId = this.memberId
+      const memberIdToDelete = this.selectedUserToDelete.userId
+      const memberFullNameToDelete = this.selectedUserToDelete.fullName
+
+      let content = `đã xóa ${memberFullNameToDelete} khỏi phòng`
 
       try {
-        const adminFullName = this.roomInfo.members.find(
-          (member) => member.userId === this.roomInfo.createdBy
-        ).fullName
-        const memberRemovedFullName = this.roomInfo.members.find(
-          (member) => member.userId === memberId
-        ).fullName
-        const content = `${adminFullName} đã xóa ${memberRemovedFullName} khỏi phòng`
-        const type = 'Room'
-        await ChatService.removeMemberFromRoom({ roomId, userId, memberId, content, type })
+        await ChatService.removeMemberFromRoom({
+          roomId,
+          userId,
+          memberId: memberIdToDelete
+        })
+        await ChatService.sendMessage({ roomId, senderId: userId, content, isSystemMessage: true })
 
-        this.membersInRoom = this.membersInRoom.filter((member) => member.userId !== memberId)
+        this.membersInRoom = this.membersInRoom.filter(
+          (member) => member.userId !== memberIdToDelete
+        )
       } catch (error) {
         console.error('Error remove member from room', error)
       }
@@ -268,8 +279,8 @@ export default {
       this.showUserInfoDialog = true
     },
 
-    openRemoveMemberConfirmDialog(memberId) {
-      this.memberId = memberId
+    openRemoveMemberConfirmDialog(userInfo) {
+      this.selectedUserToDelete = userInfo
       this.$refs.removeMemberDialog.openDialog()
     },
 
@@ -304,9 +315,10 @@ export default {
         this.editableRoomName = false
 
         this.imageUrl = this.roomInfo.avatarUrl
-        if (userId === this.roomInfo.createdBy) {
-          this.isAdminOfRoom = true
-        }
+
+        this.isAdminOfRoom = this.roomInfo.members.some(
+          (member) => member.role === 'admin' && member.userId === userId
+        )
 
         const usersInRoom = new Map(this.roomInfo.members.map((user) => [user.userId, user]))
 
@@ -411,7 +423,12 @@ export default {
       width: 100%;
       height: 120px;
       padding-top: 4px;
-      background-image: var(--search-background-color);
+      background-image: linear-gradient(
+        to right,
+        rgb(var(--v-theme-secondary-lighten-1)),
+        rgb(var(--v-theme-primary-darken-1)),
+        rgb(var(--v-theme-primary))
+      );
 
       .v-avatar {
         cursor: pointer;
@@ -503,6 +520,11 @@ export default {
 
   .leave-room {
     cursor: pointer;
+  }
+
+  .v-btn {
+    background: rgb(var(--v-theme-secondary)) !important;
+    color: white;
   }
 }
 </style>

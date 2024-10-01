@@ -4,6 +4,10 @@ const loginAPI = (userInfo) => {
   return axiosInstance.post('/v1/api/users/login', userInfo)
 }
 
+const loginWithGoogleAPI = (accessToken) => {
+  return axiosInstance.post('v1/api/auth/google', { accessToken })
+}
+
 const signUpAPI = (userInfo) => {
   return axiosInstance.post('v1/api/users/sign-up', userInfo)
 }
@@ -33,6 +37,14 @@ const updateUserAPI = (userInfo) => {
   return axiosInstance.patch('/v1/api/users/update', { fullName, email })
 }
 
+const sendVerificationEmailAPI = (data) => {
+  return axiosInstance.post('v1/api/auth/send-email', data)
+}
+
+const verifyEmailOTP = (data) => {
+  return axiosInstance.post('v1/api/auth/verify-otp', data)
+}
+
 export {
   loginAPI,
   signUpAPI,
@@ -41,5 +53,8 @@ export {
   getAllUsersAPI,
   logoutAPI,
   updateUserAPI,
-  getUserByIdAPI
+  getUserByIdAPI,
+  loginWithGoogleAPI,
+  sendVerificationEmailAPI,
+  verifyEmailOTP
 }

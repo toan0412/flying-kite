@@ -79,7 +79,7 @@ export default {
       this.showPrivateRoomDialog = true
     })
 
-    ChatService.onUpdatedRoomReceived((updatedRoom) => {
+    ChatService.onRoomUpdated((updatedRoom) => {
       const userId = localStorage.getItem('userId')
       const currentRoomId = localStorage.getItem('roomId')
 
@@ -89,16 +89,21 @@ export default {
       )
 
       if (!isUpdatedRoomHasUserId && updatedRoom._id === currentRoomId) {
-        this.isIntroduction = true
+        const roomInfoStore = useRoomInfoStore()
+        roomInfoStore.setRoomInfo({})
       }
     })
   },
 
   watch: {
-    currentRoom(newRoom) {
-      if (!newRoom._id) return
-      if (this.isIntroduction) {
-        this.isIntroduction = false
+    currentRoom: {
+      immediate: true,
+      handler(newRoom) {
+        if (!newRoom || !newRoom._id) {
+          this.isIntroduction = true
+        } else {
+          this.isIntroduction = false
+        }
       }
     }
   },

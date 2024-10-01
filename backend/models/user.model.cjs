@@ -5,11 +5,6 @@ const COLLECTION_NAME = 'Users'
 
 const userSchema = new Schema(
   {
-    username: {
-      type: String,
-      required: [true, 'The username field is required'],
-      unique: true
-    },
     fullName: {
       type: String,
       required: [true, 'The fullName field is required']
@@ -30,6 +25,14 @@ const userSchema = new Schema(
       type: String,
       enum: ['online', 'offline', 'busy'],
       default: 'offline'
+    },
+    authProvider: {
+      type: String,
+      default: 'Flying Kite'
+    },
+    isEmailVerified: {
+      type: Boolean,
+      default: false
     },
     friends: [
       {

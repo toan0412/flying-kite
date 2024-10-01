@@ -43,18 +43,6 @@
                   />
                 </div>
                 <div class="text-field-box">
-                  <label for="username" class="field-label-2">Username</label>
-                  <input
-                    v-model="username"
-                    class="input_register w-input"
-                    maxlength="256"
-                    name="username"
-                    placeholder="Nhập tên đăng nhập"
-                    id="username"
-                    required=""
-                  />
-                </div>
-                <div class="text-field-box">
                   <label for="password" class="field-label-2">Password</label>
                   <input
                     v-model="password"
@@ -104,6 +92,12 @@
                 ></v-progress-circular>
               </button>
             </form>
+            <div class="social_login_box">
+              <button @click="loginWithGoogle" class="google-login-button">
+                <v-icon icon="mdi-google-plus" alt="Google Icon" class="pr-3" />
+                Đăng nhập bằng Google
+              </button>
+            </div>
           </div>
         </div>
         <!-- Component login -->
@@ -127,14 +121,14 @@
             <form @submit.prevent="handleLogin">
               <div class="form-field-wrapper">
                 <div class="text-field-box">
-                  <label for="username" class="field-label-2">Username</label>
+                  <label for="email" class="field-label-2">Email</label>
                   <input
-                    v-model="username"
+                    v-model="email"
                     class="input_register w-input"
                     maxlength="256"
-                    name="username"
+                    name="email"
                     placeholder="Nhập tên đăng nhập"
-                    id="username"
+                    id="email"
                     required=""
                   />
                 </div>
@@ -165,6 +159,14 @@
                 ></v-progress-circular>
               </button>
             </form>
+
+            <div class="social_login_box">
+              <button @click="loginWithGoogle" class="google-login-button">
+                <v-icon icon="mdi-google-plus" alt="Google Icon" class="pr-3" />
+                Đăng nhập bằng Google
+              </button>
+            </div>
+
             <div class="div-block-95">
               <div class="small-link">
                 Quên mật khẩu?
@@ -181,14 +183,14 @@
 </template>
 
 <script>
-import { loginAPI, signUpAPI } from '@/services/UserServices.js'
+import { loginAPI, signUpAPI, loginWithGoogleAPI } from '@/services/UserServices.js'
 import { generateAvatarBlob } from '@/helper/GenerateAvatarBlob'
+import { googleTokenLogin } from 'vue3-google-login'
 import { uploadFilesAndGetUrls } from '@/helper/GetUrlOfMedia'
 
 export default {
   data() {
     return {
-      username: '',
       password: '',
       confirmPassword: '',
       email: '',
@@ -202,7 +204,7 @@ export default {
     handleLogin() {
       this.errorMessage = ''
       this.isLoading = true
-      const userInfo = { username: this.username, password: this.password }
+      const userInfo = { email: this.email, password: this.password }
       loginAPI(userInfo)
         .then((res) => {
           if (res.status === 200) {
@@ -225,9 +227,8 @@ export default {
       this.error = ''
       this.isLoading = true
       if (this.confirmPassword !== this.password) return
-      const avatarUrl = await this.generateAvatarUrl(this.username)
+      const avatarUrl = await this.generateAvatarUrl(this.fullName, this.email)
       const signUpInfo = {
-        username: this.username,
         password: this.password,
         email: this.email,
         fullName: this.fullName,
@@ -251,7 +252,6 @@ export default {
     },
 
     resetForm() {
-      this.username = ''
       this.password = ''
       this.confirmPassword = ''
       this.email = ''
@@ -260,12 +260,27 @@ export default {
     },
 
     //Tạo avataUrl theo seed và background
-    async generateAvatarUrl(username) {
-      const avatarBlob = generateAvatarBlob(username)
-      console.log(avatarBlob)
-      const path = `avatars/users/${username}/`
+    async generateAvatarUrl(fullName, email) {
+      const avatarBlob = generateAvatarBlob(fullName, 'user')
+      const path = `avatars/users/${email}/`
       const avatarUrl = await uploadFilesAndGetUrls([avatarBlob], path)
       return avatarUrl[0].url
+    },
+
+    async loginWithGoogle() {
+      try {
+        const { access_token } = await googleTokenLogin()
+        console.log(access_token)
+        const response = await loginWithGoogleAPI(access_token)
+        if (response.status === 200) {
+          localStorage.setItem('accessToken', response.data.tokens.accessToken)
+          localStorage.setItem('userId', response.data.user._id)
+          this.$router.push('/')
+          this.$emit('is-auth', true)
+        }
+      } catch (error) {
+        this.errorMessage = 'Đăng nhập bằng Google thất bại. Vui lòng thử lại.'
+      }
     }
   }
 }
@@ -460,7 +475,7 @@ export default {
   padding-top: 20px;
   padding-bottom: 15px;
   border-radius: 5px;
-  background-color: var(--primary-text-color);
+  background-color: #44546f;
   box-shadow: 1px 10px 20px 0 rgba(0, 0, 0, 0.14);
   transition: background-color 200ms ease, box-shadow 200ms ease, transform 200ms ease,
     -webkit-transform 200ms ease;
@@ -475,7 +490,7 @@ export default {
 }
 
 a {
-  color: var(--primary-text-color);
+  color: #44546f;
   text-decoration: none;
 }
 
@@ -491,6 +506,34 @@ a {
   line-height: 1.5em;
   font-weight: 300;
   margin-top: 8px;
+}
+
+.google-login-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 12px;
+  width: 100%;
+  height: 45px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: #fff;
+  color: #757575;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s;
+
+  &:hover {
+    background-color: #f5f5f5;
+  }
+
+  img {
+    width: 18px;
+    height: 18px;
+    margin-right: 10px;
+  }
 }
 
 .error-message {

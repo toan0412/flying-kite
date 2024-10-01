@@ -5,8 +5,7 @@ const RoomModel = require('../models/room.model.cjs')
 class MessageService {
   //Tạo tin nhắn
   createMessage = async (req) => {
-    const { roomId } = req.params
-    const { senderId, content, media, replyTo, isSystemMessage } = req.body
+    const { roomId, senderId, content, media, replyTo, isSystemMessage } = req
 
     const newMessage = await MessageModel.create({
       roomId: roomId,

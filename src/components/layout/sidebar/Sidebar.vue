@@ -24,10 +24,10 @@
 
       <div v-if="!skeletonLoadingUserInfo" class="sidebar__statusbar__item">
         <v-avatar size="54">
-          <MSAvatar :alt="userInfo.username" :src="userInfo.avatarUrl"></MSAvatar>
+          <v-img :alt="userInfo.email" :src="userInfo.avatarUrl"></v-img>
         </v-avatar>
         <div class="pl-3">
-          <div class="statusbar__item__username">
+          <div class="status__bar__full-name">
             {{ userInfo.fullName }}
           </div>
           <div class="statusbar__item__status">
@@ -151,6 +151,7 @@ import { useConversationsStore } from '@/stores/ConversationsStore'
 import ChatService from '@/socket/ChatService.js'
 import lodash from 'lodash'
 import { defineAsyncComponent } from 'vue'
+import { getActivePinia } from 'pinia'
 
 export default {
   data() {
@@ -252,6 +253,8 @@ export default {
             this.$router.push('/login')
             this.$emit('is-auth', false)
             localStorage.clear()
+
+            getActivePinia()._s.forEach((store) => store.$reset())
           }
         })
         .catch((error) => {
@@ -276,6 +279,11 @@ export default {
   mounted() {
     ChatService.onRoomUpdated((updatedRoom) => {
       const roomIndex = this.rooms.findIndex((room) => room._id === updatedRoom._id)
+      const userId = localStorage.getItem('userId')
+
+      const isUpdatedRoomHasUserId = updatedRoom.members.some(
+        (member) => member.userId === userId && member.role !== 'left'
+      )
 
       if (isUpdatedRoomHasUserId) {
         // Nếu người dùng vẫn là thành viên, cập nhật hoặc thêm phòng
@@ -339,8 +347,8 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: var(--background-sidebar-color);
-  color: var(--primary-text-color);
+  background-color: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-secondary));
 }
 
 .sidebar__statusbar__item {
@@ -348,13 +356,12 @@ export default {
   display: flex;
   margin: 0 16px;
   align-items: center;
-  background-color: var(--background-sidebar-color);
 
   .v-skeleton-loader {
     background-color: inherit;
   }
 
-  .statusbar__item__username {
+  .status__bar__full-name {
     font-size: 16px;
     font-weight: bold;
   }
@@ -362,6 +369,11 @@ export default {
   .statusbar__item__status {
     font-size: 12px;
     font-weight: 300;
+  }
+
+  .v-avatar {
+    border: 1px solid var(--border-color);
+    background: rgb(var(--v-theme-primary-lighten-1));
   }
 }
 
@@ -394,7 +406,7 @@ export default {
 }
 
 .sidebar__main__header__item:hover {
-  background-color: var(--background-sidebar-color);
+  background-color: rgb(var(--v-theme-primary));
 }
 
 .sidebar__main__header__item--title {
@@ -449,7 +461,7 @@ export default {
     border-radius: 8px;
 
     &:hover {
-      background-color: var(--background-sidebar-color);
+      background-color: rgb(var(--v-theme-primary));
     }
   }
 
