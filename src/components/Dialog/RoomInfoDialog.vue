@@ -306,7 +306,7 @@ export default {
   },
 
   watch: {
-    visible(newValue, oldValue) {
+    visible(newValue) {
       if (newValue) {
         const userId = localStorage.getItem('userId')
         const roomInfoStore = useRoomInfoStore()

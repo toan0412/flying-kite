@@ -262,7 +262,7 @@ export default {
   },
 
   watch: {
-    visible(newValue, oldValue) {
+    visible(newValue) {
       if (newValue) {
         const conversationsStore = useConversationsStore()
         this.imageUrl = ''

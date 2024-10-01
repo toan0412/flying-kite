@@ -1,21 +1,36 @@
 <template>
   <div class="call-container">
     <div class="video-call">
-      <!-- Local Video-->
+      <!-- Local Video -->
       <div class="local-video-wrapper">
         <video class="local-video" ref="localVideo" autoplay muted></video>
       </div>
 
-      <!-- Remote Video-->
-      <div class="remote-video-wrapper">
-        <div v-if="!isResponse" class="remote-video">
+      <!-- Remote Videos -->
+      <div class="remote-videos-wrapper">
+        <div
+          v-for="(stream, peerId) in remoteStreams"
+          :key="peerId"
+          class="remote-video-wrapper"
+          :style="remoteVideoStyle"
+        >
+          <video
+            class="remote-video"
+            :ref="
+              (el) => {
+                if (el) remoteVideoRefs[peerId] = el
+              }
+            "
+            autoplay
+          ></video>
+        </div>
+        <div v-if="Object.keys(remoteStreams).length === 0" class="remote-video">
           <div class="d-flex justify-center align-center h-100">
             <div class="text-h6 font-weight-bold text-grey-lighten-5">
               Đang đợi người dùng phản hồi ...
             </div>
           </div>
         </div>
-        <video v-else class="remote-video" ref="remoteVideo" autoplay></video>
       </div>
     </div>
     <div class="call-controls">
@@ -38,60 +53,31 @@ import ChatService from '@/socket/ChatService'
 export default {
   data() {
     return {
+      localVideo: null,
+      remoteStreams: {},
+      remoteVideoRefs: {},
       peer: null,
-      remotePeerId: null,
+      remotePeerIds: [],
       localStream: null,
       isCaller: false,
       isAudio: true,
-      isVideo: null,
-      isResponse: false
+      isVideo: true
     }
   },
 
-  async mounted() {
-    const route = useRoute()
-
-    if (!route.query) return
-
-    const userId = localStorage.getItem('userId')
-    const callerId = route.query.caller_id
-    const hasVideoStr = route.query.has_video
-    this.isVideo = hasVideoStr === 'true' ? true : false
-
-    this.remotePeerId = route.query.users_to_ring
-
-    if (userId === callerId) {
-      this.isCaller = true
-    }
-
-    await this.setUpCamera()
-
-    //Tạo peer mới
-    this.peer = PeerService.createPeer(userId)
-    ChatService.joinRoom(userId)
-
-    // Nếu là người gọi, lắng nghe sự kiện người nghe gửi thông tin
-    if (this.isCaller) {
-      ChatService.onReceiverPeerIdReceived((peerId) => {
-        this.remotePeerId = peerId
-        this.startCall()
-      })
-    }
-    // Nếu không phải người gọi, gửi peerId đến người gọi để kết nối
-    else {
-      ChatService.sendReceiverPeerId({ peerId: this.peer._id, callerId: callerId })
-    }
-
-    // Lắng nghe cuộc gọi đến
-    this.peer.on('call', (call) => {
-      if (this.localStream) {
-        call.answer(this.localStream)
+  computed: {
+    remoteVideoStyle() {
+      const count = Object.keys(this.remoteStreams).length
+      if (count === 1) {
+        return { width: '100%', height: '100%' }
+      } else if (count === 2) {
+        return { width: '50%', height: '100%' }
+      } else if (count === 3) {
+        return { width: '33.33%', height: '100%' }
+      } else {
+        return { width: '50%', height: '50%' }
       }
-      call.on('stream', (remoteStream) => {
-        this.isResponse = true
-        this.$refs.remoteVideo.srcObject = remoteStream
-      })
-    })
+    }
   },
 
   methods: {
@@ -101,12 +87,8 @@ export default {
           video: true,
           audio: true
         })
-        if (this.isVideo == false) {
-          this.localStream.getTracks().forEach((track) => {
-            if (track.kind === 'video') {
-              track.enabled = this.isVideo
-            }
-          })
+        if (!this.isVideo) {
+          this.localStream.getVideoTracks().forEach((track) => (track.enabled = false))
         }
         this.$refs.localVideo.srcObject = this.localStream
       } catch (err) {
@@ -114,27 +96,28 @@ export default {
       }
     },
 
-    async startCall() {
-      if (!this.remotePeerId) {
-        return
-      }
-
+    startCall(peerId) {
+      if (!peerId) return
       try {
-        // Thực hiện cuộc gọi
-        const call = this.peer.call(this.remotePeerId, this.localStream)
-        call.on('stream', (remoteStream) => {
-          this.isResponse = true
-          this.$refs.remoteVideo.srcObject = remoteStream
-        })
-        call.on('close', () => {
-          console.log('Call ended')
-        })
-        call.on('error', (err) => {
-          console.error('Error in call: ', err)
-        })
+        const call = this.peer.call(peerId, this.localStream)
+        this.handleCall(call)
       } catch (err) {
         console.error('Lỗi khi bắt đầu cuộc gọi: ', err)
       }
+    },
+
+    handleCall(call) {
+      call.on('stream', (remoteStream) => {
+        this.$set(this.remoteStreams, call.peer, remoteStream)
+        this.$nextTick(() => {
+          if (this.remoteVideoRefs[call.peer]) {
+            this.remoteVideoRefs[call.peer].srcObject = remoteStream
+          }
+        })
+      })
+      call.on('close', () => {
+        this.$delete(this.remoteStreams, call.peer)
+      })
     },
 
     endCall() {
@@ -144,29 +127,54 @@ export default {
       if (this.peer) {
         this.peer.destroy()
       }
+      // Add logic to notify other users about call ending
     },
 
     toggleAudio() {
       this.isAudio = !this.isAudio
       if (this.localStream) {
-        this.localStream.getTracks().forEach((track) => {
-          if (track.kind === 'audio') {
-            track.enabled = this.isAudio
-          }
-        })
+        this.localStream.getAudioTracks().forEach((track) => (track.enabled = this.isAudio))
       }
     },
 
     toggleCamera() {
       this.isVideo = !this.isVideo
       if (this.localStream) {
-        this.localStream.getTracks().forEach((track) => {
-          if (track.kind === 'video') {
-            track.enabled = this.isVideo
-          }
-        })
+        this.localStream.getVideoTracks().forEach((track) => (track.enabled = this.isVideo))
       }
     }
+  },
+
+  async mounted() {
+    const route = useRoute()
+    if (!route.query) return
+
+    const userId = localStorage.getItem('userId')
+    const callerId = route.query.caller_id
+    this.isVideo = route.query.has_video === 'true'
+    this.remotePeerIds = route.query.users_to_ring
+    this.isCaller = userId === callerId
+
+    await this.setUpCamera()
+
+    this.peer = PeerService.createPeer(userId)
+    ChatService.joinRoom(userId)
+
+    if (this.isCaller) {
+      ChatService.onReceiverPeerIdReceived((peerId) => {
+        if (!this.remotePeerIds.includes(peerId)) {
+          this.remotePeerIds.push(peerId)
+        }
+        this.startCall(peerId)
+      })
+    } else {
+      ChatService.sendReceiverPeerId({ peerId: this.peer._id, callerId: callerId })
+    }
+
+    this.peer.on('call', (call) => {
+      call.answer(this.localStream)
+      this.handleCall(call)
+    })
   },
 
   beforeUnmount() {
@@ -186,37 +194,38 @@ export default {
 
 .video-call {
   display: flex;
-  position: relative;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
   width: 100%;
   height: 100%;
+  margin: 12px;
 }
 
-.remote-video-wrapper {
-  position: absolute;
+.remote-videos-wrapper {
   display: flex;
-  height: 100%;
-  width: 100%;
-}
-
-.remote-video {
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
   width: 100%;
   height: 100%;
 }
 
 .local-video-wrapper {
-  z-index: 1;
   position: absolute;
-  display: flex;
   width: 20%;
   height: 20%;
-  top: 0;
-  right: 0;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
 }
 
-video {
+.remote-video,
+.local-video {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: 8px;
 }
 
 .call-controls {
@@ -224,6 +233,8 @@ video {
   display: flex;
   justify-content: center;
   align-items: center;
+  position: absolute;
+  bottom: 20px;
 }
 
 .call-controls-wrapper {
@@ -231,10 +242,9 @@ video {
   background-color: #2c2c34;
   padding: 6px 12px;
   border-radius: 24px;
-  margin: 8px 0;
 
   .v-btn {
-    margin: 0 24px;
+    margin: 0 12px;
   }
 }
 </style>
