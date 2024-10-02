@@ -31,6 +31,12 @@ class UserController {
       data: await UserService.updateUser(req)
     }).send(res)
   }
+
+  changeUserPassword = async (req, res, next) => {
+    new SuccessResponse({
+      data: await UserService.changeUserPassword(req.body)
+    }).send(res)
+  }
 }
 
 module.exports = new UserController()

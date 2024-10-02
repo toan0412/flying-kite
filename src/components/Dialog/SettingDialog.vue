@@ -386,7 +386,7 @@ export default {
     async sendVerificationEmail() {
       try {
         this.showValidateEmailDialog = true
-        await sendVerificationEmailAPI({ userId: this.userInfo._id, email: this.userInfo.email })
+        await sendVerificationEmailAPI({ email: this.userInfo.email })
       } catch (error) {
         console.error(error)
       }

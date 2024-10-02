@@ -8,15 +8,14 @@ class PeerService {
   // Hàm tạo Peer hoặc trả về Peer hiện tại nếu đã tồn tại
   createPeer(userId) {
     if (this.peer) {
-      console.log('Peer already exists, returning existing peer:', this.peer.id)
       return this.peer
     }
 
     // Khởi tạo Peer mới nếu chưa tồn tại
     this.peer = new Peer(userId, {
       host: import.meta.env.VITE_URL,
-      port: 9000,
-      secure: false
+      port: 443,
+      secure: true
     })
 
     this.peer.on('open', (id) => {

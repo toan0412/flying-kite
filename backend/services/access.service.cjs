@@ -71,7 +71,7 @@ const genToken = async (userInfo) => {
   return { accessToken, publicKey }
 }
 
-const generateAndSaveOTP = async (userId, email) => {
+const generateAndSaveOTP = async ({ userId, email }) => {
   const otp = crypto.randomInt(100000, 1000000).toString()
 
   const fiveMinutesToSeconds = new Date(Date.now() + 5 * 60 * 1000)
@@ -173,17 +173,23 @@ class AccessService {
 
   static sendVerificationEmail = async (req) => {
     try {
-      const { userId, email } = req
+      const { email } = req
 
-      const existOTP = await VerificationModel.findOne({ email: email }, { email: email })
+      const existUser = await UserModel.findOne({ email: email })
+
+      if (!existUser) {
+        throw new NotFoundError('Không tìm thấy người dùng')
+      }
+
+      const existOTP = await VerificationModel.findOne({ userId: existUser._id, email: email })
 
       if (existOTP) {
-        await VerificationModel.deleteOne({ email: existOTP.email })
+        await VerificationModel.findByIdAndDelete(existOTP._id)
       }
 
       const transporter = await createTransporter()
 
-      const otp = await generateAndSaveOTP(userId, email)
+      const otp = await generateAndSaveOTP({ userId: existUser._id, email })
 
       if (!otp) {
         throw new BadRequestError('Không tạo được mã OTP mới')
@@ -203,7 +209,13 @@ class AccessService {
 
       const info = await transporter.sendMail(mailOptions)
       console.log('Email sent successfully:', info.response)
-      return true
+
+      return {
+        _id: existUser._id,
+        email: existUser.email,
+        fullName: existUser.fullName,
+        avatarUrl: existUser.avatarUrl
+      }
     } catch (error) {
       console.error('Error sending email:', error)
       return false

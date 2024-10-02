@@ -1,5 +1,9 @@
 <template>
-  <div v-if="isAuth" class="main">
+  <div v-if="!isAuth">
+    <LoginView @is-auth="handleAuthStatus" />
+  </div>
+
+  <div v-else class="main">
     <div class="sidebar-wrapper">
       <router-view class="view sidebar" name="sidebar" @is-auth="handleAuthStatus" />
     </div>
@@ -13,9 +17,6 @@
       v-model:visible="showPrivateRoomDialog"
       @close="showPrivateRoomDialog = false"
     />
-  </div>
-  <div v-else>
-    <LoginView @is-auth="handleAuthStatus" />
   </div>
 </template>
 
