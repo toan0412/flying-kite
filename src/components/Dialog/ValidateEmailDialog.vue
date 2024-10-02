@@ -111,7 +111,7 @@ export default {
 
     async resendVerificationCode() {
       this.inputOTP = ''
-      await sendVerificationEmailAPI({ userId: this.userInfo._id, email: this.userInfo.email })
+      await sendVerificationEmailAPI({ email: this.userInfo.email })
     }
   },
 

@@ -1,6 +1,7 @@
 const UserModel = require('../models/user.model.cjs')
 const { BadRequestError, NotFoundError } = require('../core/error.response.cjs')
 const { getInfoData } = require('../utils/index.cjs')
+const bcrypt = require('bcrypt')
 
 class UserService {
   // Tìm người dùng bằng id
@@ -69,6 +70,25 @@ class UserService {
     }
 
     // Lưu lại user đã được cập nhật
+    await existUser.save()
+
+    return existUser
+  }
+
+  changeUserPassword = async (req) => {
+    const { userId, email, newPassword } = req
+
+    const existUser = await UserModel.findOne({ _id: userId, email: email })
+
+    if (!existUser) {
+      throw new NotFoundError('Không tìm thấy người dùng')
+    }
+
+    // Mã hóa mật khẩu trước khi lưu
+    const passwordHash = await bcrypt.hash(newPassword, 10)
+
+    existUser.password = passwordHash
+
     await existUser.save()
 
     return existUser

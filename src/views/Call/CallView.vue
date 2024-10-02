@@ -108,7 +108,7 @@ export default {
 
     handleCall(call) {
       call.on('stream', (remoteStream) => {
-        this.$set(this.remoteStreams, call.peer, remoteStream)
+        this.remoteStreams = { ...this.remoteStreams, [call.peer]: remoteStream }
         this.$nextTick(() => {
           if (this.remoteVideoRefs[call.peer]) {
             this.remoteVideoRefs[call.peer].srcObject = remoteStream
@@ -116,7 +116,8 @@ export default {
         })
       })
       call.on('close', () => {
-        this.$delete(this.remoteStreams, call.peer)
+        const { [call.peer]: _, ...remainingStreams } = this.remoteStreams
+        this.remoteStreams = remainingStreams
       })
     },
 

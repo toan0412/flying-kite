@@ -18,12 +18,97 @@
     </div>
     <div class="content-right-wrapper">
       <div class="block-2">
+        <!-- Component login -->
+        <div v-if="!showRegisterForm && !showForgetPasswordForm" class="form-wrapper">
+          <div class="font_mainheading">Chào mừng bạn trở lại!</div>
+          <div class="desc_label_general">
+            Bạn chưa có tài khoản?
+            <a href="#" @click="handleShowRegisterForm">Tạo tài khoản</a>
+            miễn phí! Chỉ mất ít hơn 1 phút.
+          </div>
+          <div class="social_login_box">
+            <a href="#"></a>
+          </div>
+          <div class="block-3">
+            <div class="_1px-div-line"></div>
+            <div class="heading-4">Hoặc</div>
+            <div class="_1px-div-line"></div>
+          </div>
+          <!-- login form-->
+          <div class="form-box">
+            <form @submit.prevent="handleLogin">
+              <div class="form-field-wrapper">
+                <div class="text-field-box">
+                  <label for="email" class="field-label-2">Email</label>
+                  <input
+                    v-model="email"
+                    class="input_register w-input"
+                    maxlength="256"
+                    name="email"
+                    placeholder="Nhập email"
+                    id="email"
+                    required=""
+                  />
+                </div>
+                <div class="text-field-box">
+                  <label for="password" class="field-label-2">Mật khẩu</label>
+                  <div class="password-input-wrapper">
+                    <input
+                      v-model="password"
+                      :type="showPassword ? 'text' : 'password'"
+                      class="input_register w-input"
+                      maxlength="256"
+                      name="password"
+                      placeholder="Nhập mật khẩu"
+                      id="password"
+                      required=""
+                    />
+                    <v-icon
+                      @click="showPassword = !showPassword"
+                      size="18"
+                      class="password-toggle-icon opacity-70"
+                    >
+                      {{ showPassword ? 'mdi-eye-off' : 'mdi-eye' }}
+                    </v-icon>
+                  </div>
+                </div>
+              </div>
+              <div class="error-message" v-if="errorMessage">{{ errorMessage }}</div>
+              <button type="submit" name="btn-register" class="large-button w-button">
+                Đăng nhập
+                <v-progress-circular
+                  class="ml-2"
+                  v-if="isLoading"
+                  size="16"
+                  width="3"
+                  color="white"
+                  indeterminate
+                ></v-progress-circular>
+              </button>
+            </form>
+
+            <div class="social_login_box">
+              <button @click="loginWithGoogle" class="google-login-button">
+                <v-icon icon="mdi-google-plus" alt="Google Icon" class="pr-3" />
+                Đăng nhập bằng Google
+              </button>
+            </div>
+
+            <div class="div-block-95">
+              <div class="small-link">
+                Quên mật khẩu?
+                <a @click="handleShowForgetPasswordForm">Nhấn vào đây</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Component register -->
-        <div v-if="isRegister" class="form-wrapper">
+        <div v-else-if="!showForgetPasswordForm" class="form-wrapper">
           <div class="font_mainheading">Tạo tài khoản mới</div>
           <div class="desc_label_general">
             Bạn đã có tài khoản?
-            <a href="#" @click="toggleComponent">Đăng nhập tại đây</a>
+            <a href="#" @click="handleShowLoginForm">Đăng nhập tại đây</a>
           </div>
           <!-- register form-->
           <div class="form-box">
@@ -42,32 +127,53 @@
                     required=""
                   />
                 </div>
+
                 <div class="text-field-box">
-                  <label for="password" class="field-label-2">Password</label>
-                  <input
-                    v-model="password"
-                    type="password"
-                    class="input_register w-input"
-                    maxlength="256"
-                    name="password"
-                    placeholder="Nhập mật khẩu"
-                    id="password"
-                    required=""
-                  />
+                  <label for="password" class="field-label-2">Mật khẩu</label>
+                  <div class="password-input-wrapper">
+                    <input
+                      v-model="password"
+                      :type="showPassword ? 'text' : 'password'"
+                      class="input_register w-input"
+                      maxlength="256"
+                      name="password"
+                      placeholder="Nhập mật khẩu"
+                      id="password"
+                      required=""
+                    />
+                    <v-icon
+                      @click="showPassword = !showPassword"
+                      size="18"
+                      class="password-toggle-icon opacity-70"
+                    >
+                      {{ showPassword ? 'mdi-eye-off' : 'mdi-eye' }}
+                    </v-icon>
+                  </div>
                 </div>
+
                 <div class="text-field-box">
-                  <label for="confirmPassword" class="field-label-2">Confirm Password</label>
-                  <input
-                    v-model="confirmPassword"
-                    type="password"
-                    class="input_register w-input"
-                    maxlength="256"
-                    name="confirmPassword"
-                    placeholder="Nhập lại mật khẩu"
-                    id="confirmPassword"
-                    required=""
-                  />
+                  <label for="confirmPassword" class="field-label-2">Nhập lại mật khẩu</label>
+                  <div class="password-input-wrapper">
+                    <input
+                      v-model="confirmPassword"
+                      :type="showConfirmPassword ? 'text' : 'password'"
+                      class="input_register w-input"
+                      maxlength="256"
+                      name="confirmPassword"
+                      placeholder="Nhập lại mật khẩu"
+                      id="confirmPassword"
+                      required=""
+                    />
+                    <v-icon
+                      @click="showConfirmPassword = !showConfirmPassword"
+                      size="18"
+                      class="password-toggle-icon opacity-70"
+                    >
+                      {{ showConfirmPassword ? 'mdi-eye-off' : 'mdi-eye' }}
+                    </v-icon>
+                  </div>
                 </div>
+
                 <div class="text-field-box">
                   <label for="fullName" class="field-label-2">Tên đầy đủ</label>
                   <input
@@ -100,25 +206,23 @@
             </div>
           </div>
         </div>
-        <!-- Component login -->
+
+        <!-- Component forgot password -->
         <div v-else class="form-wrapper">
-          <div class="font_mainheading">Chào mừng bạn trở lại!</div>
+          <div class="font_mainheading">Quên mật khẩu?</div>
           <div class="desc_label_general">
-            Bạn chưa có tài khoản?
-            <a href="#" @click="toggleComponent">Tạo tài khoản</a>
-            miễn phí! Chỉ mất ít hơn 1 phút.
+            Nhập địa chỉ email của bạn vào và chúng tôi sẽ gửi cho bạn mã OTP, hoặc
+            <a href="#" @click="handleShowLoginForm">quay lại đăng nhập</a>
           </div>
-          <div class="social_login_box">
-            <a href="#"></a>
-          </div>
-          <div class="block-3">
-            <div class="_1px-div-line"></div>
-            <div class="heading-4">Hoặc</div>
-            <div class="_1px-div-line"></div>
-          </div>
-          <!-- login form-->
+
+          <div class="desc_label_general"></div>
+
           <div class="form-box">
-            <form @submit.prevent="handleLogin">
+            <!-- Form send OTP -->
+            <form
+              v-if="!showInputOTPForm && !showNewPasswordForm"
+              @submit.prevent="handleSendVerificationEmail"
+            >
               <div class="form-field-wrapper">
                 <div class="text-field-box">
                   <label for="email" class="field-label-2">Email</label>
@@ -127,28 +231,17 @@
                     class="input_register w-input"
                     maxlength="256"
                     name="email"
-                    placeholder="Nhập tên đăng nhập"
+                    placeholder="Nhập email"
                     id="email"
                     required=""
                   />
                 </div>
-                <div class="text-field-box">
-                  <label for="password" class="field-label-2">Password</label>
-                  <input
-                    v-model="password"
-                    type="password"
-                    class="input_register w-input"
-                    maxlength="256"
-                    name="password"
-                    placeholder="Nhập mật khẩu"
-                    id="password"
-                    required=""
-                  />
-                </div>
               </div>
+
               <div class="error-message" v-if="errorMessage">{{ errorMessage }}</div>
-              <button type="submit" name="btn-register" class="large-button w-button">
-                Đăng nhập
+
+              <button type="submit" name="btn-send-otp" class="large-button w-button">
+                Gửi mã OTP
                 <v-progress-circular
                   class="ml-2"
                   v-if="isLoading"
@@ -160,21 +253,114 @@
               </button>
             </form>
 
-            <div class="social_login_box">
-              <button @click="loginWithGoogle" class="google-login-button">
-                <v-icon icon="mdi-google-plus" alt="Google Icon" class="pr-3" />
-                Đăng nhập bằng Google
-              </button>
-            </div>
+            <!-- Form verify OTP -->
+            <form
+              v-else-if="showInputOTPForm && !showNewPasswordForm"
+              @submit.prevent="handleVerifyOTP"
+            >
+              <div class="form-field-wrapper d-flex justify-center">
+                <v-card
+                  :title="userInfoForgetPassword.fullName"
+                  :subtitle="userInfoForgetPassword.email"
+                >
+                  <template v-slot:prepend>
+                    <v-avatar class="mr-2" size="54">
+                      <v-img :src="userInfoForgetPassword.avatarUrl"></v-img>
+                    </v-avatar>
+                  </template>
 
-            <div class="div-block-95">
-              <div class="small-link">
-                Quên mật khẩu?
-                <strong>
-                  <a href="/#">Nhấn vào đây</a>
-                </strong>
+                  <v-card-title>Đây có phải là bạn không?</v-card-title>
+
+                  <div class="div-block-95">
+                    <div class="small-link">
+                      Đây không phải tôi,
+                      <a @click="handleShowForgetPasswordForm">quay lại</a>
+                    </div>
+                  </div>
+                </v-card>
+
+                <v-sheet color="surface">
+                  <v-otp-input v-model="inputOTP" variant="solo"></v-otp-input>
+                </v-sheet>
               </div>
-            </div>
+              <div class="error-message" v-if="errorMessage">{{ errorMessage }}</div>
+              <button type="submit" name="btn-send-otp" class="large-button w-button">
+                Xác thực
+                <v-progress-circular
+                  class="ml-2"
+                  v-if="isLoading"
+                  size="16"
+                  width="3"
+                  color="white"
+                  indeterminate
+                ></v-progress-circular>
+              </button>
+            </form>
+
+            <!-- Form input new password -->
+            <form v-else @submit.prevent="handleChangePassword">
+              <div class="form-field-wrapper">
+                <div class="text-field-box">
+                  <label for="password" class="field-label-2">Mật khẩu mới</label>
+                  <div class="password-input-wrapper">
+                    <input
+                      v-model="password"
+                      :type="showPassword ? 'text' : 'password'"
+                      class="input_register w-input"
+                      maxlength="256"
+                      name="password"
+                      placeholder="Nhập mật khẩu mới"
+                      id="password"
+                      required=""
+                    />
+                    <v-icon
+                      @click="showPassword = !showPassword"
+                      size="18"
+                      class="password-toggle-icon opacity-70"
+                    >
+                      {{ showPassword ? 'mdi-eye-off' : 'mdi-eye' }}
+                    </v-icon>
+                  </div>
+                </div>
+
+                <div class="text-field-box">
+                  <label for="confirmPassword" class="field-label-2">Nhập lại mật khẩu mới</label>
+                  <div class="password-input-wrapper">
+                    <input
+                      v-model="confirmPassword"
+                      :type="showConfirmPassword ? 'text' : 'password'"
+                      class="input_register w-input"
+                      maxlength="256"
+                      name="confirmPassword"
+                      placeholder="Nhập lại mật khẩu mới"
+                      id="confirmPassword"
+                      required=""
+                    />
+                    <v-icon
+                      @click="showConfirmPassword = !showConfirmPassword"
+                      size="18"
+                      class="password-toggle-icon opacity-70"
+                    >
+                      {{ showConfirmPassword ? 'mdi-eye-off' : 'mdi-eye' }}
+                    </v-icon>
+                  </div>
+                </div>
+              </div>
+
+              <div class="error-message" v-if="errorMessage">{{ errorMessage }}</div>
+
+              <button type="submit" name="btn-send-otp" class="large-button w-button">
+                Đổi mật khẩu mới
+                <v-progress-circular
+                  class="ml-2"
+                  v-if="isLoading"
+                  size="16"
+                  width="3"
+                  color="white"
+                  indeterminate
+                ></v-progress-circular>
+              </button>
+            </form>
           </div>
         </div>
       </div>
@@ -183,7 +369,14 @@
 </template>
 
 <script>
-import { loginAPI, signUpAPI, loginWithGoogleAPI } from '@/services/UserServices.js'
+import {
+  loginAPI,
+  signUpAPI,
+  loginWithGoogleAPI,
+  sendVerificationEmailAPI,
+  verifyEmailOTP,
+  changePasswordAPI
+} from '@/services/UserServices.js'
 import { generateAvatarBlob } from '@/helper/GenerateAvatarBlob'
 import { googleTokenLogin } from 'vue3-google-login'
 import { uploadFilesAndGetUrls } from '@/helper/GetUrlOfMedia'
@@ -195,11 +388,19 @@ export default {
       confirmPassword: '',
       email: '',
       fullName: '',
-      isRegister: false,
+      showRegisterForm: false,
+      showForgetPasswordForm: false,
+      showInputOTPForm: false,
+      showNewPasswordForm: false,
       isLoading: false,
-      errorMessage: ''
+      errorMessage: '',
+      inputOTP: '',
+      userInfoForgetPassword: {},
+      showPassword: false,
+      showConfirmPassword: false
     }
   },
+
   methods: {
     handleLogin() {
       this.errorMessage = ''
@@ -226,8 +427,14 @@ export default {
     async handleSignUp() {
       this.error = ''
       this.isLoading = true
-      if (this.confirmPassword !== this.password) return
+
+      if (this.confirmPassword !== this.password) {
+        this.errorMessage = 'Mật khẩu nhập lại không khớp'
+        return
+      }
+
       const avatarUrl = await this.generateAvatarUrl(this.fullName, this.email)
+
       const signUpInfo = {
         password: this.password,
         email: this.email,
@@ -236,7 +443,8 @@ export default {
       }
       signUpAPI(signUpInfo)
         .then((res) => {
-          this.toggleComponent()
+          this.handleShowLoginForm()
+          this.email = res.data.email
         })
         .catch((error) => {
           this.errorMessage = error.message
@@ -246,8 +454,21 @@ export default {
         })
     },
 
-    toggleComponent() {
-      this.isRegister = !this.isRegister
+    handleShowRegisterForm() {
+      this.showForgetPasswordForm = false
+      this.showRegisterForm = true
+      this.resetForm()
+    },
+
+    handleShowForgetPasswordForm() {
+      this.showForgetPasswordForm = true
+      this.showRegisterForm = false
+      this.resetForm()
+    },
+
+    handleShowLoginForm() {
+      this.showForgetPasswordForm = false
+      this.showRegisterForm = false
       this.resetForm()
     },
 
@@ -257,6 +478,9 @@ export default {
       this.email = ''
       this.fullName = ''
       this.errorMessage = ''
+      this.showInputOTPForm = false
+      this.showPassword = false
+      this.showConfirmPassword = false
     },
 
     //Tạo avataUrl theo seed và background
@@ -268,9 +492,10 @@ export default {
     },
 
     async loginWithGoogle() {
+      this.errorMessage = ''
+      this.isLoading = true
       try {
         const { access_token } = await googleTokenLogin()
-        console.log(access_token)
         const response = await loginWithGoogleAPI(access_token)
         if (response.status === 200) {
           localStorage.setItem('accessToken', response.data.tokens.accessToken)
@@ -280,7 +505,72 @@ export default {
         }
       } catch (error) {
         this.errorMessage = 'Đăng nhập bằng Google thất bại. Vui lòng thử lại.'
+      } finally {
+        this.isLoading = false
       }
+    },
+
+    async handleSendVerificationEmail() {
+      this.errorMessage = ''
+      this.isLoading = true
+
+      try {
+        const res = await sendVerificationEmailAPI({ email: this.email })
+        if (res.data._id) {
+          this.showInputOTPForm = true
+          this.userInfoForgetPassword = res.data
+        }
+      } catch (error) {
+        this.errorMessage = error.message
+        console.error(error)
+      } finally {
+        this.isLoading = false
+      }
+    },
+
+    async handleVerifyOTP() {
+      this.isLoading = true
+      this.errorMessage = ''
+
+      try {
+        const res = await verifyEmailOTP({
+          userId: this.userInfoForgetPassword._id,
+          email: this.userInfoForgetPassword.email,
+          inputOTP: this.inputOTP
+        })
+
+        if (res.data.isEmailVerified == true) {
+          this.showNewPasswordForm = true
+        } else {
+          this.errorMessage = 'OTP không chính xác. Vui lòng thử lại.'
+        }
+      } catch (error) {
+        this.errorMessage =
+          error.response?.data?.message || error.message || 'Đã xảy ra lỗi. Vui lòng thử lại.'
+        console.error('Error verifying OTP:', error)
+      } finally {
+        this.isLoading = false
+      }
+    },
+
+    async handleChangePassword() {
+      if (this.password !== this.confirmPassword) {
+        this.errorMessage = 'Mật khẩu nhập lại không khớp'
+        return
+      }
+      await changePasswordAPI({
+        userId: this.userInfoForgetPassword._id,
+        email: this.userInfoForgetPassword.email,
+        newPassword: this.password
+      })
+        .then((res) => {
+          this.handleShowLoginForm()
+          this.email = res.data.email
+        })
+        .catch((error) => {
+          this.errorMessage = error.message
+          console.error(error)
+        })
     }
   }
 }
@@ -442,6 +732,17 @@ export default {
   flex-direction: row;
 }
 
+.password-input-wrapper {
+  position: relative;
+}
+
+.password-toggle-icon {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translate(-50%, -36%);
+}
+
 .field-label-2 {
   display: none;
   color: rgba(55, 66, 82, 0.9);
@@ -490,6 +791,7 @@ export default {
 }
 
 a {
+  cursor: pointer;
   color: #44546f;
   text-decoration: none;
 }

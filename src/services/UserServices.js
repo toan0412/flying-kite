@@ -37,6 +37,10 @@ const updateUserAPI = (userInfo) => {
   return axiosInstance.patch('/v1/api/users/update', { fullName, email })
 }
 
+const changePasswordAPI = (data) => {
+  return axiosInstance.patch('v1/api/users/change-password', data)
+}
+
 const sendVerificationEmailAPI = (data) => {
   return axiosInstance.post('v1/api/auth/send-email', data)
 }
@@ -56,5 +60,6 @@ export {
   getUserByIdAPI,
   loginWithGoogleAPI,
   sendVerificationEmailAPI,
-  verifyEmailOTP
+  verifyEmailOTP,
+  changePasswordAPI
 }
