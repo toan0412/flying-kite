@@ -123,12 +123,22 @@
             icon="mdi-video-outline"
           ></v-icon>
         </div>
+
+        <div class="content__header__actions__item ml-1 header-action-background">
+          <v-icon
+            @click="showImagesLibrary = !showImagesLibrary"
+            color="white"
+            size="18"
+            icon="mdi-image-multiple-outline"
+          ></v-icon>
+        </div>
       </div>
     </div>
 
     <!-- Conversation -->
     <div class="content__conversation">
       <div class="content__conversation--left"></div>
+
       <div class="content__conversation--main">
         <!-- skeleton loading -->
         <ol v-if="skeletonLoadingConversation">
@@ -242,12 +252,18 @@
                   </div>
 
                   <!-- Message main other file -->
-                  <div v-else class="message-content__file">
-                    <div v-if="message.media[0]" class="message-content__file__text">
-                      <a :href="message.media[0].url" target="_blank" rel="noopener noreferrer">
-                        <v-icon class="pr-2" icon="mdi-file-outline"></v-icon>
-                        {{ message.media[0].name }}
-                      </a>
+                  <div v-else>
+                    <div
+                      v-for="media in message.media"
+                      :key="media._id"
+                      class="message-content__file"
+                    >
+                      <div class="message-content__file__text">
+                        <a :href="media.url" target="_blank" rel="noopener noreferrer">
+                          <v-icon class="pr-2 opacity-70" :icon="getFileIcon(media.type)"></v-icon>
+                          {{ media.name }}
+                        </a>
+                      </div>
                     </div>
                   </div>
 
@@ -306,6 +322,70 @@
             </div>
           </li>
         </ol>
+      </div>
+
+      <div class="content__conversation--sub-main" :class="{ 'show-library': showImagesLibrary }">
+        <!-- Đầu mục thư viện  -->
+        <div class="d-flex justify-space-between align-center pa-2">
+          <div class="text-h5 font-weight-bold opacity-80">Thư viện ảnh</div>
+          <v-icon
+            class="opacity-80"
+            icon="mdi-close"
+            @click="showImagesLibrary = !showImagesLibrary"
+          />
+        </div>
+
+        <div class="library-selection">
+          <div
+            class="library-selection-item"
+            :class="{ active: libraryType === 'media' }"
+            @click="libraryType = 'media'"
+          >
+            Phương tiện
+          </div>
+          <div
+            class="library-selection-item"
+            :class="{ active: libraryType === 'file' }"
+            @click="libraryType = 'file'"
+          >
+            File
+          </div>
+        </div>
+        <!-- Nội dung thư viện ảnh -->
+        <div v-if="libraryType === 'media'" class="library-images">
+          <v-container fluid>
+            <v-row no-gutters>
+              <v-col v-for="(image, index) in imageMessages" :key="index" cols="12" sm="4">
+                <v-img
+                  :src="image.url"
+                  :alt="image.alt"
+                  aspect-ratio="1"
+                  cover
+                  @click="openZoomInImageDialog(image)"
+                  class="cursor-pointer rounded-lg ma-1"
+                ></v-img>
+              </v-col>
+            </v-row>
+          </v-container>
+        </div>
+
+        <!-- Nội dung thư viện file -->
+        <div v-else-if="libraryType === 'file'" class="library-files">
+          <v-list>
+            <v-list-item
+              v-for="(file, index) in fileMessages"
+              :key="index"
+              :href="file.url"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <template v-slot:prepend>
+                <v-icon :icon="getFileIcon(file.type)"></v-icon>
+              </template>
+              <div class="font-weight-bold">{{ file.name }}</div>
+            </v-list-item>
+          </v-list>
+        </div>
       </div>
 
       <div class="content__conversation--right"></div>
@@ -538,7 +618,11 @@ export default {
       localStream: null,
       mediaRecorder: null,
       isRecording: false,
-      userIdSelected: ''
+      userIdSelected: '',
+      showImagesLibrary: false,
+      libraryType: 'media',
+      imageMessages: [],
+      fileMessages: []
     }
   },
 
@@ -609,6 +693,19 @@ export default {
         })
 
         this.messages = [...this.messages, ...messages]
+
+        const mediaMessages = this.messages.flatMap((message) =>
+          message.media.map((item) => ({
+            _id: item._id,
+            url: item.url,
+            name: item.name,
+            type: item.type,
+            messageId: message._id
+          }))
+        )
+
+        this.imageMessages = mediaMessages.filter((item) => item.type.includes('image'))
+        this.fileMessages = mediaMessages.filter((item) => item.type.includes('application'))
       } catch (error) {
         console.error(error)
       } finally {
@@ -1020,6 +1117,13 @@ export default {
       } else {
         this.messageInput += '\n'
       }
+    },
+
+    getFileIcon(fileType) {
+      if (fileType.includes('pdf')) return 'mdi-file-pdf-box'
+      if (fileType.includes('word')) return 'mdi-file-word-box'
+      if (fileType.includes('excel')) return 'mdi-file-excel-box'
+      return 'mdi-file-outline'
     }
   },
 
@@ -1438,6 +1542,12 @@ export default {
         .message-wrapper {
           align-items: end;
         }
+
+        .message-content__audio {
+          audio::-webkit-media-controls-panel {
+            background-color: rgb(var(--v-theme-primary));
+          }
+        }
       }
 
       .other-message {
@@ -1602,10 +1712,6 @@ export default {
       audio {
         height: 36px;
       }
-
-      audio::-webkit-media-controls-panel {
-        background-color: rgb(var(--v-theme-primary));
-      }
     }
 
     .message-content__file {
@@ -1625,6 +1731,63 @@ export default {
         font-weight: bold;
         color: var(--text-color);
         text-decoration: none;
+      }
+    }
+  }
+
+  .content__conversation--sub-main {
+    width: 0;
+    overflow: hidden;
+    transition: width 0.2s ease-in;
+    white-space: nowrap;
+  }
+
+  .content__conversation--sub-main.show-library {
+    width: 320px;
+    border-left: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+    padding: -4px;
+    margin-left: 6px;
+  }
+
+  .library-selection {
+    display: flex;
+    height: 28px;
+    margin: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+  }
+
+  .library-selection-item {
+    width: 50%;
+    padding: 0 4px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    opacity: 60%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.2);
+    }
+  }
+
+  .library-selection-item.active {
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+  }
+
+  .library-files {
+    .v-list-item {
+      background: rgb(var(--v-theme-primary));
+      margin: 8px;
+      border-radius: 12px !important;
+
+      .v-list-item__prepend {
+        width: 32px;
       }
     }
   }
