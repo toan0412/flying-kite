@@ -7,6 +7,7 @@
         width="270"
         type="list-item-avatar"
       ></v-skeleton-loader>
+
       <!-- Header info -->
       <div v-else class="content__header__info">
         <MSAvatar
@@ -31,6 +32,7 @@
           @close="showRoomInfoDialog = false"
         />
       </div>
+
       <!-- Header actions -->
       <div class="content__header__actions">
         <!-- Tìm kiếm tin nhắn -->
@@ -54,6 +56,7 @@
                   >
                   </MSTextField>
                 </template>
+
                 <v-list width="350" max-height="450" class="mt-1">
                   <v-list-item>
                     <v-list-subheader class="justify-center">
@@ -93,6 +96,7 @@
             </div>
           </v-expand-x-transition>
         </div>
+
         <div class="content__header__actions__item">
           <v-icon size="20" icon="mdi-magnify" @click="toggleSearchField"></v-icon>
         </div>
@@ -104,6 +108,15 @@
             v-model:visible="showAddMemberDialog"
             @close="showAddMemberDialog = false"
           />
+        </div>
+
+        <div class="content__header__actions__item ml-1 header-action-background">
+          <v-icon
+            @click="showImagesLibrary = !showImagesLibrary"
+            color="white"
+            size="18"
+            icon="mdi-image-multiple-outline"
+          ></v-icon>
         </div>
 
         <div class="content__header__actions__item ml-1 header-action-background">
@@ -121,15 +134,6 @@
             color="white"
             size="20"
             icon="mdi-video-outline"
-          ></v-icon>
-        </div>
-
-        <div class="content__header__actions__item ml-1 header-action-background">
-          <v-icon
-            @click="showImagesLibrary = !showImagesLibrary"
-            color="white"
-            size="18"
-            icon="mdi-image-multiple-outline"
           ></v-icon>
         </div>
       </div>
@@ -569,8 +573,6 @@ import { Picker, EmojiIndex } from 'emoji-mart-vue-fast/src'
 import { differenceInMinutes, parseISO } from 'date-fns'
 import { defineAsyncComponent } from 'vue'
 
-let emojiIndex = new EmojiIndex(data)
-
 export default {
   components: {
     MSTextField,
@@ -604,12 +606,10 @@ export default {
       showUserInfoDialog: false,
       skeletonLoadingConversation: true,
       skeletonLoadingRoomInfo: true,
-      offset: 0,
-      limit: 30,
       messagesSearchList: [],
       filesToUpload: [],
       selectedMessage: {},
-      emojiIndex: emojiIndex,
+      emojiIndex: new EmojiIndex(data),
       showEmojiPicker: false,
       showAddMemberDialog: false,
       showRoomInfoDialog: false,
@@ -622,7 +622,9 @@ export default {
       showImagesLibrary: false,
       libraryType: 'media',
       imageMessages: [],
-      fileMessages: []
+      fileMessages: [],
+      offset: 0,
+      limit: 30
     }
   },
 
@@ -700,7 +702,8 @@ export default {
             url: item.url,
             name: item.name,
             type: item.type,
-            messageId: message._id
+            messageId: message._id,
+            createdAt: message.createdAt
           }))
         )
 
@@ -971,12 +974,10 @@ export default {
         classes.push('other-message')
       }
 
-      // Kiểm tra xem có phải tin nhắn cuối cùng của sender không
       if (this.isLastMessageOfSender(index)) {
         classes.push('first-message')
       }
 
-      // Kiểm tra xem có cần phân cách thời gian không
       if (this.isLastMessageOfTime(index)) {
         classes.push('time-separator')
       }
@@ -1026,8 +1027,8 @@ export default {
       this.showZoomInImage = true
     },
 
+    // Hiển thị ảnh lớn
     openUserInfoDialog(id, type) {
-      console.log(id, type)
       if (type && type !== 'private') return
       this.userIdSelected = id
       this.showUserInfoDialog = true
@@ -1156,6 +1157,30 @@ export default {
       }
 
       this.messages.unshift(message)
+
+      if (message.media && message.media.length > 0) {
+        message.media.forEach((mediaItem) => {
+          if (mediaItem.type.includes('image')) {
+            this.imageMessages.unshift({
+              _id: mediaItem._id,
+              url: mediaItem.url,
+              name: mediaItem.name,
+              type: mediaItem.type,
+              messageId: message._id,
+              createdAt: message.createdAt
+            })
+          } else if (mediaItem.type.includes('application')) {
+            this.fileMessages.unshift({
+              _id: mediaItem._id,
+              url: mediaItem.url,
+              name: mediaItem.name,
+              type: mediaItem.type,
+              messageId: message._id,
+              createdAt: message.createdAt
+            })
+          }
+        })
+      }
     })
 
     ChatService.onDeletedMessageReceived((deletedMessage) => {
@@ -1280,6 +1305,10 @@ export default {
   border-radius: 50%;
   width: 40px;
   height: 40px;
+
+  &:hover {
+    opacity: 90%;
+  }
 }
 
 .header-action-background {
@@ -1462,12 +1491,16 @@ export default {
     width: 1060px;
 
     ol {
-      overflow-y: auto;
+      overflow-y: hidden;
       display: flex;
       flex-direction: column-reverse;
       padding: 12px 8px;
       height: 100%;
       list-style-type: none;
+
+      &:hover {
+        overflow-y: auto;
+      }
 
       .message.time-separator {
         .message-time {

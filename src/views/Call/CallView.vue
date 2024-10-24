@@ -83,16 +83,20 @@ export default {
   methods: {
     async setUpCamera() {
       try {
-        this.localStream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true
-        })
-        if (!this.isVideo) {
+        const devices = await navigator.mediaDevices.enumerateDevices()
+        const hasVideoDevice = devices.some((device) => device.kind === 'videoinput')
+
+        const constraints = hasVideoDevice ? { video: true, audio: true } : { audio: true }
+
+        this.localStream = await navigator.mediaDevices.getUserMedia(constraints)
+
+        if (!hasVideoDevice) {
           this.localStream.getVideoTracks().forEach((track) => (track.enabled = false))
         }
+
         this.$refs.localVideo.srcObject = this.localStream
       } catch (err) {
-        console.error('Lỗi khi truy cập camera: ', err)
+        alert('Lỗi khi truy cập camera, vui lòng thử lại')
       }
     },
 

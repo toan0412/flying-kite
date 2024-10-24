@@ -17,7 +17,7 @@
         <div class="text">Bạn có thể thực hiện một số hành động nhanh để bắt đầu</div>
         <div class="introduction__main__content_body">
           <div class="introduction__main__content_body__item">
-            <v-card class="mx-auto" max-width="400" height="300">
+            <v-card class="mx-auto" width="360" height="320">
               <div class="d-flex justify-center mt-6">
                 <v-img
                   :height="120"
@@ -46,31 +46,31 @@
           </div>
 
           <div class="introduction__main__content_body__item">
-            <v-card class="mx-auto" max-width="400" height="300">
+            <v-card class="mx-auto" width="360" height="320">
               <div class="d-flex justify-center mt-6">
                 <v-img
                   :height="120"
                   :max-width="120"
-                  src="https://firebasestorage.googleapis.com/v0/b/flying-kite-26adc.appspot.com/o/assets%2Fman-suffering.png?alt=media&token=66bc0b22-eb48-4971-9087-d8e2a4ce0f01"
+                  src="https://firebasestorage.googleapis.com/v0/b/flying-kite-26adc.appspot.com/o/assets%2FLovepik_com-401009840-phone-class-cartoon-hand-drawn-wind-red-phone.png?alt=media&token=d60551c5-afff-4446-8a32-6cbe2274d635"
                   cover
                 >
                 </v-img>
               </div>
 
               <v-card-title class="pt-4 d-flex justify-center">
-                Dễ dàng trò chuyện với bất cứ ai
+                Dễ dàng gọi thoại, video cho bất kì ai
               </v-card-title>
 
               <v-card-text>
-                <p>Whitehaven Beach</p>
-
-                <p>Whitsunday Island, Whitsunday Islands</p>
+                <p>
+                  Gọi thoại và video dễ dàng, kết nối với bạn bè và đồng nghiệp mọi lúc mọi nơi.
+                </p>
               </v-card-text>
 
               <v-card-actions>
-                <MSButton>Tin nhắn riêng</MSButton>
+                <MSButton @click="openCallRoom(false)">Gọi thoại</MSButton>
 
-                <MSButton>Tin nhắn nhóm</MSButton>
+                <MSButton @click="openCallRoom(true)">Gọi video</MSButton>
               </v-card-actions>
             </v-card>
           </div>
@@ -89,12 +89,16 @@
     :visible="showCreatePublicRoomDialog"
     @close="showCreatePublicRoomDialog = false"
   />
+  <CreateCallRoomDialog
+    :has-video="hasVideoCall"
+    :visible="showCallRoomDialog"
+    @close="showCallRoomDialog = false"
+  />
 </template>
 
 <script>
 import MSButton from '@/components/CustomButton/MSButton.vue'
 import { useUserInfoStore } from '@/stores/UserInfoStore'
-import { truncate } from 'lodash'
 import { defineAsyncComponent } from 'vue'
 
 export default {
@@ -103,7 +107,9 @@ export default {
       userInfo: {},
       isUserInfoLoaded: false,
       showCreatePrivateRoomDialog: false,
-      showCreatePublicRoomDialog: false
+      showCreatePublicRoomDialog: false,
+      showCallRoomDialog: false,
+      hasVideoCall: false
     }
   },
 
@@ -114,7 +120,17 @@ export default {
     ),
     CreatePublicRoomDialog: defineAsyncComponent(() =>
       import('@/components/Dialog/CreatePublicRoomDialog.vue')
+    ),
+    CreateCallRoomDialog: defineAsyncComponent(() =>
+      import('@/components/Dialog/CreateCallRoomDialog.vue')
     )
+  },
+
+  methods: {
+    openCallRoom(hasVideo) {
+      this.showCallRoomDialog = true
+      this.hasVideoCall = hasVideo
+    }
   },
 
   mounted() {
@@ -227,14 +243,15 @@ export default {
     p {
       display: flex;
       justify-content: center;
+      text-align: center;
     }
   }
 
   .v-card-actions {
     width: 100%;
-    display: flex;
     position: absolute;
-    bottom: 0;
+    bottom: 12px;
+    display: flex;
     justify-content: space-around;
 
     .v-btn {

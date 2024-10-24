@@ -65,10 +65,9 @@
           <span class="sidebar__main__header__item--title">Tin nhắn nhóm mới</span>
         </div>
       </div>
-      <div class="sidebar__main__filter">
-        Cuộc trò chuyện gần đây
-        <v-icon size="14" icon="mdi-chevron-down" />
-      </div>
+
+      <div class="sidebar__main__filter">Cuộc trò chuyện gần đây</div>
+
       <ul class="sidebar__main__content">
         <div v-if="skeletonLoadingConversations">
           <SidebarSkeletonLoading />
@@ -364,6 +363,12 @@ export default {
   .status__bar__full-name {
     font-size: 16px;
     font-weight: bold;
+    display: inline;
+    flex-grow: 0;
+    flex-shrink: 1;
+    overflow: hidden;
+    white-space: pre;
+    text-overflow: ellipsis;
   }
 
   .statusbar__item__status {
@@ -476,6 +481,7 @@ export default {
     font-size: 16px;
     line-height: 22px;
     cursor: inherit;
+    width: 180px;
   }
 
   .main__content_item__message--recently {
