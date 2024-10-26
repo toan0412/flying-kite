@@ -12,8 +12,8 @@
       <div v-else class="content__header__info">
         <MSAvatar
           @click="openUserInfoDialog(roomInfo.receiverId, roomInfo.type)"
-          width="40"
-          height="40"
+          max-width="40"
+          max-height="40"
           cover
           :alt="roomInfo.roomName"
           :src="roomInfo.avatarUrl"
@@ -1844,5 +1844,120 @@ export default {
 
 .message-content__images {
   padding: 0 4px;
+}
+
+@media (max-width: 1200px) {
+  .content__conversation {
+    .content__conversation--main {
+      width: 100%;
+    }
+    .content__conversation--left,
+    .content__conversation--right {
+      display: none;
+    }
+  }
+
+  .content__input {
+    .content__input__content {
+      width: 70%;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .content__header {
+    flex-direction: column;
+    height: auto;
+    padding: 8px;
+
+    .content__header__info {
+      width: 100%;
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+
+    .content__header__actions {
+      width: 100%;
+      justify-content: space-around;
+    }
+  }
+
+  .content__conversation {
+    .content__conversation--main {
+      ol {
+        .message-main {
+          max-width: 90%;
+        }
+      }
+    }
+  }
+
+  .content__input {
+    flex-direction: column;
+    align-items: center;
+
+    .content__input__content {
+      width: 90%;
+      margin-bottom: 10px;
+    }
+
+    .content__input__actions {
+      width: 100%;
+      justify-content: space-around;
+      padding-left: 0;
+    }
+
+    .emoji-mart {
+      width: 90%;
+      height: 250px;
+    }
+  }
+
+  .content__conversation--sub-main.show-library {
+    width: 100%;
+    position: absolute;
+    background: white;
+    height: 100%;
+    z-index: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .content__header {
+    .content__header__info {
+      .content__header__info__name {
+        font-size: 14px;
+      }
+    }
+  }
+
+  .content__conversation {
+    .content__conversation--main {
+      ol {
+        .message-main {
+          max-width: 100%;
+        }
+        .message-content__text {
+          font-size: 12px;
+        }
+      }
+    }
+  }
+
+  .content__input {
+    .content__input__content {
+      width: 100%;
+    }
+
+    .content__input__actions__item {
+      width: 40px;
+      height: 40px;
+    }
+
+    .emoji-mart {
+      width: 100%;
+      height: 200px;
+    }
+  }
 }
 </style>

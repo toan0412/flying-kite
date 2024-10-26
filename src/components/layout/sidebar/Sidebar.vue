@@ -1,141 +1,149 @@
 <template>
-  <!-- Sidebar -->
-  <div class="sidebar">
-    <div class="sidebar-search pt-3 pl-3">
-      <MSTextField
-        v-model="searchValue"
-        width="298"
-        append-inner-icon="mdi-magnify"
-        density="compact"
-        variant="solo"
-        hide-details
-        single-line
-        placeholder="Tìm kiếm"
-        clear-icon="mdi-close-circle-outline"
-        clearable
-      >
-      </MSTextField>
-    </div>
-    <!-- Status bar -->
-    <div class="sidebar__statusbar">
-      <div v-if="skeletonLoadingUserInfo" class="sidebar__statusbar__item">
-        <v-skeleton-loader width="240" type="list-item-avatar"></v-skeleton-loader>
-      </div>
+  <div class="sidebar-container">
+    <!-- Add this button for mobile -->
+    <button class="sidebar-toggle" @click="toggleSidebar">
+      <v-icon>mdi-menu</v-icon>
+    </button>
 
-      <div v-if="!skeletonLoadingUserInfo" class="sidebar__statusbar__item">
-        <v-avatar size="54">
-          <v-img :alt="userInfo.email" :src="userInfo.avatarUrl"></v-img>
-        </v-avatar>
-        <div class="pl-3">
-          <div class="status__bar__full-name">
-            {{ userInfo.fullName }}
+    <!-- Wrap the existing sidebar content in a new div -->
+    <div class="sidebar" :class="{ 'sidebar-open': isSidebarOpen }">
+      <div class="sidebar-search pt-3 pl-3">
+        <MSTextField
+          v-model="searchValue"
+          width="298"
+          append-inner-icon="mdi-magnify"
+          density="compact"
+          variant="solo"
+          hide-details
+          single-line
+          placeholder="Tìm kiếm"
+          clear-icon="mdi-close-circle-outline"
+          clearable
+        >
+        </MSTextField>
+      </div>
+      <!-- Status bar -->
+      <div class="sidebar__statusbar">
+        <div v-if="skeletonLoadingUserInfo" class="sidebar__statusbar__item">
+          <v-skeleton-loader width="240" type="list-item-avatar"></v-skeleton-loader>
+        </div>
+
+        <div v-if="!skeletonLoadingUserInfo" class="sidebar__statusbar__item">
+          <v-avatar size="54">
+            <v-img :alt="userInfo.email" :src="userInfo.avatarUrl"></v-img>
+          </v-avatar>
+          <div class="pl-3">
+            <div class="status__bar__full-name">
+              {{ userInfo.fullName }}
+            </div>
+            <div class="statusbar__item__status">
+              {{ userInfo.status }}
+            </div>
           </div>
-          <div class="statusbar__item__status">
-            {{ userInfo.status }}
+        </div>
+        <div v-if="!skeletonLoadingUserInfo" class="sidebar__statusbar__item">
+          <v-menu transition="slide-x-transition" offset-y>
+            <template v-slot:activator="{ props }">
+              <v-icon v-bind="props" class="mr-2">mdi-cog</v-icon>
+            </template>
+
+            <v-list>
+              <v-list-item @click="showSettingDialog = true">
+                <span>Cài đặt</span>
+              </v-list-item>
+              <v-list-item @click="logout">
+                <span class="text-red-lighten-1">Đăng xuất</span>
+              </v-list-item>
+            </v-list>
+          </v-menu>
+        </div>
+      </div>
+      <!--Sidebar-content -->
+      <div class="sidebar__main">
+        <div class="sidebar__main__header">
+          <div @click.stop="showPrivateRoomDialog = true" class="sidebar__main__header__item">
+            <v-icon icon="mdi-account-plus-outline"></v-icon>
+            <span class="sidebar__main__header__item--title">Tin nhắn riêng mới</span>
+          </div>
+
+          <div @click.stop="showPublicRoomDialog = true" class="sidebar__main__header__item">
+            <v-icon icon="mdi-account-multiple-plus-outline"></v-icon>
+            <span class="sidebar__main__header__item--title">Tin nhắn nhóm mới</span>
           </div>
         </div>
-      </div>
-      <div v-if="!skeletonLoadingUserInfo" class="sidebar__statusbar__item">
-        <v-menu transition="slide-x-transition" offset-y>
-          <template v-slot:activator="{ props }">
-            <v-icon v-bind="props" class="mr-2">mdi-cog</v-icon>
-          </template>
 
-          <v-list>
-            <v-list-item @click="showSettingDialog = true">
-              <span>Cài đặt</span>
-            </v-list-item>
-            <v-list-item @click="logout">
-              <span class="text-red-lighten-1">Đăng xuất</span>
-            </v-list-item>
-          </v-list>
-        </v-menu>
-      </div>
-    </div>
-    <!--Sidebar-content -->
-    <div class="sidebar__main">
-      <div class="sidebar__main__header">
-        <div @click.stop="showPrivateRoomDialog = true" class="sidebar__main__header__item">
-          <v-icon icon="mdi-account-plus-outline"></v-icon>
-          <span class="sidebar__main__header__item--title">Tin nhắn riêng mới</span>
-        </div>
+        <div class="sidebar__main__filter">Cuộc trò chuyện gần đây</div>
 
-        <div @click.stop="showPublicRoomDialog = true" class="sidebar__main__header__item">
-          <v-icon icon="mdi-account-multiple-plus-outline"></v-icon>
-          <span class="sidebar__main__header__item--title">Tin nhắn nhóm mới</span>
-        </div>
-      </div>
-
-      <div class="sidebar__main__filter">Cuộc trò chuyện gần đây</div>
-
-      <ul class="sidebar__main__content">
-        <div v-if="skeletonLoadingConversations">
-          <SidebarSkeletonLoading />
-        </div>
-        <div v-else-if="!skeletonLoadingConversations && !rooms.length">
-          <EmptyCard
-            image-width="300"
-            title="Bạn chưa có cuộc trò chuyện nào"
-            subtitle="Hãy bắt đầu tạo cuộc trò chuyện riêng mới hoặc tạo nhóm mới"
-          />
-        </div>
-        <div v-else>
-          <li
-            @click="handleChangeRoom(conservation)"
-            v-for="conservation in searchRoomsList.length ? searchRoomsList : rooms"
-            :key="conservation.id"
-            class="sidebar__main__content__item"
-          >
-            <div class="main__content_item__avatar">
-              <MSAvatar
-                @click.stop="openUserInfoDialog(conservation)"
-                width="40"
-                height="40"
-                cover
-                alt="John"
-                :src="conservation.avatarUrl"
-              ></MSAvatar>
-            </div>
-            <div class="main__content_item--wrap">
-              <div class="main__content_item__fullname">
-                {{ conservation.roomName }}
+        <ul class="sidebar__main__content">
+          <div v-if="skeletonLoadingConversations">
+            <SidebarSkeletonLoading />
+          </div>
+          <div v-else-if="!skeletonLoadingConversations && !rooms.length">
+            <EmptyCard
+              image-width="300"
+              title="Bạn chưa có cuộc trò chuyện nào"
+              subtitle="Hãy bắt đầu tạo cuộc trò chuyện riêng mới hoặc tạo nhóm mới"
+            />
+          </div>
+          <div v-else>
+            <li
+              @click="handleChangeRoom(conservation)"
+              v-for="conservation in searchRoomsList.length ? searchRoomsList : rooms"
+              :key="conservation.id"
+              class="sidebar__main__content__item"
+            >
+              <div class="main__content_item__avatar">
+                <MSAvatar
+                  @click.stop="openUserInfoDialog(conservation)"
+                  width="40"
+                  height="40"
+                  cover
+                  alt="John"
+                  :src="conservation.avatarUrl"
+                ></MSAvatar>
               </div>
-              <div class="main__content_item__message--recently">
-                {{ conservation.lastMessage }}
+              <div class="main__content_item--wrap">
+                <div class="main__content_item__fullname">
+                  {{ conservation.roomName }}
+                </div>
+                <div class="main__content_item__message--recently">
+                  {{ conservation.lastMessage }}
+                </div>
               </div>
-            </div>
-            <div class="d-flex position-absolute align-center right-0 top-0 pt-2 pr-2">
-              <p class="texting-time pr-1">
-                {{
-                  conservation.lastMessageAt ? convertToDayOfWeek(conservation.lastMessageAt) : ''
-                }}
-              </p>
-            </div>
-          </li>
-        </div>
-      </ul>
+              <div class="d-flex position-absolute align-center right-0 top-0 pt-2 pr-2">
+                <p class="texting-time pr-1">
+                  {{
+                    conservation.lastMessageAt ? convertToDayOfWeek(conservation.lastMessageAt) : ''
+                  }}
+                </p>
+              </div>
+            </li>
+          </div>
+        </ul>
+      </div>
+
+      <!-- Dialogs -->
+      <CreatePublicRoomDialog
+        v-model:visible="showPublicRoomDialog"
+        @close="showPublicRoomDialog = false"
+      />
+
+      <CreatePrivateRoomDialog
+        v-model:visible="showPrivateRoomDialog"
+        @close="showPrivateRoomDialog = false"
+      />
+
+      <SettingDialog v-model:visible="showSettingDialog" @close="showSettingDialog = false" />
+
+      <UserInfoDialog
+        :userId="idSelected"
+        :visible="showUserInfoDialog"
+        @close="showUserInfoDialog = false"
+      ></UserInfoDialog>
     </div>
-
-    <!-- Dialogs -->
-    <CreatePublicRoomDialog
-      v-model:visible="showPublicRoomDialog"
-      @close="showPublicRoomDialog = false"
-    />
-
-    <CreatePrivateRoomDialog
-      v-model:visible="showPrivateRoomDialog"
-      @close="showPrivateRoomDialog = false"
-    />
-
-    <SettingDialog v-model:visible="showSettingDialog" @close="showSettingDialog = false" />
-
-    <UserInfoDialog
-      :userId="idSelected"
-      :visible="showUserInfoDialog"
-      @close="showUserInfoDialog = false"
-    ></UserInfoDialog>
   </div>
 </template>
+
 <script>
 import MSTextField from '@/components/CustomTextField/MSTextField.vue'
 import MSAvatar from '@/components/CustomAvatar/MSAvatar.vue'
@@ -167,7 +175,8 @@ export default {
       showSettingDialog: false,
       searchRoomsList: [],
       showUserInfoDialog: false,
-      idSelected: null
+      idSelected: null,
+      isSidebarOpen: false
     }
   },
   components: {
@@ -185,7 +194,6 @@ export default {
     UserInfoDialog: defineAsyncComponent(() => import('@/components/Dialog/UserInfoDialog.vue'))
   },
   methods: {
-    //Láy thông tin người dùng
     async fetchUserInfo() {
       await getUserAPI().then((res) => {
         this.userInfo = res.data.user
@@ -195,7 +203,6 @@ export default {
       })
     },
 
-    //Lấy các cuộc trò chuyện
     async fetchConservations() {
       await getConservationsAPI()
         .then((res) => {
@@ -211,7 +218,6 @@ export default {
       return convertToDayOfWeek(dateString)
     },
 
-    //Hàm tìm kiếm phòng
     debounceSearch: lodash.debounce(function (searchValue) {
       this.handleSearchRoom(searchValue)
     }, 300),
@@ -229,7 +235,6 @@ export default {
       })
     },
 
-    //Xử lý onclick vào thẻ li trong sidebar
     async handleChangeRoom(room) {
       const roomInfoStore = useRoomInfoStore()
 
@@ -262,16 +267,16 @@ export default {
     },
 
     openSettings() {
-      //open setting
       console.log('open settings')
+    },
+
+    toggleSidebar() {
+      this.isSidebarOpen = !this.isSidebarOpen
     }
   },
 
   async created() {
-    // Chạy fetchUserInfo và fetchConservations đồng thời
     await Promise.all([this.fetchUserInfo(), this.fetchConservations()])
-
-    // Sau khi cả hai phương thức hoàn tất, tham gia phòng
     ChatService.joinRoom(this.userInfo._id)
   },
 
@@ -285,7 +290,6 @@ export default {
       )
 
       if (isUpdatedRoomHasUserId) {
-        // Nếu người dùng vẫn là thành viên, cập nhật hoặc thêm phòng
         if (roomIndex !== -1) {
           this.rooms.splice(roomIndex, 1)
           this.rooms.unshift(updatedRoom)
@@ -293,7 +297,6 @@ export default {
           this.rooms.unshift(updatedRoom)
         }
       } else {
-        // Nếu người dùng không còn là thành viên, xóa phòng khỏi danh sách
         if (roomIndex !== -1) {
           this.rooms.splice(roomIndex, 1)
         }
@@ -332,6 +335,25 @@ export default {
 </script>
 
 <style lang="scss">
+.sidebar-container {
+  position: relative;
+}
+
+.sidebar-toggle {
+  display: none;
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 1000;
+  background-color: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-secondary));
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+}
+
 .sidebar {
   position: relative;
   width: 322px;
@@ -512,5 +534,26 @@ export default {
 .texting-time {
   font-size: 12px;
   color: var(--lighter-text-color);
+}
+
+@media (max-width: 768px) {
+  .sidebar-toggle {
+    display: block;
+  }
+
+  .sidebar {
+    position: fixed;
+    left: -322px;
+    top: 0;
+    bottom: 0;
+    transition: left 0.3s ease-in-out;
+    z-index: 999;
+  }
+
+  .sidebar-open {
+    left: 0;
+    background-color: rgb(var(--v-theme-primary));
+    border-right: 1px solid var(--border-color);
+  }
 }
 </style>

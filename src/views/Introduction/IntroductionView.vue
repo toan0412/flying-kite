@@ -228,6 +228,8 @@ export default {
 
 .introduction__main__content_body {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .introduction__main__content_body__item {
@@ -280,5 +282,73 @@ export default {
   font-size: 22px;
   color: var(--text-color);
   margin: 25px 10px;
+  text-align: center;
+}
+
+@media (max-width: 1024px) {
+  .introduction__main {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .introduction__main__content__header__gretting {
+    font-size: 32px;
+  }
+
+  .text {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 768px) {
+  .introduction__main__content__header {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .introduction__main__content__header__gretting {
+    padding-left: 0;
+    margin-top: 15px;
+    font-size: 28px;
+  }
+
+  .introduction__main__content_body__item {
+    width: 100%;
+  }
+
+  .v-card {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .introduction__main {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .introduction__main__content__header__gretting {
+    font-size: 24px;
+  }
+
+  .text {
+    font-size: 16px;
+  }
+
+  .introduction__main__footer {
+    font-size: 13px;
+  }
+
+  .v-card-title {
+    font-size: 18px !important;
+  }
+
+  .v-card-text {
+    font-size: 14px;
+  }
+
+  .v-btn {
+    font-size: 12px !important;
+  }
 }
 </style>
