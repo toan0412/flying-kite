@@ -15,7 +15,6 @@ class PeerService {
     this.peer = new Peer(userId, {
       host: import.meta.env.VITE_URL,
       port: 443,
-      secure: true
     })
 
     this.peer.on('open', (id) => {

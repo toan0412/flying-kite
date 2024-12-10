@@ -14,6 +14,8 @@ router.post('/auth/send-email', asyncHandler(accessController.sendVerificationEm
 router.post('/auth/verify-otp', asyncHandler(accessController.verifyOTP))
 
 router.use(authentication)
+router.post('/users/block-user', asyncHandler(userController.blockUser))
+router.post('/users/unblock-user', asyncHandler(userController.unblockUser))
 router.get('/users', asyncHandler(userController.getAllUsers))
 router.get('/users/info', asyncHandler(userController.getUser))
 router.get('/users/:id', asyncHandler(userController.getUserById))

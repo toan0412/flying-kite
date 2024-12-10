@@ -34,6 +34,11 @@
             <v-icon icon="mdi-magic-staff"></v-icon>
             <div class="font-weight-bold ml-2">Giao diện</div>
           </v-list-item>
+
+          <v-list-item @click="changeIndexSetting(5)">
+            <v-icon icon="mdi-align-vertical-bottom"></v-icon>
+            <div class="font-weight-bold ml-2">Thống kê</div>
+          </v-list-item>
         </v-list>
 
         <!--Main Card-->
@@ -225,6 +230,16 @@
             </div>
           </div>
         </div>
+
+        <!-- Setting 5-->
+        <div v-if="indexSetting == 5" class="setting-dialog__body__main">
+          <div class="setting-dialog__body__content">
+            <div class="text-subtitle-1 font-weight-bold opacity-70 pl-2">Thống kê</div>
+            <div v-if="statistics && statistics.length > 0">
+              <BarChart :data="chartData" :options="chartOptions" :style="{ height: '100rem' }" />
+            </div>
+          </div>
+        </div>
       </div>
 
       <ValidateEmailDialog
@@ -241,7 +256,21 @@ import MSAvatar from '@/components/CustomAvatar/MSAvatar.vue'
 import MSButton from '@/components/CustomButton/MSButton.vue'
 import { useUserInfoStore } from '@/stores/UserInfoStore'
 import { updateUserAPI, sendVerificationEmailAPI } from '@/services/UserServices'
+import { messageStatisticsAPI } from '@/services/MessageService'
 import ValidateEmailDialog from './ValidateEmailDialog.vue'
+import { useConversationsStore } from '@/stores/ConversationsStore'
+import { Bar } from 'vue-chartjs'
+import {
+  Chart as ChartJS,
+  Title,
+  Tooltip,
+  Legend,
+  BarElement,
+  CategoryScale,
+  LinearScale
+} from 'chart.js'
+
+ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
 export default {
   data() {
@@ -257,6 +286,9 @@ export default {
       currentTheme: '',
       indexSetting: 1,
       errorMessage: '',
+      statistics: [],
+      chartData: {},
+      chartOptions: {},
       themes: [
         {
           id: 0,
@@ -311,19 +343,74 @@ export default {
   components: {
     MSAvatar,
     MSButton,
-    ValidateEmailDialog
+    ValidateEmailDialog,
+    BarChart: Bar
   },
 
   computed: {
+    // Xử lý hiển thị Dialog
     show: {
       get() {
         return this.visible
       },
       set(value) {
         if (!value) {
-          this.$emit('close')
+          this.$emit('close') // Đóng dialog
         } else {
-          this.$emit('input', value)
+          this.$emit('input', value) // Mở dialog
+        }
+      }
+    },
+
+    // Tính toán dữ liệu biểu đồ
+    chartData() {
+      // Kiểm tra nếu statistics có giá trị hợp lệ
+      if (!Array.isArray(this.statistics) || this.statistics.length === 0) return {}
+
+      const labels = this.statistics.map((item) => item.roomName)
+      const data = this.statistics.map((item) => item.messageCount)
+
+      return {
+        labels,
+        datasets: [
+          {
+            label: 'Số lượng tin nhắn',
+            data,
+            backgroundColor: '#42A5F5',
+            borderColor: '#1E88E5',
+            borderWidth: 1
+          }
+        ]
+      }
+    },
+
+    // Tùy chọn cho biểu đồ
+    chartOptions() {
+      const maxMessageCount = this.statistics.length
+        ? Math.max(...this.statistics.map((item) => item.messageCount)) + 20
+        : 100 // Đặt giá trị mặc định nếu không có dữ liệu
+
+      return {
+        indexAxis: 'x',
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'top'
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                const room = this.statistics[context.dataIndex]
+                return `${room.roomName}: ${context.raw} tin nhắn`
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            max: maxMessageCount
+          }
         }
       }
     }
@@ -334,7 +421,6 @@ export default {
       const userInfoStore = useUserInfoStore()
       this.userInfo = userInfoStore.userInfo
     },
-
     toggleEditNameField() {
       ;(this.editableName = !this.editableName), (this.editName = '')
     },
@@ -376,6 +462,19 @@ export default {
       this.$vuetify.theme.global.name = this.currentTheme
       localStorage.setItem('app_theme', this.currentTheme)
       this.show = false
+    },
+
+    async countMessage() {
+      const res = await messageStatisticsAPI()
+      const conversationsStore = useConversationsStore()
+      const conversations = conversationsStore.conversations
+      this.statistics = res.data.map((item1) => {
+        const matchingItem = conversations.find((item2) => item2._id === item1.roomId)
+        return {
+          ...item1,
+          ...(matchingItem || {}) // Thêm thông tin từ mảng 2 nếu tìm thấy
+        }
+      })
     },
 
     changeIndexSetting(index) {
@@ -426,6 +525,12 @@ export default {
         this.isEdit = true
       } else {
         this.isEdit = false
+      }
+    },
+
+    indexSetting(newVal) {
+      if (newVal && newVal == 5) {
+        this.countMessage()
       }
     }
   }

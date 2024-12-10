@@ -49,6 +49,14 @@ const verifyEmailOTP = (data) => {
   return axiosInstance.post('v1/api/auth/verify-otp', data)
 }
 
+const blockFriendAPI = (data) => {
+  return axiosInstance.post('v1/api/users/block-user', data)
+}
+
+const unblockFriendAPI = (data) => {
+  return axiosInstance.post('v1/api/users/unblock-user', data)
+}
+
 export {
   loginAPI,
   signUpAPI,
@@ -61,5 +69,7 @@ export {
   loginWithGoogleAPI,
   sendVerificationEmailAPI,
   verifyEmailOTP,
-  changePasswordAPI
+  changePasswordAPI,
+  blockFriendAPI,
+  unblockFriendAPI
 }

@@ -18,4 +18,8 @@ const searchMessageByRoomAPI = (roomId, searchString) => {
   })
 }
 
-export { getConservationByRoomIdAPI, searchMessageByRoomAPI }
+const messageStatisticsAPI = () => {
+  return axiosInstance.get('v1/api/messages/thongke')
+}
+
+export { getConservationByRoomIdAPI, searchMessageByRoomAPI, messageStatisticsAPI }

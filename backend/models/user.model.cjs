@@ -53,6 +53,12 @@ const userSchema = new Schema(
         ref: 'Users'
       }
     ],
+    blocked: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Users'
+      }
+    ],
     roles: {
       type: Array,
       default: []

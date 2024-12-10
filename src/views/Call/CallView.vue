@@ -39,6 +39,11 @@
         <v-btn v-else size="42" @click="toggleAudio" icon="mdi-microphone-off"></v-btn>
         <v-btn v-if="isVideo" size="42" @click="toggleCamera" icon="mdi-video-outline"></v-btn>
         <v-btn v-else size="42" @click="toggleCamera" icon="mdi-video-off-outline"></v-btn>
+        <v-btn
+          size="42"
+          :icon="isScreenSharing ? 'mdi-monitor-off' : 'mdi-monitor'"
+          @click="toggleScreenShare"
+        ></v-btn>
         <v-btn size="42" icon="mdi-phone-hangup" color="red-darken-1" @click="endCall"></v-btn>
       </div>
     </div>
@@ -59,9 +64,11 @@ export default {
       peer: null,
       remotePeerIds: [],
       localStream: null,
+      screenStream: null,
       isCaller: false,
       isAudio: true,
-      isVideo: true
+      isVideo: true,
+      isScreenSharing: false
     }
   },
 
@@ -100,6 +107,39 @@ export default {
       }
     },
 
+    async toggleScreenShare() {
+      if (this.isScreenSharing) {
+        // Stop screen sharing
+        const videoTrack = this.localStream.getVideoTracks()[0]
+        const sender = this.peer.connections[
+          Object.keys(this.peer.connections)[0]
+        ][0].peerConnection
+          .getSenders()
+          .find((s) => s.track.kind === 'video')
+        if (sender) sender.replaceTrack(videoTrack)
+        this.isScreenSharing = false
+      } else {
+        try {
+          this.screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true })
+          const screenTrack = this.screenStream.getVideoTracks()[0]
+
+          const sender = this.peer.connections[
+            Object.keys(this.peer.connections)[0]
+          ][0].peerConnection
+            .getSenders()
+            .find((s) => s.track.kind === 'video')
+          if (sender) sender.replaceTrack(screenTrack)
+
+          screenTrack.onended = () => {
+            this.toggleScreenShare()
+          }
+          this.isScreenSharing = true
+        } catch (err) {
+          console.error('Lỗi khi chia sẻ màn hình:', err)
+        }
+      }
+    },
+
     startCall(peerId) {
       if (!peerId) return
       try {
@@ -129,10 +169,12 @@ export default {
       if (this.localStream) {
         this.localStream.getTracks().forEach((track) => track.stop())
       }
+      if (this.screenStream) {
+        this.screenStream.getTracks().forEach((track) => track.stop())
+      }
       if (this.peer) {
         this.peer.destroy()
       }
-      // Add logic to notify other users about call ending
     },
 
     toggleAudio() {

@@ -23,6 +23,13 @@ class MessageController {
     }).send(res)
   }
 
+  countMessages = async (req, res, next) => {
+    new SuccessResponse({
+      message: 'Thống kê tin nhắn thành công',
+      data: await MessageService.getMessagesCountByRoom(req)
+    }).send(res)
+  }
+
 }
 
 module.exports = new MessageController();
