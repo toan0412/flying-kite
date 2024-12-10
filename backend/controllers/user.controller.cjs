@@ -32,6 +32,18 @@ class UserController {
     }).send(res)
   }
 
+  blockUser = async (req, res, next) => {
+    new SuccessResponse({
+      data: await UserService.unfriendUser(req)
+    }).send(res)
+  }
+
+  unblockUser = async (req, res, next) => {
+    new SuccessResponse({
+      data: await UserService.unblockUser(req)
+    }).send(res)
+  }
+
   changeUserPassword = async (req, res, next) => {
     new SuccessResponse({
       data: await UserService.changeUserPassword(req.body)

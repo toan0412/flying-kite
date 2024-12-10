@@ -27,7 +27,7 @@ class UserService {
       throw new NotFoundError('Người dùng không tồn tại')
     }
     return getInfoData({
-      field: ['_id', 'fullName', 'email', 'avatarUrl', 'status', 'isEmailVerified'],
+      field: ['_id', 'fullName', 'email', 'avatarUrl', 'status', 'isEmailVerified', 'blocks', 'blocked'],
       object: user
     })
   }
@@ -92,6 +92,66 @@ class UserService {
     await existUser.save()
 
     return existUser
+  }
+
+  unfriendUser = async (req) => {
+    const userId = req.headers['x-client-id']
+    const userToUnfriend = req.body.userIdToBlock
+
+    const userInfo = await UserModel.findById(userId)
+    const userToBlockInfo = await UserModel.findById(userToUnfriend)
+
+    if (!userInfo || !userToBlockInfo) {
+      throw new NotFoundError('Người dùng không tồn tại')
+    }
+
+    if (userInfo.blocks.includes(userToUnfriend)) {
+      throw new BadRequestError('Người dùng đã trong danh sách chặn')
+    }
+
+    if (userToBlockInfo.blocked.includes(userId)) {
+      throw new BadRequestError('Người dùng đã trong danh sách bị chặn')
+    }
+
+    userInfo.blocks.push(userToUnfriend)
+    userToBlockInfo.blocked.push(userId)
+
+    await userInfo.save()
+    await userToBlockInfo.save()
+
+    return userInfo
+  }
+
+  unblockUser = async (req) => {
+    const userId = req.headers['x-client-id']
+    const userIdToUnblock = req.body.userIdToUnblock
+
+    const userInfo = await UserModel.findById(userId)
+    const userToBlockInfo = await UserModel.findById(userIdToUnblock)
+
+    if (!userInfo && !userToBlockInfo) {
+      throw new NotFoundError('Người dùng không tồn tại')
+    }
+
+    if (!userInfo.blocks.includes(userIdToUnblock)) {
+      throw new NotFoundError('Người dùng không trong danh sách chặn')
+    }
+
+    if (!userToBlockInfo.blocked.includes(userId)) {
+      throw new NotFoundError('Người dùng không trong danh sách bị chặn')
+    }
+
+    const index = userInfo.blocks.indexOf(userIdToUnblock)
+    const index2 = userToBlockInfo.blocked.indexOf(userId)
+    if (index !== -1 && index2 !== -1) {
+      userInfo.blocks.splice(index, 1)
+      userToBlockInfo.blocked.splice(index2, 1)
+    }
+
+    await userInfo.save()
+    await userToBlockInfo.save()
+
+    return userInfo
   }
 
   // Lấy danh sách tất cả người dùng với các trường được chọn

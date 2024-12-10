@@ -852,4 +852,103 @@ a {
   background-image: linear-gradient(rgb(255 235 233), rgb(255 235 233));
   border: 1px solid rgb(255 129 130 / 40%);
 }
+
+@media (max-width: 1024px) {
+  .login-wrapper {
+    flex-direction: column;
+  }
+
+  .content-left-wrapper {
+    width: 100%;
+    height: 40vh;
+  }
+
+  .content-right-wrapper {
+    width: 100%;
+    height: 60vh;
+  }
+
+  .block-1 {
+    padding: 20px;
+  }
+
+  .block-2 {
+    padding: 20px;
+  }
+
+  .heading-text {
+    font-size: 80px;
+  }
+
+  .sub-heading-text {
+    font-size: 18px;
+    line-height: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .content-left-wrapper {
+    display: none;
+  }
+
+  .content-right-wrapper {
+    height: 100vh;
+  }
+
+  .form-wrapper {
+    max-width: 100%;
+    padding: 0 20px;
+  }
+
+  .font_mainheading {
+    font-size: 32px;
+  }
+
+  .desc_label_general {
+    font-size: 16px;
+  }
+
+  .large-button {
+    height: 50px;
+    font-size: 16px;
+  }
+
+  .google-login-button {
+    height: 40px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .block-2 {
+    padding: 10px;
+  }
+
+  .font_mainheading {
+    font-size: 28px;
+  }
+
+  .desc_label_general {
+    font-size: 14px;
+  }
+
+  .input_register {
+    height: 40px;
+    font-size: 14px;
+  }
+
+  .large-button {
+    height: 45px;
+    font-size: 14px;
+  }
+
+  .google-login-button {
+    height: 35px;
+    font-size: 12px;
+  }
+
+  .small-link {
+    font-size: 12px;
+  }
+}
 </style>

@@ -55,7 +55,6 @@ class MessageService {
   // Tìm kiếm tin nhắn theo phòng
   searchMessagesByRoom = async (req) => {
     const { roomId, searchString } = req.query
-    console.log(roomId, searchString)
     // 0. Kiểm tra phòng có tồn tại không
     const existRoom = await RoomModel.findById(roomId)
 
@@ -86,6 +85,33 @@ class MessageService {
 
     return lastMessage.toString() === message.createdAt.toString()
   }
+
+  getMessagesCountByRoom = async (req) => {
+    try {
+      const result = await MessageModel.aggregate([
+        {
+          $group: {
+            _id: "$roomId", // Group by roomId
+            messageCount: { $sum: 1 }, // Count messages
+          },
+        },
+        {
+          $project: {
+            _id: 0, // Exclude MongoDB's default `_id` field
+            roomId: "$_id", // Rename `_id` to `roomId`
+            messageCount: 1, // Keep `messageCount` field
+          },
+        },
+        { $sort: { messageCount: -1 } }, // Sort by message count
+      ]);
+
+      return result;
+    } catch (error) {
+      console.error("Error fetching message statistics:", error);
+      throw error;
+    }
+  };
+
 }
 
 module.exports = new MessageService()

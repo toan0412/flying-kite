@@ -6,7 +6,7 @@ const {
   db: { name }
 } = require('../configs/config.mongodb.cjs')
 
-const connectString = `mongodb+srv://${user}:${password}@${url}/${name}?retryWrites=true&w=majority&appName=${appname}`
+const connectString = `mongodb+srv://truongtoan00189:hAWT4jvSPyzMs9C0@cluster0.il30m.mongodb.net/realtimechat?retryWrites=true&w=majority&appName=Cluster0`
 
 class Database {
   constructor() {

@@ -7,6 +7,7 @@
         width="270"
         type="list-item-avatar"
       ></v-skeleton-loader>
+
       <!-- Header info -->
       <div v-else class="content__header__info">
         <MSAvatar
@@ -24,6 +25,15 @@
           icon="mdi-cog"
           @click="showRoomInfoDialog = true"
         ></v-icon>
+
+        <v-icon
+          class="pl-2"
+          v-else-if="!isBlocker && !isBlocked"
+          icon="mdi-account-remove-outline"
+          color="red-lighten-1"
+          @click="showUnfriendDialog"
+        ></v-icon>
+
         <RoomInfoDialog
           @openAddMemberDialog="openAddMemberDialog"
           :visible="showRoomInfoDialog"
@@ -31,6 +41,21 @@
           @close="showRoomInfoDialog = false"
         />
       </div>
+
+      <div v-if="isBlocker" class="blocking d-flex justify-center flex-column align-center">
+        <div class="blocking-header">Bạn đã chặn người dùng này</div>
+        <div class="blocking-body">
+          Các bạn sẽ không thể nhắn tin hay gọi điện cho nhau trong đoạn chat này
+        </div>
+        <div class="blocking-action">
+          <MSButton @click="showUnblockFriendDialog" color="grey-lighten-2">Bỏ chặn</MSButton>
+        </div>
+      </div>
+      <div v-if="isBlocked" class="blocking d-flex justify-center flex-column align-center">
+        <div class="blocking-header">Bạn đã bị người dùng này chặn</div>
+        <div class="blocking-body">Vui lòng hãy hành xử đúng mực trên môi trường mạng xã hội</div>
+      </div>
+
       <!-- Header actions -->
       <div class="content__header__actions">
         <!-- Tìm kiếm tin nhắn -->
@@ -54,6 +79,7 @@
                   >
                   </MSTextField>
                 </template>
+
                 <v-list width="350" max-height="450" class="mt-1">
                   <v-list-item>
                     <v-list-subheader class="justify-center">
@@ -93,8 +119,14 @@
             </div>
           </v-expand-x-transition>
         </div>
+
         <div class="content__header__actions__item">
-          <v-icon size="20" icon="mdi-magnify" @click="toggleSearchField"></v-icon>
+          <v-icon
+            :disabled="isBlocked || isBlocker"
+            size="20"
+            icon="mdi-magnify"
+            @click="toggleSearchField"
+          ></v-icon>
         </div>
 
         <div v-if="roomInfo.type == 'public'" class="content__header__actions__item">
@@ -108,7 +140,17 @@
 
         <div class="content__header__actions__item ml-1 header-action-background">
           <v-icon
+            @click="showImagesLibrary = !showImagesLibrary"
+            :disabled="isBlocked || isBlocker"
+            color="white"
+            size="18"
+            icon="mdi-image-multiple-outline"
+          ></v-icon>
+        </div>
+        <div class="content__header__actions__item ml-1 header-action-background">
+          <v-icon
             @click="openVideoCall(false)"
+            :disabled="isBlocked || isBlocker"
             color="white"
             size="20"
             icon="mdi-phone-outline"
@@ -118,18 +160,10 @@
         <div class="content__header__actions__item ml-1 header-action-background">
           <v-icon
             @click="openVideoCall(true)"
+            :disabled="isBlocked || isBlocker"
             color="white"
             size="20"
             icon="mdi-video-outline"
-          ></v-icon>
-        </div>
-
-        <div class="content__header__actions__item ml-1 header-action-background">
-          <v-icon
-            @click="showImagesLibrary = !showImagesLibrary"
-            color="white"
-            size="18"
-            icon="mdi-image-multiple-outline"
           ></v-icon>
         </div>
       </div>
@@ -470,6 +504,7 @@
           class="custom-textfield"
           v-model="messageInput"
           height="50"
+          :disabled="isBlocker || isBlocked"
           @keydown.enter.prevent="handleEnterFromMessageInput"
           rows="1"
           auto-grow
@@ -501,12 +536,20 @@
           >
           </v-progress-circular>
 
-          <v-icon v-else size="20" @click="sendMessage" icon="mdi-send-variant-outline"> </v-icon>
+          <v-icon
+            :disabled="isBlocked || isBlocker"
+            v-else
+            size="20"
+            @click="sendMessage"
+            icon="mdi-send-variant-outline"
+          >
+          </v-icon>
         </div>
         <div v-if="!isTyping" class="content__input__actions__item">
           <v-icon
             v-if="!isRecording"
             @click="startRecording"
+            :disabled="isBlocked || isBlocker"
             size="20"
             icon="mdi-microphone-outline"
           />
@@ -526,7 +569,12 @@
             multiple
             @change="handleChangePreviewImages"
           />
-          <v-icon @click="triggerImageFileInput" size="20" icon="mdi-paperclip" />
+          <v-icon
+            :disabled="isBlocked || isBlocker"
+            @click="triggerImageFileInput"
+            size="20"
+            icon="mdi-paperclip"
+          />
         </div>
 
         <!-- <div v-if="!isTyping" class="content__input__actions__item">
@@ -545,6 +593,20 @@
     @response="handleResponseDeleteMessageDialog"
   />
 
+  <ConfirmDialog
+    ref="unfriendDialog"
+    title="Chặn bạn bè"
+    message="Bạn có chắc chắn muốn chặn người này không?, bạn sẽ không thể liên lạc với người này sau khi chặn"
+    @response="handleResponseUnfriendDialog"
+  />
+
+  <ConfirmDialog
+    ref="unblockFriendDialog"
+    title="Bỏ chặn bạn bè"
+    message="Bạn có chắc chắn muốn bỏ chặn người này không?"
+    @response="handleResponseUnblockFriendDialog"
+  />
+
   <UserInfoDialog
     :userId="userIdSelected"
     :visible="showUserInfoDialog"
@@ -558,6 +620,7 @@ import MSTextField from '@/components/CustomTextField/MSTextField.vue'
 import ChatService from '@/socket/ChatService'
 import ConversationSkeletonLoading from '@/components/SkeletonLoading/ConversationSkeletonLoading.vue'
 import { getConservationByRoomIdAPI, searchMessageByRoomAPI } from '@/services/MessageService'
+import { blockFriendAPI, unblockFriendAPI } from '@/services/UserServices'
 import { useUserInfoStore } from '@/stores/UserInfoStore'
 import { useRoomInfoStore } from '@/stores/RoomInfoStore'
 import { convertToDayOfWeek } from '@/helper/ConvertDate'
@@ -568,8 +631,7 @@ import 'emoji-mart-vue-fast/css/emoji-mart.css'
 import { Picker, EmojiIndex } from 'emoji-mart-vue-fast/src'
 import { differenceInMinutes, parseISO } from 'date-fns'
 import { defineAsyncComponent } from 'vue'
-
-let emojiIndex = new EmojiIndex(data)
+import MSButton from '@/components/CustomButton/MSButton.vue'
 
 export default {
   components: {
@@ -577,6 +639,7 @@ export default {
     MSAvatar,
     ConversationSkeletonLoading,
     Picker,
+    MSButton,
     ConfirmDialog: defineAsyncComponent(() => import('@/components/Dialog/ConfirmDialog.vue')),
     AddMemberDialog: defineAsyncComponent(() => import('@/components/Dialog/AddMemberDialog.vue')),
     RoomInfoDialog: defineAsyncComponent(() => import('@/components/Dialog/RoomInfoDialog.vue')),
@@ -604,12 +667,10 @@ export default {
       showUserInfoDialog: false,
       skeletonLoadingConversation: true,
       skeletonLoadingRoomInfo: true,
-      offset: 0,
-      limit: 30,
       messagesSearchList: [],
       filesToUpload: [],
       selectedMessage: {},
-      emojiIndex: emojiIndex,
+      emojiIndex: new EmojiIndex(data),
       showEmojiPicker: false,
       showAddMemberDialog: false,
       showRoomInfoDialog: false,
@@ -622,7 +683,11 @@ export default {
       showImagesLibrary: false,
       libraryType: 'media',
       imageMessages: [],
-      fileMessages: []
+      fileMessages: [],
+      offset: 0,
+      limit: 30,
+      isBlocker: false,
+      isBlocked: false
     }
   },
 
@@ -633,10 +698,14 @@ export default {
         this.usersInRoom = new Map(newRoom.members.map((user) => [user.userId, user]))
         return
       }
+      const userInfoStore = useUserInfoStore()
 
       localStorage.setItem('roomId', newRoom?._id)
       this.roomId = newRoom._id
       this.roomInfo = newRoom
+      const receiverId = this.roomInfo.receiverId
+      this.isBlocker = userInfoStore.userInfo.blocks.includes(receiverId)
+      this.isBlocked = userInfoStore.userInfo.blocked.includes(receiverId)
       this.messages = []
       this.offset = 0
       this.skeletonLoadingConversation = true
@@ -700,7 +769,8 @@ export default {
             url: item.url,
             name: item.name,
             type: item.type,
-            messageId: message._id
+            messageId: message._id,
+            createdAt: message.createdAt
           }))
         )
 
@@ -971,12 +1041,10 @@ export default {
         classes.push('other-message')
       }
 
-      // Kiểm tra xem có phải tin nhắn cuối cùng của sender không
       if (this.isLastMessageOfSender(index)) {
         classes.push('first-message')
       }
 
-      // Kiểm tra xem có cần phân cách thời gian không
       if (this.isLastMessageOfTime(index)) {
         classes.push('time-separator')
       }
@@ -1026,8 +1094,8 @@ export default {
       this.showZoomInImage = true
     },
 
+    // Hiển thị ảnh lớn
     openUserInfoDialog(id, type) {
-      console.log(id, type)
       if (type && type !== 'private') return
       this.userIdSelected = id
       this.showUserInfoDialog = true
@@ -1041,6 +1109,41 @@ export default {
         messageId: this.selectedMessage._id
       }
       ChatService.deleteMessage(message)
+    },
+
+    async handleUnfriend() {
+      try {
+        const userToUnfriend = this.roomInfo.members.find((member) => member.userId !== this.userId)
+
+        if (userToUnfriend) {
+          const res = await blockFriendAPI({ userIdToBlock: userToUnfriend.userId })
+
+          const userInfoStore = useUserInfoStore()
+          userInfoStore.setUserInfo(res.data)
+          this.isBlocker = true
+        }
+      } catch (error) {
+        console.error('Failed to unfriend user:', error)
+      }
+    },
+
+    async handleUnblockFriend() {
+      try {
+        const userToUnblock = this.roomInfo.members.find((member) => member.userId !== this.userId)
+
+        if (userToUnblock) {
+          // Call API to unblock the user
+          const res = await unblockFriendAPI({ userIdToUnblock: userToUnblock.userId })
+
+          const userInfoStore = useUserInfoStore()
+          userInfoStore.setUserInfo(res.data)
+          this.isBlocker = false
+          this.isBlocked = false
+        }
+      } catch (error) {
+        console.error('Failed to unblock user:', error)
+        // Additional error handling can go here, like notifying the user
+      }
     },
 
     //Hàm gửi sự kiện người dùng đang nhập tin nhắn
@@ -1086,9 +1189,27 @@ export default {
       this.$refs.deleteMessageDialog.openDialog()
     },
 
+    showUnfriendDialog() {
+      this.$refs.unfriendDialog.openDialog()
+    },
+
+    showUnblockFriendDialog() {
+      this.$refs.unblockFriendDialog.openDialog()
+    },
+
     handleResponseDeleteMessageDialog(answer) {
       if (!answer) return
       this.handleDeleteMessage()
+    },
+
+    handleResponseUnfriendDialog(answer) {
+      if (!answer) return
+      this.handleUnfriend()
+    },
+
+    handleResponseUnblockFriendDialog(answer) {
+      if (!answer) return
+      this.handleUnblockFriend()
     },
 
     //Hàm convert date
@@ -1156,6 +1277,30 @@ export default {
       }
 
       this.messages.unshift(message)
+
+      if (message.media && message.media.length > 0) {
+        message.media.forEach((mediaItem) => {
+          if (mediaItem.type.includes('image')) {
+            this.imageMessages.unshift({
+              _id: mediaItem._id,
+              url: mediaItem.url,
+              name: mediaItem.name,
+              type: mediaItem.type,
+              messageId: message._id,
+              createdAt: message.createdAt
+            })
+          } else if (mediaItem.type.includes('application')) {
+            this.fileMessages.unshift({
+              _id: mediaItem._id,
+              url: mediaItem.url,
+              name: mediaItem.name,
+              type: mediaItem.type,
+              messageId: message._id,
+              createdAt: message.createdAt
+            })
+          }
+        })
+      }
     })
 
     ChatService.onDeletedMessageReceived((deletedMessage) => {
@@ -1241,6 +1386,7 @@ export default {
   display: flex;
   align-items: center;
   height: 40px;
+  justify-content: center;
 
   .content__header__info__name {
     font-size: 16px;
@@ -1280,6 +1426,10 @@ export default {
   border-radius: 50%;
   width: 40px;
   height: 40px;
+
+  &:hover {
+    opacity: 90%;
+  }
 }
 
 .header-action-background {
@@ -1462,12 +1612,16 @@ export default {
     width: 1060px;
 
     ol {
-      overflow-y: auto;
+      overflow-y: hidden;
       display: flex;
       flex-direction: column-reverse;
       padding: 12px 8px;
       height: 100%;
       list-style-type: none;
+
+      &:hover {
+        overflow-y: auto;
+      }
 
       .message.time-separator {
         .message-time {
@@ -1811,5 +1965,140 @@ export default {
 
 .message-content__images {
   padding: 0 4px;
+}
+
+@media (max-width: 1200px) {
+  .content__conversation {
+    .content__conversation--main {
+      width: 100%;
+    }
+    .content__conversation--left,
+    .content__conversation--right {
+      display: none;
+    }
+  }
+
+  .content__input {
+    .content__input__content {
+      width: 70%;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .content__header {
+    flex-direction: column;
+    height: auto;
+    padding: 8px;
+
+    .content__header__info {
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+
+    .content__header__actions {
+      width: 100%;
+      justify-content: space-around;
+    }
+  }
+
+  .content__conversation {
+    .content__conversation--main {
+      ol {
+        .message-main {
+          max-width: 90%;
+        }
+      }
+    }
+  }
+
+  .content__input {
+    flex-direction: column;
+    align-items: center;
+
+    .content__input__content {
+      width: 90%;
+      margin-bottom: 10px;
+    }
+
+    .content__input__actions {
+      width: 100%;
+      justify-content: space-around;
+      padding-left: 0;
+    }
+
+    .emoji-mart {
+      width: 90%;
+      height: 250px;
+    }
+  }
+
+  .content__conversation--sub-main.show-library {
+    width: 100%;
+    position: absolute;
+    background: white;
+    height: 100%;
+    z-index: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .content__header {
+    .content__header__info {
+      .content__header__info__name {
+        font-size: 14px;
+      }
+    }
+  }
+
+  .content__conversation {
+    .content__conversation--main {
+      ol {
+        .message-main {
+          max-width: 100%;
+        }
+        .message-content__text {
+          font-size: 12px;
+        }
+      }
+    }
+  }
+
+  .content__input {
+    .content__input__content {
+      width: 100%;
+    }
+
+    .content__input__actions__item {
+      width: 40px;
+      height: 40px;
+    }
+
+    .emoji-mart {
+      width: 100%;
+      height: 200px;
+    }
+  }
+}
+
+.blocking {
+  position: relative;
+
+  .blocking-header {
+    font-size: 14px;
+    font-weight: bold;
+  }
+
+  .blocking-body {
+    font-size: 12px;
+    font-weight: lighter;
+    opacity: 0.7;
+  }
+
+  .blocking-action {
+    z-index: 1;
+    position: absolute;
+    top: 56px;
+  }
 }
 </style>
